@@ -394,7 +394,7 @@ function showPrivateVault() {
             
             <!-- Pending Advance Banner -->
             <div id="advanceSummaryDiv" style="display:none; background:#fcf3cf; padding:12px; border-radius:8px; border:1px solid #f1c40f; margin-bottom:15px;">
-                <strong style="color:#d35400;">⚠️ Total Advance Given:</strong>
+                <strong style="color:#d35400;">⚠️ Total Advance Pending:</strong>
                 <div id="advanceSummaryList" style="margin-top:5px; font-size:14px; color:#333; display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:10px;"></div>
             </div>
 
@@ -402,7 +402,7 @@ function showPrivateVault() {
                 <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
                     <div style="flex:1; min-width:150px;"><label>Date</label><input type="date" id="psDate" value="${todayDate}"></div>
                     <div style="flex:1; min-width:150px;"><label>Employee Name</label><input id="psName" list="dlEmpNames" placeholder="e.g. Rahul"></div>
-                    <div style="flex:1; min-width:150px;"><label>Month (Optional)</label><input id="psMonth" placeholder="e.g. August 2026"></div>
+                    <div style="flex:1; min-width:150px;"><label>Salary Month</label><input type="month" id="psMonth"></div>
                 </div>
                 <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
                     <div style="flex:1; min-width:150px;"><label>Entry Type</label>
@@ -527,11 +527,18 @@ function renderPrivateSalary() {
 
         let typeColor = v.entryType === 'Advance Given' ? '#e67e22' : (v.entryType === 'Advance Deducted' ? '#c0392b' : (v.entryType === 'T.A' ? '#2980b9' : '#27ae60'));
 
+        let monthDisp = v.month || '-';
+        if(v.month && v.month.includes('-')) {
+            let p = v.month.split('-');
+            let mNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            if(p.length === 2 && !isNaN(p[1])) monthDisp = mNames[parseInt(p[1])-1] + ' ' + p[0];
+        }
+
         return `
         <tr>
             <td>${formatDate(v.date)}</td>
             <td><strong>${v.name}</strong></td>
-            <td>${v.month || '-'}</td>
+            <td>${monthDisp}</td>
             <td><span style="font-size:11px; background:${typeColor}22; color:${typeColor}; padding:4px 6px; border-radius:4px; font-weight:bold;">${v.entryType || 'Salary'}</span></td>
             <td style="font-weight:bold; color:${typeColor};">₹${v.amount}</td>
             <td>${v.remarks || '-'}</td>
@@ -549,12 +556,12 @@ function renderPrivateSalary() {
 async function savePrivateSalary() {
     let date = document.getElementById('psDate').value;
     let name = document.getElementById('psName').value.trim();
-    let month = document.getElementById('psMonth').value.trim();
+    let month = document.getElementById('psMonth').value;
     let entryType = document.getElementById('psType').value;
     let amount = document.getElementById('psAmount').value;
     let remarks = document.getElementById('psRemarks').value.trim();
     
-    if(!name || !amount) return alert("Employee Name and Amount are required!");
+    if(!name || !amount || !month) return alert("Employee Name, Salary Month and Amount are required!");
     
     let btn = document.getElementById('psSaveBtn'); 
     let origText = btn.innerText; btn.innerText = "⏳ Saving..."; btn.disabled = true;
@@ -630,7 +637,14 @@ function pushSalaryToPartnerForm(id) {
             if (amountEl && v.amount) amountEl.value = v.amount;
             
             if (detailsEl) {
-                let typeText = v.entryType === 'Salary' ? `Salary: ${v.month}` : (v.entryType === 'T.A' ? `T.A: ${v.month}` : v.entryType);
+                let monthDisp = v.month || '';
+                if(monthDisp.includes('-')) {
+                    let p = monthDisp.split('-');
+                    let mNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                    if(p.length === 2 && !isNaN(p[1])) monthDisp = mNames[parseInt(p[1])-1] + ' ' + p[0];
+                }
+                
+                let typeText = v.entryType === 'Salary' ? `Salary: ${monthDisp}` : (v.entryType === 'T.A' ? `T.A: ${monthDisp}` : v.entryType);
                 let remarkText = v.remarks ? ` - ${v.remarks}` : '';
                 detailsEl.value = `${v.name} (${typeText})${remarkText}`;
             }
@@ -1090,7 +1104,7 @@ async function savePartnerEntry(name) {
                 let isDuplicateVeh = appData.vehicles.some(v => 
                     v.id !== currentVehicleEditId && 
                     v.date === date && 
-                    v.amount === amt && 
+                    v.amount === amount && 
                     v.car === qvCar && 
                     v.category === qvCat &&
                     (v.details || '-') === finalDetails
