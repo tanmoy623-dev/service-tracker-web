@@ -91,14 +91,14 @@ const IMGBB_API_KEY = "2291e363544930c9291f5bf04d9e9432";
 let defaultData = {
     records: { 'Tanmoy': [], 'Tapabrata': [] }, balances: { 'Tanmoy': 0, 'Tapabrata': 0 },
     passwords: { 'Tanmoy': '2196', 'Tapabrata': 'tapabrata329', 'Technician': 'tech329' },
-    computerJobs: [], waterJobs: [], invoiceCount: 314, invoices: [], submittedBills: [], poRecords: [], vehicles: [], signature: '', privateVault: []
+    computerJobs: [], waterJobs: [], invoiceCount: 314, invoices: [], submittedBills: [], poRecords: [], vehicles: [], signature: '', privateVault: [], privateSalary: []
 };
 
 let appData = JSON.parse(JSON.stringify(defaultData));
 let isFirstLoad = true; let currentEditId = null; let currentEntryType = 'income'; 
 let currentInvoiceEditId = null; let currentTechEditId = null; let currentTechEditPhoto = '';
 let currentSubmittedBillEditId = null; let currentPOEditId = null; let currentVehicleEditId = null;
-let currentActiveTab = 'tab-overview'; 
+let currentSalaryEditId = null; let currentActiveTab = 'tab-overview'; 
 
 // ====== DATA SANITIZER ======
 function getArray(data) {
@@ -193,6 +193,7 @@ db.ref('ServiceTracker').on('value', (snapshot) => {
         appData.waterJobs = getArray(appData.waterJobs);
         appData.vehicles = getArray(appData.vehicles);
         appData.privateVault = getArray(appData.privateVault);
+        appData.privateSalary = getArray(appData.privateSalary);
         for(let p in appData.records) { appData.records[p] = getArray(appData.records[p]); }
 
         if(!appData.passwords) appData.passwords = { 'Tanmoy': '2196', 'Tapabrata': 'tapabrata329', 'Technician': 'tech329' };
@@ -269,7 +270,6 @@ function handleGlobalMonthChange() {
     else if (currentActiveTab === 'tab-private') showPrivateVault();
 }
 
-// Global Main Dropdown
 function generateMonthDropdown() {
     const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     let options = '<option value="All Time">All Time</option>';
@@ -285,7 +285,6 @@ function generateMonthDropdown() {
     return `<select id="headerMonthSelect" style="background:white;color:#17352b;padding:8px 12px;border-radius:8px;border:none;font-weight:bold;cursor:pointer;flex-shrink:0;width:auto;margin:0;" onchange="handleGlobalMonthChange()">${options}</select>`;
 }
 
-// Mini Dropdown for Cards
 function generateMiniMonthDropdown(currentValue) {
     const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     let options = '<option value="All Time">All Time</option>';
@@ -345,38 +344,111 @@ function setActiveAdminTab(activeId) {
     });
 }
 
-// ====== PRIVATE VAULT (ONLY TANMOY) ======
+// ====== PRIVATE VAULT & SALARY (ONLY TANMOY) ======
 function showPrivateVault() {
     if (localStorage.getItem('st_user') !== 'Tanmoy') return;
     setActiveAdminTab('tab-private');
     let todayDate = new Date().toISOString().split('T')[0];
+    
+    let empNames = getUniqueOptions(appData.privateSalary, 'name');
 
     document.getElementById('profileArea').innerHTML = `
-    <div class="card" style="border:2px solid #34495e;">
-        <h2 style="color:#34495e; margin-top:0;">🔒 Personal Vault (Only Visible to Tanmoy)</h2>
-        <p style="color:#7f8c8d; font-size:13px; margin-top:0;">This is your personal notepad and ledger. Data saved here will NOT affect the business balance and Tapabrata cannot see this tab.</p>
-        
-        <div style="background:#f4f6f6; padding:15px; border-radius:10px; border:1px solid #bdc3c7;">
-            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-                <div style="flex:1; min-width:150px;"><label>Date</label><input type="date" id="pvDate" value="${todayDate}"></div>
-                <div style="flex:1; min-width:150px;"><label>Amount (Optional)</label><input type="number" id="pvAmount" placeholder="0.00"></div>
+    <div style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap;">
+        <button id="sub-pv-notes" onclick="switchPvTab('notes')" style="background:#34495e; color:white; flex:1; font-size:16px;">📝 Secret Notes</button>
+        <button id="sub-pv-salary" onclick="switchPvTab('salary')" style="background:#bdc3c7; color:#333; flex:1; font-size:16px;">💸 Employee Salary</button>
+    </div>
+
+    <!-- SECRET NOTES AREA -->
+    <div id="pvNotesArea">
+        <div class="card" style="border:2px solid #34495e;">
+            <h2 style="color:#34495e; margin-top:0;">🔒 Personal Vault (Only Visible to Tanmoy)</h2>
+            <p style="color:#7f8c8d; font-size:13px; margin-top:0;">This is your personal notepad and ledger. Data saved here will NOT affect the business balance and Tapabrata cannot see this tab.</p>
+            
+            <div style="background:#f4f6f6; padding:15px; border-radius:10px; border:1px solid #bdc3c7;">
+                <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+                    <div style="flex:1; min-width:150px;"><label>Date</label><input type="date" id="pvDate" value="${todayDate}"></div>
+                    <div style="flex:1; min-width:150px;"><label>Amount (Optional)</label><input type="number" id="pvAmount" placeholder="0.00"></div>
+                </div>
+                <label>Secret Note / Details</label>
+                <input id="pvDetails" placeholder="Type your private notes here...">
+                <button id="pvSaveBtn" onclick="savePrivateVault()" style="width:100%; background:#34495e; font-size:16px;">💾 Save Secret Entry</button>
             </div>
-            <label>Secret Note / Details</label>
-            <input id="pvDetails" placeholder="Type your private notes here...">
-            <button onclick="savePrivateVault()" style="width:100%; background:#34495e; font-size:16px;">💾 Save Secret Entry</button>
+        </div>
+        <div class="card">
+            <h2 style="margin-top:0;">📂 Secret History</h2>
+            <div style="overflow-x:auto;">
+                <table style="min-width:600px;">
+                    <thead><tr><th>Date</th><th>Details / Note</th><th>Amount</th><th style="text-align:center;">Action</th></tr></thead>
+                    <tbody id="pvTableBody"></tbody>
+                </table>
+            </div>
         </div>
     </div>
-    <div class="card">
-        <h2 style="margin-top:0;">📂 Secret History</h2>
-        <div style="overflow-x:auto;">
-            <table style="min-width:600px;">
-                <thead><tr><th>Date</th><th>Details / Note</th><th>Amount</th><th style="text-align:center;">Action</th></tr></thead>
-                <tbody id="pvTableBody"></tbody>
-            </table>
+
+    <!-- EMPLOYEE SALARY AREA -->
+    <div id="pvSalaryArea" style="display:none;">
+        <datalist id="dlEmpNames">${empNames}</datalist>
+        <div class="card" style="border:2px solid #27ae60;">
+            <h2 style="color:#27ae60; margin-top:0;">💸 Employee Salary & Advance Tracker</h2>
+            <p style="color:#7f8c8d; font-size:13px; margin-top:0;">Manage employees' salaries and track pending advances automatically.</p>
+            
+            <!-- Pending Advance Banner -->
+            <div id="advanceSummaryDiv" style="display:none; background:#fcf3cf; padding:12px; border-radius:8px; border:1px solid #f1c40f; margin-bottom:15px;">
+                <strong style="color:#d35400;">⚠️ Total Advance Given:</strong>
+                <div id="advanceSummaryList" style="margin-top:5px; font-size:14px; color:#333; display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:10px;"></div>
+            </div>
+
+            <div style="background:#eaeded; padding:15px; border-radius:10px; border:1px solid #aeb6bf;">
+                <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+                    <div style="flex:1; min-width:150px;"><label>Date</label><input type="date" id="psDate" value="${todayDate}"></div>
+                    <div style="flex:1; min-width:150px;"><label>Employee Name</label><input id="psName" list="dlEmpNames" placeholder="e.g. Rahul"></div>
+                    <div style="flex:1; min-width:150px;"><label>Month (Optional)</label><input id="psMonth" placeholder="e.g. August 2026"></div>
+                </div>
+                <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+                    <div style="flex:1; min-width:150px;"><label>Entry Type</label>
+                        <select id="psType">
+                            <option value="Salary">💰 Regular Salary</option>
+                            <option value="Advance Given">↗️ Advance Given</option>
+                            <option value="Advance Deducted">↙️ Advance Deducted (EMI)</option>
+                            <option value="T.A">🏍️ T.A (Travel Allowance)</option>
+                        </select>
+                    </div>
+                    <div style="flex:1; min-width:150px;"><label>Amount (₹)</label><input type="number" id="psAmount" placeholder="0"></div>
+                    <div style="flex:2; min-width:200px;"><label>Remarks (Optional)</label><input id="psRemarks" placeholder="Notes..."></div>
+                </div>
+                <button id="psSaveBtn" onclick="savePrivateSalary()" style="width:100%; background:#27ae60; font-size:16px;">💾 Save Salary Record</button>
+            </div>
         </div>
-    </div>`;
+        <div class="card">
+            <h2 style="margin-top:0;">📂 Salary History</h2>
+            <div style="overflow-x:auto;">
+                <table style="min-width:800px;">
+                    <thead><tr><th>Date</th><th>Employee Name</th><th>Month</th><th>Type</th><th>Amount</th><th>Remarks</th><th style="text-align:center;">Action</th></tr></thead>
+                    <tbody id="psTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    `;
     
     renderPrivateVault();
+    renderPrivateSalary();
+}
+
+function switchPvTab(tab) {
+    document.getElementById('pvNotesArea').style.display = (tab === 'notes') ? 'block' : 'none';
+    document.getElementById('pvSalaryArea').style.display = (tab === 'salary') ? 'block' : 'none';
+    
+    let btnN = document.getElementById('sub-pv-notes');
+    let btnS = document.getElementById('sub-pv-salary');
+    
+    if(tab === 'notes') {
+        btnN.style.background = '#34495e'; btnN.style.color = 'white';
+        btnS.style.background = '#bdc3c7'; btnS.style.color = '#333';
+    } else {
+        btnS.style.background = '#27ae60'; btnS.style.color = 'white';
+        btnN.style.background = '#bdc3c7'; btnN.style.color = '#333';
+    }
 }
 
 function renderPrivateVault() {
@@ -404,7 +476,7 @@ async function savePrivateVault() {
     
     if(!details) return alert("Secret Note / Details is required!");
     
-    let btn = document.querySelector('button[onclick="savePrivateVault()"]'); 
+    let btn = document.getElementById('pvSaveBtn');
     let origText = btn.innerText; btn.innerText = "⏳ Saving..."; btn.disabled = true;
 
     try {
@@ -417,7 +489,163 @@ async function savePrivateVault() {
     }
 }
 
-// Global functions for Vault Actions to prevent scope errors
+// ====== SALARY & ADVANCE FUNCTIONS ======
+function renderPrivateSalary() {
+    let tbody = document.getElementById('psTableBody'); if(!tbody) return;
+    let list = [...getArray(appData.privateSalary)].sort((a,b) => new Date(b.date) - new Date(a.date));
+    
+    // Calculate Pending Advances
+    let advances = {};
+    list.forEach(r => {
+        let emp = (r.name || '').trim().toUpperCase();
+        if(!emp) return;
+        if(!advances[emp]) advances[emp] = {name: r.name, amt: 0};
+        let amt = parseFloat(r.amount) || 0;
+        if(r.entryType === 'Advance Given') advances[emp].amt += amt;
+        if(r.entryType === 'Advance Deducted') advances[emp].amt -= amt;
+    });
+
+    let advDiv = document.getElementById('advanceSummaryDiv');
+    let advList = document.getElementById('advanceSummaryList');
+    let hasAdvance = false;
+    let advHtml = '';
+    for(let key in advances) {
+        if(advances[key].amt > 0) {
+            hasAdvance = true;
+            advHtml += `<div style="background:white; padding:6px 10px; border-radius:6px; border:1px solid #f5cba7; box-shadow:0 2px 4px #0001;"><b>${advances[key].name}</b>: ₹${advances[key].amt.toLocaleString('en-IN')}</div>`;
+        }
+    }
+    if(advDiv && advList) {
+        advDiv.style.display = hasAdvance ? 'block' : 'none';
+        advList.innerHTML = advHtml;
+    }
+    
+    let rows = list.map(v => {
+        let pushBtn = v.isPushed 
+            ? `<button onclick="pushSalaryToPartnerForm('${v.id}')" style="background:#07865b; color:white; border:none; border-radius:6px; padding:6px 12px; cursor:pointer;" title="Already Pushed. Click to push again.">✅ Pushed</button>`
+            : `<button onclick="pushSalaryToPartnerForm('${v.id}')" style="background:#2980b9; color:white; border:none; border-radius:6px; padding:6px 12px; cursor:pointer;" title="Push to Main Business">📤 Push</button>`;
+
+        let typeColor = v.entryType === 'Advance Given' ? '#e67e22' : (v.entryType === 'Advance Deducted' ? '#c0392b' : (v.entryType === 'T.A' ? '#2980b9' : '#27ae60'));
+
+        return `
+        <tr>
+            <td>${formatDate(v.date)}</td>
+            <td><strong>${v.name}</strong></td>
+            <td>${v.month || '-'}</td>
+            <td><span style="font-size:11px; background:${typeColor}22; color:${typeColor}; padding:4px 6px; border-radius:4px; font-weight:bold;">${v.entryType || 'Salary'}</span></td>
+            <td style="font-weight:bold; color:${typeColor};">₹${v.amount}</td>
+            <td>${v.remarks || '-'}</td>
+            <td style="display:flex; gap:5px; justify-content:center;">
+                ${pushBtn}
+                <button onclick="editPrivateSalary('${v.id}')" style="background:#f39c12; color:white; border:none; border-radius:6px; padding:6px 12px; cursor:pointer;">✏️</button>
+                <button onclick="deletePrivateSalary('${v.id}')" style="background:#e21d4f; color:white; border:none; border-radius:6px; padding:6px 12px; cursor:pointer;">🗑️</button>
+            </td>
+        </tr>`;
+    }).join('');
+        
+    tbody.innerHTML = rows || `<tr><td colspan="7" style="text-align:center; color:#888;">No salary records found!</td></tr>`;
+}
+
+async function savePrivateSalary() {
+    let date = document.getElementById('psDate').value;
+    let name = document.getElementById('psName').value.trim();
+    let month = document.getElementById('psMonth').value.trim();
+    let entryType = document.getElementById('psType').value;
+    let amount = document.getElementById('psAmount').value;
+    let remarks = document.getElementById('psRemarks').value.trim();
+    
+    if(!name || !amount) return alert("Employee Name and Amount are required!");
+    
+    let btn = document.getElementById('psSaveBtn'); 
+    let origText = btn.innerText; btn.innerText = "⏳ Saving..."; btn.disabled = true;
+
+    try {
+        appData.privateSalary = getArray(appData.privateSalary);
+        
+        // Preserve isPushed status if editing
+        let isPushedExisting = false;
+        if(currentSalaryEditId) {
+            let existing = appData.privateSalary.find(x => String(x.id) === String(currentSalaryEditId));
+            if(existing) isPushedExisting = existing.isPushed || false;
+        }
+
+        let entry = { id: currentSalaryEditId || Date.now().toString(), date, name, month, entryType, amount, remarks, isPushed: isPushedExisting };
+        
+        if(currentSalaryEditId) {
+            let idx = appData.privateSalary.findIndex(x => String(x.id) === String(currentSalaryEditId));
+            appData.privateSalary[idx] = entry;
+            currentSalaryEditId = null;
+        } else {
+            appData.privateSalary.unshift(entry);
+        }
+        
+        await saveDataToLocal();
+        showPrivateVault(); // Re-render to update Datalist and Advance Summary
+        switchPvTab('salary');
+        
+    } catch(e) {
+        alert("Error saving."); btn.innerText = origText; btn.disabled = false;
+    }
+}
+
+function deletePrivateSalary(id) {
+    if(confirm("Are you sure you want to delete this salary record?")) {
+        appData.privateSalary = getArray(appData.privateSalary).filter(x => String(x.id) !== String(id));
+        saveDataToLocal().then(() => renderPrivateSalary());
+    }
+}
+
+function editPrivateSalary(id) {
+    let v = getArray(appData.privateSalary).find(x => String(x.id) === String(id));
+    if(v) {
+        currentSalaryEditId = id;
+        document.getElementById('psDate').value = v.date || '';
+        document.getElementById('psName').value = v.name || '';
+        document.getElementById('psMonth').value = v.month || '';
+        document.getElementById('psType').value = v.entryType || 'Salary';
+        document.getElementById('psAmount').value = v.amount || '';
+        document.getElementById('psRemarks').value = v.remarks || '';
+        
+        let btn = document.getElementById('psSaveBtn');
+        btn.innerText = "✏️ Update Salary Record";
+        btn.style.background = "#f39c12";
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
+function pushSalaryToPartnerForm(id) {
+    let v = getArray(appData.privateSalary).find(x => String(x.id) === String(id));
+    if(v) {
+        v.isPushed = true;
+        saveDataToLocal().then(() => renderPrivateSalary());
+        
+        partnerProfile('Tanmoy');
+        
+        setTimeout(() => {
+            let dateEl = document.getElementById('entryDate');
+            let amountEl = document.getElementById('entryAmount');
+            let detailsEl = document.getElementById('entryDetails');
+            
+            if (dateEl && v.date) dateEl.value = v.date;
+            if (amountEl && v.amount) amountEl.value = v.amount;
+            
+            if (detailsEl) {
+                let typeText = v.entryType === 'Salary' ? `Salary: ${v.month}` : (v.entryType === 'T.A' ? `T.A: ${v.month}` : v.entryType);
+                let remarkText = v.remarks ? ` - ${v.remarks}` : '';
+                detailsEl.value = `${v.name} (${typeText})${remarkText}`;
+            }
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            setTimeout(() => {
+                alert("✅ Salary Entry loaded into the main form!\n\n💡 Note: This entry is STILL safely kept in your Private Salary Tab.\n\nPlease select 'Expenditure' and click 'Save Entry' to record it in the main business ledger.");
+            }, 400);
+            
+        }, 150);
+    }
+}
+
+// ====== VAULT ACTIONS ======
 window.deletePrivateVault = function(id) {
     if(confirm("Are you sure you want to permanently delete this secret entry?")) {
         appData.privateVault = getArray(appData.privateVault).filter(x => String(x.id) !== String(id));
@@ -430,15 +658,10 @@ window.pushToPartnerForm = function(id) {
         let vaultList = getArray(appData.privateVault);
         let v = vaultList.find(x => String(x.id) === String(id));
         
-        if(!v) {
-            alert("Entry not found!");
-            return;
-        }
+        if(!v) { alert("Entry not found!"); return; }
         
-        // Tab Switch karega pehle
         partnerProfile('Tanmoy');
         
-        // Thoda delay taaki HTML theek se load ho jaye
         setTimeout(() => {
             let dateEl = document.getElementById('entryDate');
             let amountEl = document.getElementById('entryAmount');
@@ -450,7 +673,6 @@ window.pushToPartnerForm = function(id) {
             if (detailsEl) {
                 let cleanText = v.details || '';
                 if (cleanText.includes('🤖')) {
-                    // Emoji hatane ka simple aur solid code
                     cleanText = cleanText.replace(/🤖\s*/g, '').trim();
                 }
                 detailsEl.value = cleanText;
@@ -470,7 +692,6 @@ window.pushToPartnerForm = function(id) {
         
     } catch(err) {
         alert("Action Failed! Error: " + err.message);
-        console.error(err);
     }
 };
 
