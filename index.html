@@ -726,7 +726,7 @@ function toggleRowCheck(row, event, type, id, name) {
         
         // SAVE TO FIREBASE
         if(id && name && appData.records[name]) {
-            let r = appData.records[name].find(x => x.id === id);
+            let r = appData.records[name].find(x => String(x.id) === String(id));
             if(r) {
                 r.isReconciled = chk.checked;
                 saveDataToLocal();
@@ -747,9 +747,9 @@ function toggleAllRows(source, type, name) {
         }
         
         // Update appData locally
-        let id = parseInt(chk.getAttribute('data-id'));
+        let id = chk.getAttribute('data-id');
         if(id && name && appData.records[name]) {
-            let r = appData.records[name].find(x => x.id === id);
+            let r = appData.records[name].find(x => String(x.id) === String(id));
             if(r) r.isReconciled = source.checked;
         }
     });
@@ -898,9 +898,9 @@ function renderPartnerData(name) {
         let bTag = r.billNo ? `<br><span style="font-size:11px; color:#8e44ad; font-weight:bold;">🧾 Bill: ${r.billNo}</span>` : '';
         let isChecked = r.isReconciled ? 'checked' : '';
         let bgStyle = r.isReconciled ? 'background:#e8f8f5;' : '';
-        return `<tr onclick="toggleRowCheck(this, event, 'inc', ${r.id}, '${name}')" style="cursor:pointer; transition: background 0.2s; ${bgStyle}">
+        return `<tr onclick="toggleRowCheck(this, event, 'inc', '${r.id}', '${name}')" style="cursor:pointer; transition: background 0.2s; ${bgStyle}">
             <td style="text-align:center;"><input type="checkbox" class="inc-chk" data-id="${r.id}" value="${r.amount}" ${isChecked} style="transform:scale(1.2); cursor:pointer; pointer-events:none;"></td>
-            <td>${formatDate(r.date)}</td><td>${r.details}${bTag}</td><td>${proof}</td><td class="positive">₹${r.amount}</td><td><button onclick="editEntry(${r.id}, 'income', '${name}')" style="background:#f39c12; color:white; border:none; border-radius:5px; padding:4px 8px;">✏️</button> <button onclick="deleteEntry(${r.id}, '${name}')" style="background:#e21d4f; color:white; border:none; border-radius:5px; padding:4px 8px;">🗑️</button></td></tr>`;
+            <td>${formatDate(r.date)}</td><td>${r.details}${bTag}</td><td>${proof}</td><td class="positive">₹${r.amount}</td><td><button onclick="editEntry('${r.id}', 'income', '${name}')" style="background:#f39c12; color:white; border:none; border-radius:5px; padding:4px 8px;">✏️</button> <button onclick="deleteEntry('${r.id}', '${name}')" style="background:#e21d4f; color:white; border:none; border-radius:5px; padding:4px 8px;">🗑️</button></td></tr>`;
     }).join('');
     
     let exps = recs.filter(r=>r.type==='expense').map(r=> {
@@ -908,9 +908,9 @@ function renderPartnerData(name) {
         let proof = '-'; if (r.photo && r.photo.length > 5) proof = `<a href="${r.photo}" target="_blank">📷 View</a>`; else if (r.link && r.link.length > 5) proof = `<a href="${r.link}" target="_blank">🔗 Link</a>`;
         let isChecked = r.isReconciled ? 'checked' : '';
         let bgStyle = r.isReconciled ? 'background:#fdedec;' : '';
-        return `<tr onclick="toggleRowCheck(this, event, 'exp', ${r.id}, '${name}')" style="cursor:pointer; transition: background 0.2s; ${bgStyle}">
+        return `<tr onclick="toggleRowCheck(this, event, 'exp', '${r.id}', '${name}')" style="cursor:pointer; transition: background 0.2s; ${bgStyle}">
             <td style="text-align:center;"><input type="checkbox" class="exp-chk" data-id="${r.id}" value="${r.amount}" ${isChecked} style="transform:scale(1.2); cursor:pointer; pointer-events:none;"></td>
-            <td>${formatDate(r.date)}</td><td>${r.details}</td><td>${proof}</td><td class="negative">₹${r.amount}</td><td><button onclick="editEntry(${r.id}, 'expense', '${name}')" style="background:#f39c12; color:white; border:none; border-radius:5px; padding:4px 8px;">✏️</button> <button onclick="deleteEntry(${r.id}, '${name}')" style="background:#e21d4f; color:white; border:none; border-radius:5px; padding:4px 8px;">🗑️</button></td></tr>`;
+            <td>${formatDate(r.date)}</td><td>${r.details}</td><td>${proof}</td><td class="negative">₹${r.amount}</td><td><button onclick="editEntry('${r.id}', 'expense', '${name}')" style="background:#f39c12; color:white; border:none; border-radius:5px; padding:4px 8px;">✏️</button> <button onclick="deleteEntry('${r.id}', '${name}')" style="background:#e21d4f; color:white; border:none; border-radius:5px; padding:4px 8px;">🗑️</button></td></tr>`;
     }).join('');
 
     let profs = recs.filter(r=>r.type==='profit').map(r=> {
@@ -918,9 +918,9 @@ function renderPartnerData(name) {
         let proof = '-'; if (r.photo && r.photo.length > 5) proof = `<a href="${r.photo}" target="_blank">📷 View</a>`; else if (r.link && r.link.length > 5) proof = `<a href="${r.link}" target="_blank">🔗 Link</a>`;
         let isChecked = r.isReconciled ? 'checked' : '';
         let bgStyle = r.isReconciled ? 'background:#f4ecf7;' : '';
-        return `<tr onclick="toggleRowCheck(this, event, 'prof', ${r.id}, '${name}')" style="cursor:pointer; transition: background 0.2s; ${bgStyle}">
+        return `<tr onclick="toggleRowCheck(this, event, 'prof', '${r.id}', '${name}')" style="cursor:pointer; transition: background 0.2s; ${bgStyle}">
             <td style="text-align:center;"><input type="checkbox" class="prof-chk" data-id="${r.id}" value="${r.amount}" ${isChecked} style="transform:scale(1.2); cursor:pointer; pointer-events:none;"></td>
-            <td>${formatDate(r.date)}</td><td>${r.details}</td><td>${proof}</td><td style="color:#8e44ad; font-weight:bold;">₹${r.amount}</td><td><button onclick="editEntry(${r.id}, 'profit', '${name}')" style="background:#f39c12; color:white; border:none; border-radius:5px; padding:4px 8px;">✏️</button> <button onclick="deleteEntry(${r.id}, '${name}')" style="background:#e21d4f; color:white; border:none; border-radius:5px; padding:4px 8px;">🗑️</button></td></tr>`;
+            <td>${formatDate(r.date)}</td><td>${r.details}</td><td>${proof}</td><td style="color:#8e44ad; font-weight:bold;">₹${r.amount}</td><td><button onclick="editEntry('${r.id}', 'profit', '${name}')" style="background:#f39c12; color:white; border:none; border-radius:5px; padding:4px 8px;">✏️</button> <button onclick="deleteEntry('${r.id}', '${name}')" style="background:#e21d4f; color:white; border:none; border-radius:5px; padding:4px 8px;">🗑️</button></td></tr>`;
     }).join('');
     
     document.getElementById('incTable').innerHTML = `
@@ -1077,10 +1077,10 @@ async function savePartnerEntry(name) {
     
     // --- NAYA FIX: Seamless Conversion ---
     if(currentEditId !== null && (isTransfer || isVehicle)) {
-        let oldR = getArray(appData.records[name]).find(r => r.id === currentEditId);
+        let oldR = getArray(appData.records[name]).find(r => String(r.id) === String(currentEditId));
         if (oldR) {
             appData.balances[name] -= (oldR.type === 'income' ? oldR.amount : -oldR.amount);
-            appData.records[name] = getArray(appData.records[name]).filter(r => r.id !== currentEditId);
+            appData.records[name] = getArray(appData.records[name]).filter(r => String(r.id) !== String(currentEditId));
         }
         currentEditId = null; 
     }
@@ -1088,7 +1088,7 @@ async function savePartnerEntry(name) {
     // --- NAYA DUPLICATE CHECK ---
     if (!isVehicle) {
         let isDuplicate = getArray(appData.records[name]).some(r => 
-            r.id !== currentEditId && 
+            String(r.id) !== String(currentEditId) && 
             r.date === date && 
             r.amount === amt && 
             (r.details||'').toLowerCase() === det.toLowerCase() && 
@@ -1101,7 +1101,7 @@ async function savePartnerEntry(name) {
 
     if(currentEntryType === 'income' && billNo) {
         let allRecs = [ ...getArray(appData.records['Tanmoy']), ...getArray(appData.records['Tapabrata']) ];
-        let isBillUsed = allRecs.some(r => r.id !== currentEditId && r.billNo && r.billNo.toLowerCase() === billNo.toLowerCase());
+        let isBillUsed = allRecs.some(r => String(r.id) !== String(currentEditId) && r.billNo && r.billNo.toLowerCase() === billNo.toLowerCase());
         if(isBillUsed) {
             return alert(`❌ DUPLICATE BILL!\nThis Bill No. (${billNo}) has already been received. You cannot receive the same bill twice.`);
         }
@@ -1111,9 +1111,9 @@ async function savePartnerEntry(name) {
 
     try {
         appData.records[name] = getArray(appData.records[name]);
-        let photoUrl = currentEditId && appData.records[name].find(r=>r.id===currentEditId)?.photo ? appData.records[name].find(r=>r.id===currentEditId).photo : '';
-        let oldLink = currentEditId && appData.records[name].find(r=>r.id===currentEditId)?.link ? appData.records[name].find(r=>r.id===currentEditId).link : '';
-        let oldReconciled = currentEditId && appData.records[name].find(r=>r.id===currentEditId)?.isReconciled ? appData.records[name].find(r=>r.id===currentEditId).isReconciled : false;
+        let photoUrl = currentEditId && appData.records[name].find(r=>String(r.id)===String(currentEditId))?.photo ? appData.records[name].find(r=>String(r.id)===String(currentEditId)).photo : '';
+        let oldLink = currentEditId && appData.records[name].find(r=>String(r.id)===String(currentEditId))?.link ? appData.records[name].find(r=>String(r.id)===String(currentEditId)).link : '';
+        let oldReconciled = currentEditId && appData.records[name].find(r=>String(r.id)===String(currentEditId))?.isReconciled ? appData.records[name].find(r=>String(r.id)===String(currentEditId)).isReconciled : false;
         
         if(file) { let b64 = await compressImage(file); photoUrl = await uploadToImgBB(b64); }
         
@@ -1123,7 +1123,7 @@ async function savePartnerEntry(name) {
         let linkedEntryId = newEntryId + "_linked";
 
         if(currentEditId !== null) {
-            let idx = appData.records[name].findIndex(r => r.id === currentEditId);
+            let idx = appData.records[name].findIndex(r => String(r.id) === String(currentEditId));
             let oldR = appData.records[name][idx];
             appData.balances[name] -= (oldR.type==='income' ? oldR.amount : -oldR.amount);
             appData.balances[name] += (currentEntryType==='income' ? amt : -amt);
@@ -1139,7 +1139,7 @@ async function savePartnerEntry(name) {
                 appData.vehicles = getArray(appData.vehicles);
 
                 let isDuplicateVeh = appData.vehicles.some(v => 
-                    v.id !== currentVehicleEditId && 
+                    String(v.id) !== String(currentVehicleEditId) && 
                     v.date === date && 
                     v.amount === amt && 
                     v.car === qvCar && 
@@ -1212,22 +1212,32 @@ async function savePartnerEntry(name) {
 }
 
 function deleteEntry(id, name) {
-    let r = getArray(appData.records[name]).find(x=>x.id===id);
-    if(r && r.isAuto && !r.linkedId) return alert("❌ This entry was automatically generated from the '🚗 Vehicles' tab. To edit or delete it, please go to the 'Vehicles' tab.");
+    let r = getArray(appData.records[name]).find(x=>String(x.id)===String(id));
     
+    // --- NAYA FIX: Vehicle Auto-Delete from Main Ledger ---
+    if(r && r.isAuto && !r.linkedId) {
+        if(confirm("🚗 This is a Vehicle expense. Are you sure you want to permanently delete it?")) {
+            appData.balances[name] -= (r.type==='income' ? r.amount : -r.amount);
+            appData.records[name] = getArray(appData.records[name]).filter(x=>String(x.id)!==String(id));
+            appData.vehicles = getArray(appData.vehicles).filter(x=>String(x.id)!==String(id));
+            saveDataToLocal().then(()=>partnerProfile(name));
+        }
+        return;
+    }
+
     let msg = r && r.linkedId ? "⚠️ This is a TRANSFER entry. Deleting it will also reverse the amount from the other partner's account. Do you want to proceed?" : "Delete entry?";
 
     if(confirm(msg)) {
         if(r) { 
             appData.balances[name] -= (r.type==='income' ? r.amount : -r.amount); 
-            appData.records[name] = getArray(appData.records[name]).filter(x=>x.id!==id); 
+            appData.records[name] = getArray(appData.records[name]).filter(x=>String(x.id)!==String(id)); 
             
             if (r.linkedId) {
                 let otherName = name === 'Tanmoy' ? 'Tapabrata' : 'Tanmoy';
-                let lr = getArray(appData.records[otherName]).find(x=>x.id === r.linkedId);
+                let lr = getArray(appData.records[otherName]).find(x=>String(x.id) === String(r.linkedId));
                 if(lr) {
                     appData.balances[otherName] -= (lr.type==='income' ? lr.amount : -lr.amount);
-                    appData.records[otherName] = getArray(appData.records[otherName]).filter(x=>x.id !== r.linkedId);
+                    appData.records[otherName] = getArray(appData.records[otherName]).filter(x=>String(x.id) !== String(r.linkedId));
                 }
             }
             
@@ -1237,8 +1247,16 @@ function deleteEntry(id, name) {
 }
 
 function editEntry(id, type, name) {
-    let r = getArray(appData.records[name]).find(x=>x.id===id);
-    if(r && r.isAuto && !r.linkedId) return alert("❌ This entry was automatically generated from the '🚗 Vehicles' tab. To edit or delete it, please go to the 'Vehicles' tab.");
+    let r = getArray(appData.records[name]).find(x=>String(x.id)===String(id));
+    
+    // --- NAYA FIX: Vehicle Auto-Jump ---
+    if(r && r.isAuto && !r.linkedId) {
+        alert("🚗 Taking you to the 'Vehicles' tab to edit this specific entry.");
+        showVehicles();
+        setTimeout(() => { editVehicle(id); }, 150);
+        return;
+    }
+
     if(r && r.linkedId) return alert("⚠️ This is a 'Transfer' entry. It cannot be edited directly. Please DELETE it and create a new entry to keep both accounts balanced.");
 
     if(r) { 
@@ -1627,8 +1645,8 @@ function renderVehicleTable() {
             <td>${v.category}</td><td>${v.details}</td><td>👤 ${v.paidBy || 'Tanmoy'}</td><td>${proofHTML}</td>
             <td style="font-weight:bold; color:#e21d4f;">₹${v.amount}</td>
             <td style="display:flex; gap:5px; justify-content:center;">
-                <button onclick="editVehicle(${v.id})" style="background:#f39c12; padding:6px; border-radius:6px; font-size:12px; color:white; border:none; cursor:pointer;">✏️</button>
-                <button onclick="deleteVehicle(${v.id})" style="background:#444; padding:6px; border-radius:6px; font-size:12px; color:white; border:none; cursor:pointer;">🗑️</button>
+                <button onclick="editVehicle('${v.id}')" style="background:#f39c12; padding:6px; border-radius:6px; font-size:12px; color:white; border:none; cursor:pointer;">✏️</button>
+                <button onclick="deleteVehicle('${v.id}')" style="background:#444; padding:6px; border-radius:6px; font-size:12px; color:white; border:none; cursor:pointer;">🗑️</button>
             </td></tr>`;
     }).join('');
 
@@ -1652,14 +1670,14 @@ async function saveVehicle() {
         appData.vehicles = getArray(appData.vehicles);
         appData.records[paidBy] = getArray(appData.records[paidBy]);
 
-        let photoUrl = currentVehicleEditId && appData.vehicles.find(v=>v.id===currentVehicleEditId)?.photo ? appData.vehicles.find(v=>v.id===currentVehicleEditId).photo : '';
+        let photoUrl = currentVehicleEditId && appData.vehicles.find(v=>String(v.id)===String(currentVehicleEditId))?.photo ? appData.vehicles.find(v=>String(v.id)===String(currentVehicleEditId)).photo : '';
         if(file) { let b64 = await compressImage(file); photoUrl = await uploadToImgBB(b64); }
         
         let finalDetails = details || '-';
         
         // --- NAYA DUPLICATE CHECK ---
         let isDuplicateVeh = appData.vehicles.some(v => 
-            v.id !== currentVehicleEditId && 
+            String(v.id) !== String(currentVehicleEditId) && 
             v.date === date && 
             v.amount === amount && 
             v.car === car && 
@@ -1675,12 +1693,12 @@ async function saveVehicle() {
         let partnerDesc = details ? `🚗 ${car} - ${category} (${details})` : `🚗 ${car} - ${category}`;
 
         if(currentVehicleEditId) {
-            let oldV = appData.vehicles.find(v => v.id === currentVehicleEditId);
+            let oldV = appData.vehicles.find(v => String(v.id) === String(currentVehicleEditId));
             if(oldV) {
                 appData.balances[oldV.paidBy] += oldV.amount;
-                appData.records[oldV.paidBy] = getArray(appData.records[oldV.paidBy]).filter(r => r.id !== currentVehicleEditId);
+                appData.records[oldV.paidBy] = getArray(appData.records[oldV.paidBy]).filter(r => String(r.id) !== String(currentVehicleEditId));
             }
-            let idx = appData.vehicles.findIndex(v => v.id === currentVehicleEditId);
+            let idx = appData.vehicles.findIndex(v => String(v.id) === String(currentVehicleEditId));
             appData.vehicles[idx] = newEntry; currentVehicleEditId = null;
         } else {
             appData.vehicles.unshift(newEntry);
@@ -1705,18 +1723,18 @@ async function saveVehicle() {
 
 function deleteVehicle(id) { 
     if(confirm("Are you sure you want to delete this vehicle expense?")) { 
-        let oldV = getArray(appData.vehicles).find(x=>x.id===id);
+        let oldV = getArray(appData.vehicles).find(x=>String(x.id)===String(id));
         if(oldV) {
             appData.balances[oldV.paidBy] += oldV.amount;
-            appData.records[oldV.paidBy] = getArray(appData.records[oldV.paidBy]).filter(r => r.id !== id);
-            appData.vehicles = getArray(appData.vehicles).filter(x=>x.id!==id); 
+            appData.records[oldV.paidBy] = getArray(appData.records[oldV.paidBy]).filter(r => String(r.id) !== String(id));
+            appData.vehicles = getArray(appData.vehicles).filter(x=>String(x.id)!==String(id)); 
             saveDataToLocal().then(()=>showVehicles()); 
         }
     } 
 }
 
 function editVehicle(id) {
-    let v = getArray(appData.vehicles).find(x=>x.id===id);
+    let v = getArray(appData.vehicles).find(x=>String(x.id)===String(id));
     if(v) {
         currentVehicleEditId = id;
         document.getElementById('vDate').value=v.date||''; document.getElementById('vCar').value=v.car||'Tcl car';
@@ -1786,8 +1804,8 @@ function renderPOTableRows() {
     let historyRows = poList.map(p => {
         let rowBg = p.isCompleted ? 'background:#eefdf6; color:#555;' : 'background:#fff;';
         let statusBtn = p.isCompleted ? 
-            `<button onclick="togglePOStatus(${p.id})" style="background:#07865b; padding:6px; border-radius:6px; font-size:12px; color:white; border:none; cursor:pointer; width:110px;">✅ Completed</button>` : 
-            `<button onclick="togglePOStatus(${p.id})" style="background:#f39c12; padding:6px; border-radius:6px; font-size:12px; color:white; border:none; cursor:pointer; width:110px;">⏳ Ongoing</button>`;
+            `<button onclick="togglePOStatus('${p.id}')" style="background:#07865b; padding:6px; border-radius:6px; font-size:12px; color:white; border:none; cursor:pointer; width:110px;">✅ Completed</button>` : 
+            `<button onclick="togglePOStatus('${p.id}')" style="background:#f39c12; padding:6px; border-radius:6px; font-size:12px; color:white; border:none; cursor:pointer; width:110px;">⏳ Ongoing</button>`;
 
         let proofHTML = '-';
         if (p.photo && p.photo.length > 5) {
@@ -1801,8 +1819,8 @@ function renderPOTableRows() {
             <td>${p.poNo}</td><td>${p.deadline ? formatDate(p.deadline) : '-'}</td><td style="font-weight:bold;">₹${p.amount}</td>
             <td>${proofHTML}</td>
             <td style="display:flex; gap:5px; justify-content:center; align-items:center;">${statusBtn}
-                <button onclick="editPO(${p.id})" style="background:#3498db; padding:6px; border-radius:6px; font-size:12px; color:white; border:none; cursor:pointer;">✏️</button>
-                <button onclick="deletePO(${p.id})" style="background:#e21d4f; padding:6px; border-radius:6px; font-size:12px; color:white; border:none; cursor:pointer;">🗑️</button>
+                <button onclick="editPO('${p.id}')" style="background:#3498db; padding:6px; border-radius:6px; font-size:12px; color:white; border:none; cursor:pointer;">✏️</button>
+                <button onclick="deletePO('${p.id}')" style="background:#e21d4f; padding:6px; border-radius:6px; font-size:12px; color:white; border:none; cursor:pointer;">🗑️</button>
             </td></tr>`;
     }).join('');
 
@@ -1825,13 +1843,13 @@ async function savePO() {
         appData.poRecords = getArray(appData.poRecords);
 
         // --- NAYA DUPLICATE CHECK ---
-        let isDuplicatePO = appData.poRecords.some(p => p.id !== currentPOEditId && p.poNo.toLowerCase() === poNo.toLowerCase());
+        let isDuplicatePO = appData.poRecords.some(p => String(p.id) !== String(currentPOEditId) && p.poNo.toLowerCase() === poNo.toLowerCase());
         if(isDuplicatePO) {
             btn.innerText = originalText; btn.disabled = false;
             return alert(`❌ DUPLICATE PO!\nThis PO No. (${poNo}) is already added in the system.`);
         }
 
-        let existingPO = currentPOEditId ? appData.poRecords.find(p=>p.id === currentPOEditId) : null;
+        let existingPO = currentPOEditId ? appData.poRecords.find(p=>String(p.id) === String(currentPOEditId)) : null;
         let photoUrl = existingPO ? existingPO.photo : '';
         let oldLink = existingPO ? existingPO.link : '';
         
@@ -1849,7 +1867,7 @@ async function savePO() {
         };
 
         if(currentPOEditId) {
-            let idx = appData.poRecords.findIndex(p => p.id === currentPOEditId);
+            let idx = appData.poRecords.findIndex(p => String(p.id) === String(currentPOEditId));
             appData.poRecords[idx] = newPO; currentPOEditId = null;
         } else appData.poRecords.unshift(newPO);
         
@@ -1857,10 +1875,10 @@ async function savePO() {
     } catch(e) { alert("Error saving: " + e.message); btn.innerText = originalText; btn.disabled = false; }
 }
 
-function togglePOStatus(id) { let p = getArray(appData.poRecords).find(x => x.id === id); if(p) { p.isCompleted = !p.isCompleted; saveDataToLocal().then(()=>renderPOTableRows()); } }
-function deletePO(id) { if(confirm("Are you sure you want to delete this PO?")) { appData.poRecords = getArray(appData.poRecords).filter(p => p.id !== id); saveDataToLocal().then(()=>renderPOTableRows()); } }
+function togglePOStatus(id) { let p = getArray(appData.poRecords).find(x => String(x.id) === String(id)); if(p) { p.isCompleted = !p.isCompleted; saveDataToLocal().then(()=>renderPOTableRows()); } }
+function deletePO(id) { if(confirm("Are you sure you want to delete this PO?")) { appData.poRecords = getArray(appData.poRecords).filter(p => String(p.id) !== String(id)); saveDataToLocal().then(()=>renderPOTableRows()); } }
 function editPO(id) {
-    let p = getArray(appData.poRecords).find(x => x.id === id);
+    let p = getArray(appData.poRecords).find(x => String(x.id) === String(id));
     if(p) {
         currentPOEditId = id;
         document.getElementById('poDate').value = p.date || ''; 
@@ -1942,16 +1960,16 @@ function renderSubBillRows() {
     let rows = sBills.map(b => {
         let rowBg = b.isPaid ? 'background:#eefdf6; color:#555;' : 'background:#fff;';
         let statusBtn = b.isPaid ? 
-            `<button onclick="toggleSubBillStatus(${b.id})" style="background:#07865b; padding:6px; border-radius:6px; font-size:12px; color:white; border:none; cursor:pointer;">✅ Paid</button>` : 
-            `<button onclick="toggleSubBillStatus(${b.id})" style="background:#e21d4f; padding:6px; border-radius:6px; font-size:12px; color:white; border:none; cursor:pointer;">⏳ Pending</button>`;
+            `<button onclick="toggleSubBillStatus('${b.id}')" style="background:#07865b; padding:6px; border-radius:6px; font-size:12px; color:white; border:none; cursor:pointer;">✅ Paid</button>` : 
+            `<button onclick="toggleSubBillStatus('${b.id}')" style="background:#e21d4f; padding:6px; border-radius:6px; font-size:12px; color:white; border:none; cursor:pointer;">⏳ Pending</button>`;
         
         return `<tr style="${rowBg}">
             <td>${formatDate(b.date)}</td><td><b>${b.location}</b></td>
             <td>${b.billNo}${b.period ? `<br><span style="font-size:11px;color:#555;">${b.period}</span>` : ''}</td>
             <td>${b.poNo || '-'}</td><td style="font-weight:bold;">₹${b.amount}</td>
             <td style="display:flex; gap:5px; justify-content:center;">${statusBtn}
-                <button onclick="editSubBill(${b.id})" style="background:#f39c12; padding:6px; border-radius:6px; font-size:12px; color:white; border:none; cursor:pointer;">✏️</button>
-                <button onclick="deleteSubBill(${b.id})" style="background:#444; padding:6px; border-radius:6px; font-size:12px; color:white; border:none; cursor:pointer;">🗑️</button>
+                <button onclick="editSubBill('${b.id}')" style="background:#f39c12; padding:6px; border-radius:6px; font-size:12px; color:white; border:none; cursor:pointer;">✏️</button>
+                <button onclick="deleteSubBill('${b.id}')" style="background:#444; padding:6px; border-radius:6px; font-size:12px; color:white; border:none; cursor:pointer;">🗑️</button>
             </td></tr>`;
     }).join('');
 
@@ -1968,7 +1986,7 @@ function saveSubBill() {
     appData.submittedBills = getArray(appData.submittedBills);
 
     // --- NAYA DUPLICATE CHECK ---
-    let isDuplicateBill = appData.submittedBills.some(b => b.id !== currentSubmittedBillEditId && b.billNo.toLowerCase() === billNo.toLowerCase());
+    let isDuplicateBill = appData.submittedBills.some(b => String(b.id) !== String(currentSubmittedBillEditId) && b.billNo.toLowerCase() === billNo.toLowerCase());
     if(isDuplicateBill) {
         btn.innerText = originalText; btn.disabled = false;
         return alert(`❌ DUPLICATE BILL!\nThis Bill No. (${billNo}) already exists in the Track Record.`);
@@ -1976,7 +1994,7 @@ function saveSubBill() {
     
     let newBill = { id: currentSubmittedBillEditId || Date.now(), date, location, billNo, poNo, period, amount, isPaid: false };
     if(currentSubmittedBillEditId) {
-        let idx = appData.submittedBills.findIndex(b => b.id === currentSubmittedBillEditId);
+        let idx = appData.submittedBills.findIndex(b => String(b.id) === String(currentSubmittedBillEditId));
         newBill.isPaid = appData.submittedBills[idx].isPaid; appData.submittedBills[idx] = newBill;
         currentSubmittedBillEditId = null;
     } else appData.submittedBills.unshift(newBill);
@@ -1988,10 +2006,10 @@ function saveSubBill() {
     });
 }
 
-function toggleSubBillStatus(id) { let b = getArray(appData.submittedBills).find(x=>x.id===id); if(b){ b.isPaid = !b.isPaid; saveDataToLocal().then(()=>renderSubBillRows()); } }
-function deleteSubBill(id) { if(confirm("Are you sure you want to delete this Bill?")) { appData.submittedBills = getArray(appData.submittedBills).filter(x=>x.id!==id); saveDataToLocal().then(()=>renderSubBillRows()); } }
+function toggleSubBillStatus(id) { let b = getArray(appData.submittedBills).find(x=>String(x.id)===String(id)); if(b){ b.isPaid = !b.isPaid; saveDataToLocal().then(()=>renderSubBillRows()); } }
+function deleteSubBill(id) { if(confirm("Are you sure you want to delete this Bill?")) { appData.submittedBills = getArray(appData.submittedBills).filter(x=>String(x.id)!==String(id)); saveDataToLocal().then(()=>renderSubBillRows()); } }
 function editSubBill(id) {
-    let b = getArray(appData.submittedBills).find(x=>x.id===id);
+    let b = getArray(appData.submittedBills).find(x=>String(x.id)===String(id));
     if(b) {
         currentSubmittedBillEditId = id;
         document.getElementById('sbDate').value=b.date||''; 
@@ -2087,8 +2105,8 @@ function renderInvTable() {
     let rows = invs.map(inv => {
         let rowBg = inv.isPaid ? 'background:#eefdf6; color:#555;' : 'background:#fff;';
         let statusBtn = inv.isPaid ? 
-            `<button onclick="togglePayStatus(${inv.id})" style="background:#07865b; padding:6px; border-radius:6px; font-size:12px; color:white; border:none; cursor:pointer;">✅ Paid</button>` : 
-            `<button onclick="togglePayStatus(${inv.id})" style="background:#e21d4f; padding:6px; border-radius:6px; font-size:12px; color:white; border:none; cursor:pointer;">⏳ Pending</button>`;
+            `<button onclick="togglePayStatus('${inv.id}')" style="background:#07865b; padding:6px; border-radius:6px; font-size:12px; color:white; border:none; cursor:pointer;">✅ Paid</button>` : 
+            `<button onclick="togglePayStatus('${inv.id}')" style="background:#e21d4f; padding:6px; border-radius:6px; font-size:12px; color:white; border:none; cursor:pointer;">⏳ Pending</button>`;
         
         let itemSummary = inv.items && inv.items.length > 0 ? inv.items[0].desc : 'No items';
         if (inv.items && inv.items.length > 1) itemSummary += ` (+${inv.items.length - 1} more)`;
@@ -2098,9 +2116,9 @@ function renderInvTable() {
             <td><b>${inv.bName}</b><br><span style="font-size:11px;color:#555;">${itemSummary}</span></td>
             <td style="font-weight:bold;">₹${inv.gTotal}</td>
             <td style="display:flex; gap:5px; justify-content:center;">${statusBtn}
-                <button onclick="reprintBill(${inv.id})" style="background:#2980b9; padding:6px; border-radius:6px; font-size:12px; color:white; border:none; cursor:pointer;">🖨️</button>
-                <button onclick="editInvoice(${inv.id})" style="background:#f39c12; padding:6px; border-radius:6px; font-size:12px; color:white; border:none; cursor:pointer;">✏️</button>
-                <button onclick="deleteInvoice(${inv.id})" style="background:#444; padding:6px; border-radius:6px; font-size:12px; color:white; border:none; cursor:pointer;">🗑️</button>
+                <button onclick="reprintBill('${inv.id}')" style="background:#2980b9; padding:6px; border-radius:6px; font-size:12px; color:white; border:none; cursor:pointer;">🖨️</button>
+                <button onclick="editInvoice('${inv.id}')" style="background:#f39c12; padding:6px; border-radius:6px; font-size:12px; color:white; border:none; cursor:pointer;">✏️</button>
+                <button onclick="deleteInvoice('${inv.id}')" style="background:#444; padding:6px; border-radius:6px; font-size:12px; color:white; border:none; cursor:pointer;">🗑️</button>
             </td></tr>`;
     }).join('');
 
@@ -2154,7 +2172,7 @@ async function printBill() {
     appData.invoices = getArray(appData.invoices);
 
     // --- NAYA DUPLICATE CHECK ---
-    let isDuplicateInv = appData.invoices.some(i => i.id !== currentInvoiceEditId && i.invNo.toLowerCase() === invNo.toLowerCase());
+    let isDuplicateInv = appData.invoices.some(i => String(i.id) !== String(currentInvoiceEditId) && i.invNo.toLowerCase() === invNo.toLowerCase());
     if(isDuplicateInv) {
         return alert(`❌ DUPLICATE VOUCHER!\nThis Voucher No. (${invNo}) has already been generated. Please enter a new number.`);
     }
@@ -2162,17 +2180,17 @@ async function printBill() {
     let invData = { id: currentInvoiceEditId || Date.now(), invNo, date, bName, bGST, bAdd, bPin, gTotal, amountWords: numberToWords(gTotal), items: itemsToSave, includeMyGST: incGST, isPaid: false };
     
     if(currentInvoiceEditId) {
-        let idx = appData.invoices.findIndex(i => i.id === currentInvoiceEditId);
+        let idx = appData.invoices.findIndex(i => String(i.id) === String(currentInvoiceEditId));
         invData.isPaid = appData.invoices[idx].isPaid; appData.invoices[idx] = invData;
     } else { appData.invoices.unshift(invData); appData.invoiceCount = (appData.invoiceCount||314)+1; }
 
     await saveDataToLocal(); showInvoice(); generateInvoiceHTML(invData);
 }
-function reprintBill(id) { let i = getArray(appData.invoices).find(x=>x.id===id); if(i) generateInvoiceHTML(i); }
-function togglePayStatus(id) { let i = getArray(appData.invoices).find(x=>x.id===id); if(i) { i.isPaid = !i.isPaid; saveDataToLocal().then(()=>renderInvTable()); } }
-function deleteInvoice(id) { if(confirm("Are you sure you want to delete this Petty Cash record?")) { appData.invoices = getArray(appData.invoices).filter(x=>x.id!==id); saveDataToLocal().then(()=>renderInvTable()); } }
+function reprintBill(id) { let i = getArray(appData.invoices).find(x=>String(x.id)===String(id)); if(i) generateInvoiceHTML(i); }
+function togglePayStatus(id) { let i = getArray(appData.invoices).find(x=>String(x.id)===String(id)); if(i) { i.isPaid = !i.isPaid; saveDataToLocal().then(()=>renderInvTable()); } }
+function deleteInvoice(id) { if(confirm("Are you sure you want to delete this Petty Cash record?")) { appData.invoices = getArray(appData.invoices).filter(x=>String(x.id)!==String(id)); saveDataToLocal().then(()=>renderInvTable()); } }
 function editInvoice(id) {
-    let i = getArray(appData.invoices).find(x=>x.id===id);
+    let i = getArray(appData.invoices).find(x=>String(x.id)===String(id));
     if(i) {
         currentInvoiceEditId = id; 
         document.getElementById('invBuyerName').value=i.bName||''; 
@@ -2353,7 +2371,7 @@ function tech(type){
         let rows = compJobs.map(j => {
             let partsDisplay = getArray(j.parts).map(p => `<div style="margin-bottom:4px;">• <b>${p.part||'-'}</b><br><span style="font-size:11px;color:#555;">SN: ${p.serial||'N/A'}</span></div>`).join('');
             let proofDisplay = getArray(j.parts).map((p, idx) => p.photo ? `<a href="${p.photo}" target="_blank" style="display:block; font-size:12px; margin-bottom:4px;">📷 Part ${idx+1}</a>` : '').join('');
-            return `<tr><td>${j.location}</td><td>${j.shop}</td><td>${partsDisplay}</td><td>${formatDate(j.date)}</td><td>${proofDisplay || '-'}</td><td><button onclick="editTechJob(${j.id}, 'computer')" style="background:#f39c12; color:white; border:none; border-radius:5px; padding:5px;">✏️</button> <button onclick="deleteTechJob(${j.id}, 'computer')" style="background:#e21d4f; color:white; border:none; border-radius:5px; padding:5px;">🗑️</button></td></tr>`;
+            return `<tr><td>${j.location}</td><td>${j.shop}</td><td>${partsDisplay}</td><td>${formatDate(j.date)}</td><td>${proofDisplay || '-'}</td><td><button onclick="editTechJob('${j.id}', 'computer')" style="background:#f39c12; color:white; border:none; border-radius:5px; padding:5px;">✏️</button> <button onclick="deleteTechJob('${j.id}', 'computer')" style="background:#e21d4f; color:white; border:none; border-radius:5px; padding:5px;">🗑️</button></td></tr>`;
         }).join('');
         
         document.getElementById('techArea').innerHTML = `
@@ -2362,7 +2380,7 @@ function tech(type){
         addPartRow(); 
     } else {
         let wJobs = getArray(appData.waterJobs);
-        let rows = wJobs.map(j => `<tr><td>${j.customer}</td><td>${j.mobile}</td><td>${j.model}</td><td>${j.part}</td><td>${formatDate(j.date)}</td><td>${j.photo ? `<a href="${j.photo}" target="_blank">📷 View</a>` : '-'}</td><td><button onclick="editTechJob(${j.id}, 'water')" style="background:#f39c12; color:white; border:none; border-radius:5px; padding:5px;">✏️</button> <button onclick="deleteTechJob(${j.id}, 'water')" style="background:#e21d4f; color:white; border:none; border-radius:5px; padding:5px;">🗑️</button></td></tr>`).join('');
+        let rows = wJobs.map(j => `<tr><td>${j.customer}</td><td>${j.mobile}</td><td>${j.model}</td><td>${j.part}</td><td>${formatDate(j.date)}</td><td>${j.photo ? `<a href="${j.photo}" target="_blank">📷 View</a>` : '-'}</td><td><button onclick="editTechJob('${j.id}', 'water')" style="background:#f39c12; color:white; border:none; border-radius:5px; padding:5px;">✏️</button> <button onclick="deleteTechJob('${j.id}', 'water')" style="background:#e21d4f; color:white; border:none; border-radius:5px; padding:5px;">🗑️</button></td></tr>`).join('');
         document.getElementById('techArea').innerHTML = `
         <div class="card"><h2>💧 Water Purifier Service</h2><label>Customer</label><input id="wCust"><label>Mobile</label><input id="wMob"><label>Model</label><input id="wModel"><label>Part Replaced</label><input id="wPart"><label>Photo</label><input id="wPhoto" type="file" accept="image/*"><label>Date</label><input type="date" id="wDate" value="${todayDate}"><button id="wSaveBtn" onclick="saveWaterJob()" style="width:100%;">Save Job</button></div>
         <div class="card"><div style="overflow-x:auto;"><table><tr><th>Customer</th><th>Mobile</th><th>Model</th><th>Part</th><th>Date</th><th>Proof</th><th>Action</th></tr>${rows||'<tr><td colspan="7" style="text-align:center;">No jobs</td></tr>'}</table></div></div>`;
@@ -2392,7 +2410,7 @@ async function saveComputerJob() {
     if(!partsList.length) { btn.innerText=orig; btn.disabled=false; return alert("Add at least 1 part!"); }
     
     let j = { id: currentTechEditId||Date.now(), location:loc, shop, date:d, remarks:rem, parts:partsList };
-    if(currentTechEditId) { let idx=appData.computerJobs.findIndex(x=>x.id===currentTechEditId); appData.computerJobs[idx]=j; currentTechEditId=null; }
+    if(currentTechEditId) { let idx=appData.computerJobs.findIndex(x=>String(x.id)===String(currentTechEditId)); appData.computerJobs[idx]=j; currentTechEditId=null; }
     else appData.computerJobs.unshift(j);
     await saveDataToLocal(); tech('computer');
 }
@@ -2405,18 +2423,18 @@ async function saveWaterJob() {
     let btn = document.getElementById('wSaveBtn'); let orig=btn.innerText; btn.innerText="⏳ Saving..."; btn.disabled=true;
     appData.waterJobs = getArray(appData.waterJobs);
     
-    let url = currentTechEditId && appData.waterJobs.find(x=>x.id===currentTechEditId)?.photo ? appData.waterJobs.find(x=>x.id===currentTechEditId).photo : ''; 
+    let url = currentTechEditId && appData.waterJobs.find(x=>String(x.id)===String(currentTechEditId))?.photo ? appData.waterJobs.find(x=>String(x.id)===String(currentTechEditId)).photo : ''; 
     if(file){ let b64 = await compressImage(file); url = await uploadToImgBB(b64); }
     
     let j = { id: currentTechEditId||Date.now(), customer:c, mobile:m, model:mod, part:p, date:d, photo:url };
-    if(currentTechEditId) { let idx=appData.waterJobs.findIndex(x=>x.id===currentTechEditId); appData.waterJobs[idx]=j; currentTechEditId=null; currentTechEditPhoto=''; }
+    if(currentTechEditId) { let idx=appData.waterJobs.findIndex(x=>String(x.id)===String(currentTechEditId)); appData.waterJobs[idx]=j; currentTechEditId=null; currentTechEditPhoto=''; }
     else appData.waterJobs.unshift(j);
     await saveDataToLocal(); tech('water');
 }
 
-function deleteTechJob(id, t) { if(confirm("Are you sure you want to delete this job?")){ t==='computer'?appData.computerJobs=getArray(appData.computerJobs).filter(x=>x.id!==id):appData.waterJobs=getArray(appData.waterJobs).filter(x=>x.id!==id); saveDataToLocal().then(()=>tech(t)); } }
+function deleteTechJob(id, t) { if(confirm("Are you sure you want to delete this job?")){ t==='computer'?appData.computerJobs=getArray(appData.computerJobs).filter(x=>String(x.id)!==String(id)):appData.waterJobs=getArray(appData.waterJobs).filter(x=>String(x.id)!==String(id)); saveDataToLocal().then(()=>tech(t)); } }
 function editTechJob(id, t) {
-    let arr = t==='computer'?getArray(appData.computerJobs):getArray(appData.waterJobs); let j = arr.find(x=>x.id===id); if(!j)return;
+    let arr = t==='computer'?getArray(appData.computerJobs):getArray(appData.waterJobs); let j = arr.find(x=>String(x.id)===String(id)); if(!j)return;
     currentTechEditId = id;
     if(t==='computer') {
         document.getElementById('cLoc').value=j.location; 
