@@ -296,7 +296,6 @@ function generateMiniMonthDropdown(currentValue) {
             options += `<option value="${val}" ${sel}>${val}</option>`;
         });
     }
-    // NAYA FIX: Made dropdown smaller and more compact
     return `<select onchange="document.getElementById('headerMonthSelect').value=this.value; handleGlobalMonthChange()" style="width: auto; max-width: 150px; margin: 0; padding:6px 8px; font-size:13px; border:1px solid #cce3d8; border-radius:6px; background:#fff; font-weight:bold; color:#176b4d; cursor:pointer;">${options}</select>`;
 }
 
@@ -710,79 +709,98 @@ window.pushToPartnerForm = function(id) {
     }
 };
 
-// ====== RECONCILIATION SELECTION LOGIC ======
+// ====== NEW FIX: 3-STATE SMART RECONCILIATION LOGIC ======
 function toggleRowCheck(row, event, type, id, name) {
     if(event.target.tagName === 'BUTTON' || event.target.tagName === 'A') return;
-    let chk = row.querySelector('.' + type + '-chk');
-    if(chk) {
-        if(event.target.tagName !== 'INPUT') {
-            chk.checked = !chk.checked;
-        }
-        if(chk.checked) {
-            row.style.backgroundColor = (type === 'inc') ? '#e8f8f5' : (type === 'exp' ? '#fdedec' : '#f4ecf7');
+    
+    let cell = row.querySelector('.recon-cell');
+    if(cell) {
+        let currentState = parseInt(cell.getAttribute('data-state') || '0');
+        let newState = (currentState + 1) % 3; // Cycles: 0 -> 1 -> 2 -> 0
+        
+        cell.setAttribute('data-state', newState);
+        cell.innerText = newState === 1 ? '✅' : (newState === 2 ? '❌' : '⬜');
+        
+        if(newState === 1) {
+            row.style.setProperty('background-color', '#eefdf6', 'important'); // Green Match
+        } else if(newState === 2) {
+            row.style.setProperty('background-color', '#fadbd8', 'important'); // Red Missing
         } else {
-            row.style.backgroundColor = '';
+            row.style.removeProperty('background-color'); // Blank Normal
         }
+        
         calcGroupTotal(type);
         
-        // SAVE TO FIREBASE
+        // DIRECT FIREBASE SAVE FOR INSTANT MEMORY
         if(id && name && appData.records[name]) {
-            let r = appData.records[name].find(x => String(x.id) === String(id));
-            if(r) {
-                r.isReconciled = chk.checked;
-                saveDataToLocal();
+            let rIndex = appData.records[name].findIndex(x => String(x.id) === String(id));
+            if(rIndex !== -1) {
+                appData.records[name][rIndex].reconState = newState;
+                db.ref('ServiceTracker/records/' + name + '/' + rIndex + '/reconState').set(newState);
             }
         }
     }
 }
 
-function toggleAllRows(source, type, name) {
-    let checkboxes = document.querySelectorAll('.' + type + '-chk');
-    checkboxes.forEach(chk => {
-        chk.checked = source.checked;
-        let row = chk.closest('tr');
-        if(chk.checked) {
-            row.style.backgroundColor = (type === 'inc') ? '#e8f8f5' : (type === 'exp' ? '#fdedec' : '#f4ecf7');
-        } else {
-            row.style.backgroundColor = '';
-        }
+function toggleAllRows(type, name) {
+    let tableId = type === 'inc' ? 'incTable' : (type === 'exp' ? 'expTable' : 'profTable');
+    let table = document.getElementById(tableId);
+    if(!table) return;
+
+    let cells = table.querySelectorAll('.recon-cell');
+    let allGreen = true;
+    cells.forEach(c => { if(parseInt(c.getAttribute('data-state')||'0') !== 1) allGreen = false; });
+    let targetState = allGreen ? 0 : 1; // If all green, make blank. Else make all green.
+
+    let updates = {};
+    cells.forEach(cell => {
+        cell.setAttribute('data-state', targetState);
+        cell.innerText = targetState === 1 ? '✅' : '⬜';
+        let row = cell.closest('tr');
         
-        // Update appData locally
-        let id = chk.getAttribute('data-id');
+        if(targetState === 1) row.style.setProperty('background-color', '#eefdf6', 'important');
+        else row.style.removeProperty('background-color');
+        
+        let id = cell.getAttribute('data-id');
         if(id && name && appData.records[name]) {
-            let r = appData.records[name].find(x => String(x.id) === String(id));
-            if(r) r.isReconciled = source.checked;
+            let rIndex = appData.records[name].findIndex(x => String(x.id) === String(id));
+            if(rIndex !== -1) {
+                appData.records[name][rIndex].reconState = targetState;
+                updates[rIndex + '/reconState'] = targetState;
+            }
         }
     });
     calcGroupTotal(type);
-    saveDataToLocal(); // Save all at once
+    if(Object.keys(updates).length > 0) {
+        db.ref('ServiceTracker/records/' + name).update(updates);
+    }
 }
 
 function calcGroupTotal(type) {
-    let checkboxes = document.querySelectorAll('.' + type + '-chk');
+    let tableId = type === 'inc' ? 'incTable' : (type === 'exp' ? 'expTable' : 'profTable');
+    let table = document.getElementById(tableId);
+    if(!table) return;
+
+    let cells = table.querySelectorAll('.recon-cell');
     let total = 0;
     let count = 0;
-    checkboxes.forEach(chk => {
-        if(chk.checked) {
-            total += parseFloat(chk.value) || 0;
+    
+    cells.forEach(cell => {
+        let state = parseInt(cell.getAttribute('data-state') || '0');
+        if(state === 1) { // Only state 1 (✅ Green) adds to the total sum
+            total += parseFloat(cell.getAttribute('data-amt')) || 0;
             count++;
         }
     });
 
     let badge = document.getElementById(type + 'GroupTotalBadge');
-    let selectAll = document.getElementById('selectAll' + type.charAt(0).toUpperCase() + type.slice(1));
-
     if(badge) {
         if(count > 0) {
             badge.style.display = 'inline-block';
-            badge.innerText = 'Selected (' + count + '): ₹' + total.toLocaleString('en-IN');
+            badge.innerText = 'Matched (' + count + '): ₹' + total.toLocaleString('en-IN');
         } else {
             badge.style.display = 'none';
         }
-    }
-
-    if(selectAll) {
-        selectAll.checked = (count === checkboxes.length && count > 0);
     }
 }
 
@@ -862,7 +880,6 @@ function partnerProfile(name){
     renderPartnerData(name); setEntryType('income');
 }
 
-// NAYA FIX: 3 SMART BALANCES
 function renderPartnerData(name) {
     let globalMonth = document.getElementById('headerMonthSelect') ? document.getElementById('headerMonthSelect').value : '';
     let monthQuery = '';
@@ -894,34 +911,44 @@ function renderPartnerData(name) {
     let totalExp = 0;
     let totalProf = 0;
 
+    // --- NAYA FIX: 3-State Data Mapping ---
     let incs = recs.filter(r=>r.type==='income').map(r=> {
         totalInc += parseFloat(r.amount) || 0;
         let proof = '-'; if (r.photo && r.photo.length > 5) proof = `<a href="${r.photo}" target="_blank">📷 View</a>`; else if (r.link && r.link.length > 5) proof = `<a href="${r.link}" target="_blank">🔗 Link</a>`;
         let bTag = r.billNo ? `<br><span style="font-size:11px; color:#8e44ad; font-weight:bold;">🧾 Bill: ${r.billNo}</span>` : '';
-        let isChecked = r.isReconciled ? 'checked' : '';
-        let bgStyle = r.isReconciled ? 'background:#e8f8f5;' : '';
+        
+        let rState = r.reconState !== undefined ? r.reconState : (r.isReconciled ? 1 : 0);
+        let statusIcon = rState === 1 ? '✅' : (rState === 2 ? '❌' : '⬜');
+        let bgStyle = rState === 1 ? 'background-color:#eefdf6 !important;' : (rState === 2 ? 'background-color:#fadbd8 !important;' : '');
+
         return `<tr onclick="toggleRowCheck(this, event, 'inc', '${r.id}', '${name}')" style="cursor:pointer; transition: background 0.2s; ${bgStyle}">
-            <td style="text-align:center;"><input type="checkbox" class="inc-chk" data-id="${r.id}" value="${r.amount}" ${isChecked} style="transform:scale(1.2); cursor:pointer; pointer-events:none;"></td>
+            <td style="text-align:center; font-size:16px; user-select:none;" class="recon-cell" data-state="${rState}" data-id="${r.id}" data-amt="${r.amount}">${statusIcon}</td>
             <td>${formatDate(r.date)}</td><td>${r.details}${bTag}</td><td>${proof}</td><td class="positive">₹${r.amount}</td><td><button onclick="editEntry('${r.id}', 'income', '${name}')" style="background:#f39c12; color:white; border:none; border-radius:5px; padding:4px 8px;">✏️</button> <button onclick="deleteEntry('${r.id}', '${name}')" style="background:#e21d4f; color:white; border:none; border-radius:5px; padding:4px 8px;">🗑️</button></td></tr>`;
     }).join('');
     
     let exps = recs.filter(r=>r.type==='expense').map(r=> {
         totalExp += parseFloat(r.amount) || 0;
         let proof = '-'; if (r.photo && r.photo.length > 5) proof = `<a href="${r.photo}" target="_blank">📷 View</a>`; else if (r.link && r.link.length > 5) proof = `<a href="${r.link}" target="_blank">🔗 Link</a>`;
-        let isChecked = r.isReconciled ? 'checked' : '';
-        let bgStyle = r.isReconciled ? 'background:#fdedec;' : '';
+        
+        let rState = r.reconState !== undefined ? r.reconState : (r.isReconciled ? 1 : 0);
+        let statusIcon = rState === 1 ? '✅' : (rState === 2 ? '❌' : '⬜');
+        let bgStyle = rState === 1 ? 'background-color:#fdedec !important;' : (rState === 2 ? 'background-color:#fadbd8 !important;' : '');
+
         return `<tr onclick="toggleRowCheck(this, event, 'exp', '${r.id}', '${name}')" style="cursor:pointer; transition: background 0.2s; ${bgStyle}">
-            <td style="text-align:center;"><input type="checkbox" class="exp-chk" data-id="${r.id}" value="${r.amount}" ${isChecked} style="transform:scale(1.2); cursor:pointer; pointer-events:none;"></td>
+            <td style="text-align:center; font-size:16px; user-select:none;" class="recon-cell" data-state="${rState}" data-id="${r.id}" data-amt="${r.amount}">${statusIcon}</td>
             <td>${formatDate(r.date)}</td><td>${r.details}</td><td>${proof}</td><td class="negative">₹${r.amount}</td><td><button onclick="editEntry('${r.id}', 'expense', '${name}')" style="background:#f39c12; color:white; border:none; border-radius:5px; padding:4px 8px;">✏️</button> <button onclick="deleteEntry('${r.id}', '${name}')" style="background:#e21d4f; color:white; border:none; border-radius:5px; padding:4px 8px;">🗑️</button></td></tr>`;
     }).join('');
 
     let profs = recs.filter(r=>r.type==='profit').map(r=> {
         totalProf += parseFloat(r.amount) || 0;
         let proof = '-'; if (r.photo && r.photo.length > 5) proof = `<a href="${r.photo}" target="_blank">📷 View</a>`; else if (r.link && r.link.length > 5) proof = `<a href="${r.link}" target="_blank">🔗 Link</a>`;
-        let isChecked = r.isReconciled ? 'checked' : '';
-        let bgStyle = r.isReconciled ? 'background:#f4ecf7;' : '';
+        
+        let rState = r.reconState !== undefined ? r.reconState : (r.isReconciled ? 1 : 0);
+        let statusIcon = rState === 1 ? '✅' : (rState === 2 ? '❌' : '⬜');
+        let bgStyle = rState === 1 ? 'background-color:#f4ecf7 !important;' : (rState === 2 ? 'background-color:#fadbd8 !important;' : '');
+
         return `<tr onclick="toggleRowCheck(this, event, 'prof', '${r.id}', '${name}')" style="cursor:pointer; transition: background 0.2s; ${bgStyle}">
-            <td style="text-align:center;"><input type="checkbox" class="prof-chk" data-id="${r.id}" value="${r.amount}" ${isChecked} style="transform:scale(1.2); cursor:pointer; pointer-events:none;"></td>
+            <td style="text-align:center; font-size:16px; user-select:none;" class="recon-cell" data-state="${rState}" data-id="${r.id}" data-amt="${r.amount}">${statusIcon}</td>
             <td>${formatDate(r.date)}</td><td>${r.details}</td><td>${proof}</td><td style="color:#8e44ad; font-weight:bold;">₹${r.amount}</td><td><button onclick="editEntry('${r.id}', 'profit', '${name}')" style="background:#f39c12; color:white; border:none; border-radius:5px; padding:4px 8px;">✏️</button> <button onclick="deleteEntry('${r.id}', '${name}')" style="background:#e21d4f; color:white; border:none; border-radius:5px; padding:4px 8px;">🗑️</button></td></tr>`;
     }).join('');
     
@@ -929,14 +956,14 @@ function renderPartnerData(name) {
     <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #07865b; margin-bottom:8px; padding-bottom:4px;">
         <div style="display:flex; align-items:center;">
             <h3 style="color:#07865b; margin:0;">🟢 Income</h3>
-            <span id="incGroupTotalBadge" style="display:none; background:#d4efdf; color:#07865b; padding:4px 8px; border-radius:10px; font-size:13px; margin-left:10px; font-weight:bold;">Selected: ₹0</span>
+            <span id="incGroupTotalBadge" style="display:none; background:#d4efdf; color:#07865b; padding:4px 8px; border-radius:10px; font-size:13px; margin-left:10px; font-weight:bold;">Matched: ₹0</span>
         </div>
         <b style="color:#07865b;">Total: ₹${totalInc.toLocaleString('en-IN')}</b>
     </div>
     <div style="overflow-x:auto;">
         <table>
             <tr>
-                <th style="width:30px; text-align:center;"><input type="checkbox" id="selectAllInc" onchange="toggleAllRows(this, 'inc', '${name}')" style="transform:scale(1.2); cursor:pointer;"></th>
+                <th style="width:40px; text-align:center;"><button onclick="toggleAllRows('inc', '${name}')" style="background:#eee; border:1px solid #ccc; border-radius:4px; cursor:pointer; font-size:11px; padding:3px 5px; color:#333;">All</button></th>
                 <th>Date</th><th>Details</th><th>Proof</th><th>Amt</th><th>Action</th>
             </tr>
             ${incs||'<tr><td colspan="6" style="text-align:center;">No records</td></tr>'}
@@ -947,14 +974,14 @@ function renderPartnerData(name) {
     <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #e21d4f; margin-bottom:8px; padding-bottom:4px;">
         <div style="display:flex; align-items:center;">
             <h3 style="color:#e21d4f; margin:0;">🔴 Expense</h3>
-            <span id="expGroupTotalBadge" style="display:none; background:#fadbd8; color:#e21d4f; padding:4px 8px; border-radius:10px; font-size:13px; margin-left:10px; font-weight:bold;">Selected: ₹0</span>
+            <span id="expGroupTotalBadge" style="display:none; background:#fadbd8; color:#e21d4f; padding:4px 8px; border-radius:10px; font-size:13px; margin-left:10px; font-weight:bold;">Matched: ₹0</span>
         </div>
         <b style="color:#e21d4f;">Total: ₹${totalExp.toLocaleString('en-IN')}</b>
     </div>
     <div style="overflow-x:auto;">
         <table>
             <tr>
-                <th style="width:30px; text-align:center;"><input type="checkbox" id="selectAllExp" onchange="toggleAllRows(this, 'exp', '${name}')" style="transform:scale(1.2); cursor:pointer;"></th>
+                <th style="width:40px; text-align:center;"><button onclick="toggleAllRows('exp', '${name}')" style="background:#eee; border:1px solid #ccc; border-radius:4px; cursor:pointer; font-size:11px; padding:3px 5px; color:#333;">All</button></th>
                 <th>Date</th><th>Details</th><th>Proof</th><th>Amt</th><th>Action</th>
             </tr>
             ${exps||'<tr><td colspan="6" style="text-align:center;">No records</td></tr>'}
@@ -965,14 +992,14 @@ function renderPartnerData(name) {
     <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #8e44ad; margin-bottom:8px; padding-bottom:4px;">
         <div style="display:flex; align-items:center;">
             <h3 style="color:#8e44ad; margin:0;">🟣 Profit Booked</h3>
-            <span id="profGroupTotalBadge" style="display:none; background:#ebdef0; color:#8e44ad; padding:4px 8px; border-radius:10px; font-size:13px; margin-left:10px; font-weight:bold;">Selected: ₹0</span>
+            <span id="profGroupTotalBadge" style="display:none; background:#ebdef0; color:#8e44ad; padding:4px 8px; border-radius:10px; font-size:13px; margin-left:10px; font-weight:bold;">Matched: ₹0</span>
         </div>
         <b style="color:#8e44ad;">Total: ₹${totalProf.toLocaleString('en-IN')}</b>
     </div>
     <div style="overflow-x:auto;">
         <table>
             <tr>
-                <th style="width:30px; text-align:center;"><input type="checkbox" id="selectAllProf" onchange="toggleAllRows(this, 'prof', '${name}')" style="transform:scale(1.2); cursor:pointer;"></th>
+                <th style="width:40px; text-align:center;"><button onclick="toggleAllRows('prof', '${name}')" style="background:#eee; border:1px solid #ccc; border-radius:4px; cursor:pointer; font-size:11px; padding:3px 5px; color:#333;">All</button></th>
                 <th>Date</th><th>Details</th><th>Proof</th><th>Amt</th><th>Action</th>
             </tr>
             ${profs||'<tr><td colspan="6" style="text-align:center;">No records</td></tr>'}
@@ -991,21 +1018,29 @@ function renderPartnerData(name) {
         
         let endOfPrevMonth = new Date(yNum, mIdx, 0, 23, 59, 59);
 
-        let pastInc = 0, pastExp = 0;
+        let pastInc = 0, pastExp = 0, pastProf = 0, sumAll = 0;
         getArray(appData.records[name]).forEach(r => {
+            let amt = parseFloat(r.amount) || 0;
+            let v = (r.type === 'income') ? amt : -amt;
+            sumAll += v;
+
             if(r.date) {
                 let rParts = r.date.split('-');
                 if(rParts.length === 3) {
                     let rDate = new Date(parseInt(rParts[0]), parseInt(rParts[1])-1, parseInt(rParts[2]), 12, 0, 0);
                     if(rDate <= endOfPrevMonth) {
-                        let amt = parseFloat(r.amount) || 0;
                         if(r.type === 'income') pastInc += amt;
-                        else pastExp += amt;
+                        else if(r.type === 'expense') pastExp += amt;
+                        else if(r.type === 'profit') pastProf += amt;
                     }
                 }
             }
         });
-        cfBalance = pastInc - pastExp;
+        
+        let sumPastRecords = pastInc - pastExp - pastProf;
+        let openingBalance = (appData.balances[name] || 0) - sumAll;
+        
+        cfBalance = openingBalance + sumPastRecords;
         totalCashInHand = cfBalance + currentNetBalance;
     } else {
         totalCashInHand = appData.balances[name] || 0;
@@ -1159,7 +1194,7 @@ async function savePartnerEntry(name) {
         appData.records[name] = getArray(appData.records[name]);
         let photoUrl = currentEditId && appData.records[name].find(r=>String(r.id)===String(currentEditId))?.photo ? appData.records[name].find(r=>String(r.id)===String(currentEditId)).photo : '';
         let oldLink = currentEditId && appData.records[name].find(r=>String(r.id)===String(currentEditId))?.link ? appData.records[name].find(r=>String(r.id)===String(currentEditId)).link : '';
-        let oldReconciled = currentEditId && appData.records[name].find(r=>String(r.id)===String(currentEditId))?.isReconciled ? appData.records[name].find(r=>String(r.id)===String(currentEditId)).isReconciled : false;
+        let oldReconState = currentEditId && appData.records[name].find(r=>String(r.id)===String(currentEditId))?.reconState !== undefined ? appData.records[name].find(r=>String(r.id)===String(currentEditId)).reconState : 0;
         
         if(file) { let b64 = await compressImage(file); photoUrl = await uploadToImgBB(b64); }
         
@@ -1173,7 +1208,7 @@ async function savePartnerEntry(name) {
             let oldR = appData.records[name][idx];
             appData.balances[name] -= (oldR.type==='income' ? oldR.amount : -oldR.amount);
             appData.balances[name] += (currentEntryType==='income' ? amt : -amt);
-            appData.records[name][idx] = {id: currentEditId, date, details: det, amount: amt, type: currentEntryType, photo: photoUrl || '', link: oldLink || '', isAuto: oldR.isAuto || false, linkedId: oldR.linkedId || null, billNo: billNo, isReconciled: oldReconciled};
+            appData.records[name][idx] = {id: currentEditId, date, details: det, amount: amt, type: currentEntryType, photo: photoUrl || '', link: oldLink || '', isAuto: oldR.isAuto || false, linkedId: oldR.linkedId || null, billNo: billNo, reconState: oldReconState};
         } else {
             
             if (isVehicle) {
@@ -1202,7 +1237,7 @@ async function savePartnerEntry(name) {
                 });
 
                 appData.records[name].unshift({
-                    id: newEntryId, date, details: partnerDesc, amount: amt, type: 'expense', photo: photoUrl || '', link: oldLink || '', isAuto: true, isReconciled: false
+                    id: newEntryId, date, details: partnerDesc, amount: amt, type: 'expense', photo: photoUrl || '', link: oldLink || '', isAuto: true, reconState: 0
                 });
                 appData.balances[name] -= amt;
 
@@ -1219,7 +1254,7 @@ async function savePartnerEntry(name) {
                     isAuto: false,
                     linkedId: isTransfer ? linkedEntryId : null,
                     billNo: billNo,
-                    isReconciled: false
+                    reconState: 0
                 });
                 appData.balances[name] += (currentEntryType==='income' ? amt : -amt);
                 
@@ -1237,7 +1272,7 @@ async function savePartnerEntry(name) {
                         link: '',
                         isAuto: true,
                         linkedId: newEntryId,
-                        isReconciled: false
+                        reconState: 0
                     });
                     if(!appData.balances[otherName]) appData.balances[otherName] = 0;
                     appData.balances[otherName] += (otherType === 'income' ? amt : -amt);
@@ -1357,9 +1392,16 @@ function showAdminOverview(){
         let mIndex = months.indexOf(mName); let prevMIndex = mIndex === 0 ? 11 : mIndex - 1; let prevYearNum = mIndex === 0 ? yNum - 1 : yNum;
         let lastDay = new Date(prevYearNum, prevMIndex + 1, 0, 23, 59, 59);
         let sumAll = 0; let pRecs = getArray(appData.records[pName]); let pBal = appData.balances[pName] || 0;
-        pRecs.forEach(r => sumAll += (r.type === 'income' ? r.amount : -r.amount));
-        let sumUpTo = 0; pRecs.forEach(r => { if(new Date(r.date) <= lastDay) sumUpTo += (r.type === 'income' ? r.amount : -r.amount); });
-        return { bal: (pBal - sumAll) + sumUpTo, month: `${months[prevMIndex]} ${prevYearNum}` };
+        pRecs.forEach(r => sumAll += (r.type === 'income' ? parseFloat(r.amount) : -parseFloat(r.amount)));
+        let sumUpTo = 0; pRecs.forEach(r => { 
+            if(r.date) {
+                let dP = r.date.split('-'); 
+                let rDate = new Date(parseInt(dP[0]), parseInt(dP[1])-1, parseInt(dP[2]), 12, 0, 0);
+                if(rDate <= lastDay) sumUpTo += (r.type === 'income' ? parseFloat(r.amount) : -parseFloat(r.amount)); 
+            }
+        });
+        let openingBalance = pBal - sumAll;
+        return { bal: openingBalance + sumUpTo, month: `${months[prevMIndex]} ${prevYearNum}` };
     }
     
     let tanDataMonth = getMonthData('Tanmoy', selectedMonthText);
@@ -2363,8 +2405,20 @@ function calcCF() {
     let end = new Date(parseInt(m[1]), mIdx+1, 0, 23,59,59);
     let sumAll = 0, sumPast = 0;
     
-    getArray(appData.records[p]).forEach(r => { let v = r.type==='income'?r.amount:-r.amount; sumAll+=v; if(new Date(r.date)<=end) sumPast+=v; });
-    document.getElementById('cfResult').innerText = "₹ " + (totalBal - sumAll + sumPast).toLocaleString('en-IN');
+    getArray(appData.records[p]).forEach(r => { 
+        let v = r.type==='income'?parseFloat(r.amount):-parseFloat(r.amount); 
+        sumAll+=v; 
+        if(r.date) {
+            let pParts = r.date.split('-');
+            if(pParts.length === 3) {
+                let rDate = new Date(parseInt(pParts[0]), parseInt(pParts[1])-1, parseInt(pParts[2]), 12, 0, 0);
+                if(rDate <= end) sumPast+=v; 
+            }
+        }
+    });
+    
+    let openingBalance = totalBal - sumAll;
+    document.getElementById('cfResult').innerText = "₹ " + (openingBalance + sumPast).toLocaleString('en-IN');
 }
 
 // ====== SETTINGS ======
