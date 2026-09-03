@@ -296,7 +296,8 @@ function generateMiniMonthDropdown(currentValue) {
             options += `<option value="${val}" ${sel}>${val}</option>`;
         });
     }
-    return `<select onchange="document.getElementById('headerMonthSelect').value=this.value; handleGlobalMonthChange()" style="padding:4px 8px; font-size:12px; border:1px solid #cce3d8; border-radius:6px; background:#fff; font-weight:bold; color:#176b4d; cursor:pointer;">${options}</select>`;
+    // NAYA FIX: Made dropdown smaller and more compact
+    return `<select onchange="document.getElementById('headerMonthSelect').value=this.value; handleGlobalMonthChange()" style="width: auto; max-width: 150px; margin: 0; padding:6px 8px; font-size:13px; border:1px solid #cce3d8; border-radius:6px; background:#fff; font-weight:bold; color:#176b4d; cursor:pointer;">${options}</select>`;
 }
 
 function admin(){
@@ -861,6 +862,7 @@ function partnerProfile(name){
     renderPartnerData(name); setEntryType('income');
 }
 
+// NAYA FIX: 3 SMART BALANCES
 function renderPartnerData(name) {
     let globalMonth = document.getElementById('headerMonthSelect') ? document.getElementById('headerMonthSelect').value : '';
     let monthQuery = '';
@@ -977,18 +979,62 @@ function renderPartnerData(name) {
         </table>
     </div>`;
 
+    // SMART BALANCE CALCULATION LOGIC
     let currentNetBalance = totalInc - totalExp - totalProf;
-    if(globalMonth === 'All Time') currentNetBalance = appData.balances[name] || 0;
+    let cfBalance = 0;
+    let totalCashInHand = currentNetBalance;
 
-    let balTitleText = (globalMonth && globalMonth !== 'All Time') ? `Net Balance` : `Overall Balance`;
+    if (globalMonth && globalMonth !== 'All Time') {
+        let parts = globalMonth.split(' ');
+        let mIdx = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].indexOf(parts[0]);
+        let yNum = parseInt(parts[1]);
+        
+        let endOfPrevMonth = new Date(yNum, mIdx, 0, 23, 59, 59);
+
+        let pastInc = 0, pastExp = 0;
+        getArray(appData.records[name]).forEach(r => {
+            if(r.date) {
+                let rParts = r.date.split('-');
+                if(rParts.length === 3) {
+                    let rDate = new Date(parseInt(rParts[0]), parseInt(rParts[1])-1, parseInt(rParts[2]), 12, 0, 0);
+                    if(rDate <= endOfPrevMonth) {
+                        let amt = parseFloat(r.amount) || 0;
+                        if(r.type === 'income') pastInc += amt;
+                        else pastExp += amt;
+                    }
+                }
+            }
+        });
+        cfBalance = pastInc - pastExp;
+        totalCashInHand = cfBalance + currentNetBalance;
+    } else {
+        totalCashInHand = appData.balances[name] || 0;
+        cfBalance = 0;
+        currentNetBalance = totalCashInHand;
+    }
+
+    let balTitleText = (globalMonth && globalMonth !== 'All Time') ? `Financial Summary (${globalMonth})` : `Overall Summary (All Time)`;
 
     document.getElementById('partnerBalArea').innerHTML = `
-    <div class="stat">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <span>${balTitleText}</span>
+    <div style="background:#eff7f3; padding:15px; border-radius:12px; margin-bottom:10px; border:1px solid #cce3d8;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #cce3d8; padding-bottom:10px; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
+            <span style="font-weight:bold; color:#176b4d; font-size:15px;">💰 ${balTitleText}</span>
             ${generateMiniMonthDropdown(globalMonth)}
         </div>
-        <b class="${currentNetBalance>=0?'positive':'negative'}">₹${currentNetBalance.toLocaleString('en-IN')}</b>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap:10px; text-align:center;">
+            <div style="background:#fff; padding:10px; border-radius:8px; border:1px solid #cce3d8;">
+                <span style="font-size:11px; color:#555; display:block; margin-bottom:4px;">Pichla Balance (CF)</span>
+                <b class="${cfBalance >= 0 ? 'positive' : 'negative'}" style="font-size:15px;">₹${cfBalance.toLocaleString('en-IN')}</b>
+            </div>
+            <div style="background:#fff; padding:10px; border-radius:8px; border:1px solid #cce3d8;">
+                <span style="font-size:11px; color:#555; display:block; margin-bottom:4px;">Is Mahine Ka Net</span>
+                <b class="${currentNetBalance >= 0 ? 'positive' : 'negative'}" style="font-size:15px;">₹${currentNetBalance.toLocaleString('en-IN')}</b>
+            </div>
+            <div style="background:#fff; padding:10px; border-radius:8px; border:2px solid #176b4d; box-shadow:0 2px 4px #0002;">
+                <span style="font-size:12px; font-weight:bold; color:#17352b; display:block; margin-bottom:4px;">Total Cash In Hand</span>
+                <b class="${totalCashInHand >= 0 ? 'positive' : 'negative'}" style="font-size:18px;">₹${totalCashInHand.toLocaleString('en-IN')}</b>
+            </div>
+        </div>
     </div>`;
 
     // Auto-calculate groups on load if things are already checked
