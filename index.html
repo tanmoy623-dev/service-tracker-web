@@ -1,0 +1,1410 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Service Tracker</title>
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<!-- Html5-QRCode Scanner Library -->
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+<style>
+body{font-family:Arial;margin:0;background:#f4f7f6;color:#17352b}
+.app{max-width:1150px;margin:auto;padding:24px}
+.card{background:white;padding:22px;border-radius:18px;margin:14px 0;box-shadow:0 6px 24px #0001}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+.role{padding:18px;border:2px solid #dfe9e5;border-radius:14px;cursor:pointer;background:#fafcfb;}
+.role:hover{border-color:#176b4d}
+.partner-group {border:2px solid #dfe9e5;border-radius:14px;padding:18px;background:#fafcfb;}
+.partner-group h3 {margin:0 0 12px 0;color:#17352b;font-size:16px;display:flex;align-items:center;gap:6px;}
+button{padding:12px 16px;border:0;border-radius:10px;background:#176b4d;color:white;font-weight:bold;cursor:pointer;transition:all 0.2s}
+button.alt{background:#e7f0ed;color:#176b4d}
+button:disabled {background:#999; cursor:not-allowed; opacity:0.7;}
+input, select{width:100%;padding:11px;margin:6px 0 12px;border:1px solid #ccd8d4;border-radius:9px;box-sizing:border-box}
+.hidden{display:none}
+.stat{background:#eff7f3;padding:16px;border-radius:12px}
+.stat b{display:block;font-size:24px;margin-top:6px}
+.negative{color:#e21d4f !important; font-weight:bold;}
+.positive{color:#07865b !important; font-weight:bold;}
+table{width:100%;border-collapse:collapse}
+td,th{padding:10px;border-bottom:1px solid #e6ece9;text-align:left}
+.top{display:flex;justify-content:space-between;align-items:center}
+.action-btn {padding: 6px 10px; font-size: 13px; margin-right: 4px;}
+.part-row-box {background:#f8faf9; padding:12px; border:1px solid #dfe9e5; border-radius:10px; margin-bottom:12px;}
+.b-qty, .b-rate, .b-desc { margin:0; padding:8px; border-radius:6px; }
+.bill-table th { background:#eff7f3; color:#176b4d; font-size:14px; }
+.dual-records-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.tri-records-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+.scroll-list { max-height: 250px; overflow-y: auto; overflow-x: auto; background: white; border-radius: 8px; border: 1px solid #bdc3c7; margin-top: 10px; }
+
+/* Mobile Optimization */
+@media (max-width: 768px) { 
+    .tri-records-grid { grid-template-columns: 1fr; } 
+    .dual-records-grid { grid-template-columns: 1fr; } 
+    .app { padding: 10px; }
+    .card { padding: 12px; margin: 10px 0; }
+    td, th { padding: 6px 4px; font-size: 12px; }
+    table button { padding: 4px 6px !important; font-size: 11px !important; margin: 0 2px; }
+    td:nth-child(2) { font-size: 11px; white-space: nowrap; }
+    .recon-cell { padding: 2px !important; font-size: 14px !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+    <section id="login" class="card">
+        <h1>Service Tracker</h1>
+        <p>Select account type to continue.</p>
+        <div class="grid">
+            <div class="partner-group">
+                <h3>🔐 Admin Portal</h3>
+                <select id="loginPartnerSelect">
+                    <option value="Tanmoy">Tanmoy</option>
+                    <option value="Tapabrata">Tapabrata</option>
+                </select>
+                <button onclick="dropdownPartnerLogin()" style="width:100%; background:#176b4d; margin-top:4px;">Login</button>
+            </div>
+            <div class="role" onclick="techLoginPrompt()" style="display:flex; flex-direction:column; justify-content:center;">
+                <div>👤 <b>Technician Login</b><br><span style="font-size:13px; color:#555;">Access assigned Technician Profile</span></div>
+            </div>
+        </div>
+    </section>
+
+    <section id="dash" class="hidden">
+        <div class="card top">
+            <h1 id="head"></h1>
+            <button class="alt" onclick="logoutApp()">Logout</button>
+        </div>
+        <div id="content"></div>
+    </section>
+</div>
+
+<script>
+// --- FIREBASE CONFIGURATION ---
+const firebaseConfig = {
+    apiKey: "AIzaSyCAhAQcsnGqPTiScGJVbNR57Mbnn9jdfdU",
+    authDomain: "servicetracker-e4887.firebaseapp.com",
+    databaseURL: "https://servicetracker-e4887-default-rtdb.firebaseio.com/",
+    projectId: "servicetracker-e4887",
+    storageBucket: "servicetracker-e4887.firebasestorage.app",
+    messagingSenderId: "64365607107",
+    appId: "1:64365607107:web:12e4da7d9c918ad6f38a76"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const IMGBB_API_KEY = "2291e363544930c9291f5bf04d9e9432"; 
+
+let defaultData = {
+    records: { 'Tanmoy': [], 'Tapabrata': [] }, balances: { 'Tanmoy': 0, 'Tapabrata': 0 },
+    passwords: { 'Tanmoy': '2196', 'Tapabrata': 'tapabrata329', 'Technician': 'tech329' },
+    computerJobs: [], waterJobs: [], invoiceCount: 314, invoices: [], submittedBills: [], poRecords: [], vehicles: [], signature: '', privateVault: [], privateSalary: [],
+    config: { cfStartMonth: '2026-08', enablePastCF: false }
+};
+
+let appData = JSON.parse(JSON.stringify(defaultData));
+let isFirstLoad = true; let currentEditId = null; let currentEntryType = 'income'; 
+let currentInvoiceEditId = null; let currentTechEditId = null; let currentTechEditPhoto = '';
+let currentSubmittedBillEditId = null; let currentPOEditId = null; let currentVehicleEditId = null;
+let currentSalaryEditId = null; let currentActiveTab = 'tab-overview'; 
+
+// ====== DATA SANITIZER & HELPERS ======
+function getArray(data) { if (!data) return []; if (Array.isArray(data)) return data; return Object.values(data); }
+
+function getUniqueOptions(arr1, key1, arr2=[], key2='') {
+    let vals = getArray(arr1).map(x => x[key1]).filter(Boolean);
+    if(arr2.length > 0 && key2) vals = vals.concat(getArray(arr2).map(x => x[key2]).filter(Boolean));
+    return [...new Set(vals)].sort().map(v => `<option value="${v}">`).join('');
+}
+
+function compressImage(file) {
+    return new Promise((resolve) => {
+        if(!file) return resolve('');
+        let reader = new FileReader();
+        reader.onload = function(event) {
+            let img = new Image();
+            img.onload = function() {
+                let canvas = document.createElement('canvas'); let ctx = canvas.getContext('2d');
+                let maxWidth = 800; let maxHeight = 800; let width = img.width; let height = img.height;
+                if (width > height) { if (width > maxWidth) { height = Math.round(height * maxWidth / width); width = maxWidth; } } 
+                else { if (height > maxHeight) { width = Math.round(width * maxHeight / height); height = maxHeight; } }
+                canvas.width = width; canvas.height = height; ctx.drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/jpeg', 0.7)); 
+            };
+            img.onerror = () => resolve(''); img.src = event.target.result;
+        };
+        reader.onerror = () => resolve(''); reader.readAsDataURL(file);
+    });
+}
+
+async function uploadToImgBB(base64Str) {
+    if (!base64Str || !base64Str.startsWith('data:image')) return ''; 
+    try {
+        let byteString = atob(base64Str.split(',')[1]); let mimeString = base64Str.split(',')[0].split(':')[1].split(';')[0];
+        let ab = new ArrayBuffer(byteString.length); let ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+        let blob = new Blob([ab], {type: mimeString});
+        let formData = new FormData(); formData.append("image", blob, "photo.jpg");
+        let response = await fetch('https://api.imgbb.com/1/upload?key=' + IMGBB_API_KEY, { method: 'POST', body: formData });
+        let data = await response.json();
+        return (data && data.success) ? data.data.url : '';
+    } catch (error) { return ''; }
+}
+
+const INACTIVITY_TIMEOUT = 20 * 60 * 1000; let inactivityTimer = null;
+function resetInactivityTimer() {
+    if (!localStorage.getItem('st_user')) return;
+    localStorage.setItem('st_last_active', Date.now().toString());
+    if (inactivityTimer) clearTimeout(inactivityTimer);
+    inactivityTimer = setTimeout(() => { alert("⏰ Auto logout due to inactivity."); logoutApp(); }, INACTIVITY_TIMEOUT);
+}
+['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'].forEach(evt => window.addEventListener(evt, resetInactivityTimer, { passive: true }));
+
+function formatDate(dateStr) {
+    if (!dateStr) return ''; let parts = dateStr.split('-');
+    if (parts.length === 3) return parts[2] + '/' + parts[1] + '/' + parts[0].slice(-2); 
+    return dateStr;
+}
+
+db.ref('ServiceTracker').on('value', (snapshot) => {
+    let data = snapshot.val();
+    if (data && data.records && data.balances) {
+        appData = data;
+        appData.poRecords = getArray(appData.poRecords);
+        appData.submittedBills = getArray(appData.submittedBills);
+        appData.invoices = getArray(appData.invoices);
+        appData.computerJobs = getArray(appData.computerJobs);
+        appData.waterJobs = getArray(appData.waterJobs);
+        appData.vehicles = getArray(appData.vehicles);
+        appData.privateVault = getArray(appData.privateVault);
+        appData.privateSalary = getArray(appData.privateSalary);
+        for(let p in appData.records) appData.records[p] = getArray(appData.records[p]);
+        if(!appData.passwords) appData.passwords = { 'Tanmoy': '2196', 'Tapabrata': 'tapabrata329', 'Technician': 'tech329' };
+        if(!appData.passwords['Technician']) appData.passwords['Technician'] = 'tech329'; 
+        if(!appData.invoiceCount) appData.invoiceCount = 314;
+        if(!appData.signature) appData.signature = '';
+        if(!appData.config) appData.config = { cfStartMonth: '2026-08', enablePastCF: false };
+    } else { db.ref('ServiceTracker').set(defaultData); }
+
+    if(isFirstLoad) {
+        isFirstLoad = false;
+        let savedUser = localStorage.getItem('st_user'); let savedRole = localStorage.getItem('st_role');
+        let lastActive = parseInt(localStorage.getItem('st_last_active') || '0', 10);
+        if(savedUser && savedRole) {
+            if (lastActive && (Date.now() - lastActive > INACTIVITY_TIMEOUT)) { logoutApp(); return; }
+            resetInactivityTimer();
+            document.getElementById('login').classList.add('hidden'); document.getElementById('dash').classList.remove('hidden');
+            document.getElementById('head').textContent = savedUser + ' Dashboard';
+            if(savedRole === 'admin') { document.getElementById('content').innerHTML = admin(); showAdminOverview(); } 
+            else { document.getElementById('content').innerHTML = user(); }
+        }
+    }
+});
+
+async function saveDataToLocal() { await db.ref('ServiceTracker').set(appData); }
+
+async function hashPassword(password) {
+    const encoder = new TextEncoder(); const data = encoder.encode(password);
+    const hash = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function dropdownPartnerLogin() {
+    let p = document.getElementById('loginPartnerSelect').value;
+    let storedPass = appData.passwords[p] || (p === 'Tanmoy' ? '2196' : 'tapabrata329');
+    let pass = prompt(`🔐 Enter password for ${p}:`);
+    if(!pass) return;
+    let enteredHash = await hashPassword(pass.trim());
+    let isMatch = (storedPass.length === 64) ? (enteredHash === storedPass) : (pass.trim() === storedPass.trim());
+    if (!isMatch) return alert("❌ Incorrect Password!"); 
+    localStorage.setItem('st_user', p); localStorage.setItem('st_role', 'admin'); resetInactivityTimer();
+    document.getElementById('login').classList.add('hidden'); document.getElementById('dash').classList.remove('hidden');
+    document.getElementById('head').textContent = p + ' Dashboard';
+    document.getElementById('content').innerHTML = admin(); showAdminOverview();
+}
+
+async function techLoginPrompt() {
+    let storedPass = appData.passwords['Technician'] || 'tech329';
+    let pass = prompt(`🔐 Enter password for Technician:`);
+    if(!pass) return;
+    let enteredHash = await hashPassword(pass.trim());
+    let isMatch = (storedPass.length === 64) ? (enteredHash === storedPass) : (pass.trim() === storedPass.trim());
+    if (!isMatch) return alert("❌ Incorrect Password!"); 
+    localStorage.setItem('st_user', 'Technician'); localStorage.setItem('st_role', 'user'); resetInactivityTimer();
+    document.getElementById('login').classList.add('hidden'); document.getElementById('dash').classList.remove('hidden');
+    document.getElementById('head').textContent = 'Technician Dashboard';
+    document.getElementById('content').innerHTML = user();
+}
+
+function logoutApp() { localStorage.removeItem('st_user'); localStorage.removeItem('st_role'); location.reload(); }
+
+// ====== ADMIN SHELL ======
+function handleGlobalMonthChange() {
+    if (currentActiveTab === 'tab-overview') showAdminOverview();
+    else if (currentActiveTab === 'tab-tanmoy') partnerProfile('Tanmoy');
+    else if (currentActiveTab === 'tab-tapabrata') partnerProfile('Tapabrata');
+    else if (currentActiveTab === 'tab-carry') showCarryForward();
+    else if (currentActiveTab === 'tab-vehicles') showVehicles();
+    else if (currentActiveTab === 'tab-private') showPrivateVault();
+}
+
+function generateMonthDropdown() {
+    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    let options = '<option value="All Time">All Time</option>';
+    for (let year = 2026; year <= new Date().getFullYear() + 3; year++) {
+        options += `<optgroup label="${year}">`;
+        months.forEach((month, index) => {
+            if (year === 2026 && index < 3) return; 
+            let sel = (month === "August" && year === 2026) ? "selected" : "";
+            options += `<option value="${month} ${year}" ${sel}>${month} ${year}</option>`;
+        });
+        options += `</optgroup>`;
+    }
+    return `<select id="headerMonthSelect" style="background:white;color:#17352b;padding:8px 12px;border-radius:8px;border:none;font-weight:bold;cursor:pointer;flex-shrink:0;width:auto;margin:0;" onchange="handleGlobalMonthChange()">${options}</select>`;
+}
+
+function generateMiniMonthDropdown(currentValue) {
+    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    let options = '<option value="All Time">All Time</option>';
+    for (let year = 2026; year <= new Date().getFullYear() + 3; year++) {
+        months.forEach((month, index) => {
+            if (year === 2026 && index < 3) return; 
+            let val = `${month} ${year}`;
+            let sel = (val === currentValue) ? "selected" : "";
+            options += `<option value="${val}" ${sel}>${val}</option>`;
+        });
+    }
+    return `<select onchange="document.getElementById('headerMonthSelect').value=this.value; handleGlobalMonthChange()" style="width: auto; max-width: 150px; margin: 0; padding:6px 8px; font-size:13px; border:1px solid #cce3d8; border-radius:6px; background:#fff; font-weight:bold; color:#176b4d; cursor:pointer;">${options}</select>`;
+}
+
+function admin(){
+let currentUser = localStorage.getItem('st_user');
+let privateBtn = (currentUser === 'Tanmoy') ? `<button id="tab-private" onclick="showPrivateVault()">🔒 Private</button>` : '';
+return `
+<div class="card" style="background:#4635d6;color:white">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap;">
+        <div><h2 style="margin:0;">💼 Service Tracker — Admin Portal</h2><p style="margin:4px 0 0 0;opacity:0.9;">Tanmoy & Tapabrata Management</p></div>
+        <div style="display:none;">${generateMonthDropdown()}</div>
+    </div>
+    <div class="grid" style="margin-top:16px; grid-template-columns:repeat(auto-fit,minmax(100px,1fr));">
+        <button id="tab-overview" onclick="showAdminOverview()">📊 Overview</button>
+        <button id="tab-po" onclick="showPOTracker()">📄 PO Track</button>
+        <button id="tab-sub-bills" onclick="showSubmittedBills()">📋 Bill Track</button>
+        <button id="tab-invoice" onclick="showInvoice()">🧾 Petty Cash</button>
+        <button id="tab-vehicles" onclick="showVehicles()">🚗 Vehicles</button>
+        <button id="tab-tanmoy" onclick="partnerProfile('Tanmoy')">👨‍💼 Tanmoy</button>
+        <button id="tab-tapabrata" onclick="partnerProfile('Tapabrata')">👨‍💼 Tapabrata</button>
+        <button id="tab-carry" onclick="showCarryForward()">🔄 CF Bal</button>
+        <button id="tab-tech" onclick="showTechDashboard()">👷 Tech</button>
+        <button id="tab-settings" onclick="showSettings()">⚙️ Set</button>
+        ${privateBtn}
+    </div>
+</div>
+<div id="adminArea"><div id="profileArea"></div></div>`;
+}
+
+function setActiveAdminTab(activeId) {
+    currentActiveTab = activeId;
+    let tabs = ['tab-overview', 'tab-invoice', 'tab-sub-bills', 'tab-po', 'tab-vehicles', 'tab-tanmoy', 'tab-tapabrata', 'tab-carry', 'tab-tech', 'tab-settings', 'tab-private'];
+    tabs.forEach(id => {
+        let btn = document.getElementById(id);
+        if(btn) {
+            let defaultBg = '#5b4be0';
+            if(id === 'tab-invoice') defaultBg = '#f39c12'; else if(id === 'tab-settings') defaultBg = '#2980b9';
+            else if(id === 'tab-sub-bills') defaultBg = '#8e44ad'; else if(id === 'tab-po') defaultBg = '#16a085';
+            else if(id === 'tab-vehicles') defaultBg = '#e67e22'; else if(id === 'tab-private') defaultBg = '#34495e';
+            btn.style.background = (id === activeId) ? "white" : defaultBg;
+            btn.style.color = (id === activeId) ? (id === 'tab-private' ? '#34495e' : "#07865b") : "white";
+        }
+    });
+}
+
+// ====== OVERVIEW ======
+function showAdminOverview(){
+    setActiveAdminTab('tab-overview');
+    let tanBal = appData.balances['Tanmoy'] || 0; let tapBal = appData.balances['Tapabrata'] || 0;
+    let totalBusiness = tanBal + tapBal;
+    let hm = document.getElementById('headerMonthSelect'); let selectedMonthText = hm ? hm.value : "August 2026";
+    let cutoffDate = (appData.config && appData.config.cfStartMonth) ? appData.config.cfStartMonth + '-01' : '2026-08-01';
+    
+    function getMonthData(pName, monthStr) {
+        let recs = getArray(appData.records[pName]);
+        if (monthStr && monthStr !== "All Time") {
+            let parts = monthStr.split(' ');
+            let mIdx = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].indexOf(parts[0]) + 1;
+            let mStr = mIdx < 10 ? '0' + mIdx : mIdx.toString();
+            let mQuery = parts[1] + '-' + mStr; 
+            recs = recs.filter(r => r.date && r.date.startsWith(mQuery));
+        }
+        let inc = 0, exp = 0, prof = 0;
+        recs.forEach(r => {
+            if(!appData.config?.enablePastCF && r.date < cutoffDate) return;
+            let amt = parseFloat(r.amount) || 0;
+            if(r.type === 'income') inc += amt;
+            else if(r.type === 'expense') exp += amt;
+            else if(r.type === 'profit') prof += amt;
+        });
+        return { net: inc - exp - prof, prof: prof };
+    }
+
+    function getHistoricalBal(pName, monthStr) {
+        if(!monthStr || monthStr === "All Time") return { bal: 0, month: "All Time" };
+        let parts = monthStr.split(' '); let mName = parts[0]; let yNum = parseInt(parts[1]);
+        const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        let mIndex = months.indexOf(mName); let prevMIndex = mIndex === 0 ? 11 : mIndex - 1; let prevYearNum = mIndex === 0 ? yNum - 1 : yNum;
+        let lastDay = new Date(prevYearNum, prevMIndex + 1, 0, 23, 59, 59);
+        let pRecs = getArray(appData.records[pName]); 
+        
+        let validPastNet = 0;
+        pRecs.forEach(r => { 
+            if(r.date) {
+                let dP = r.date.split('-'); 
+                let rDate = new Date(parseInt(dP[0]), parseInt(dP[1])-1, parseInt(dP[2]), 12, 0, 0);
+                if(rDate <= lastDay) {
+                    if (appData.config?.enablePastCF || r.date >= cutoffDate) {
+                        validPastNet += (r.type === 'income' ? parseFloat(r.amount) : -parseFloat(r.amount)); 
+                    }
+                }
+            }
+        });
+        return { bal: validPastNet, month: `${months[prevMIndex]} ${prevYearNum}` };
+    }
+    
+    let tanDataMonth = getMonthData('Tanmoy', selectedMonthText);
+    let tapDataMonth = getMonthData('Tapabrata', selectedMonthText);
+    
+    let tanBalToDisplay = selectedMonthText === "All Time" ? 0 : tanDataMonth.net;
+    let tapBalToDisplay = selectedMonthText === "All Time" ? 0 : tapDataMonth.net;
+    
+    if(selectedMonthText === "All Time") {
+        getArray(appData.records['Tanmoy']).forEach(r => { if(appData.config?.enablePastCF || r.date >= cutoffDate) tanBalToDisplay += (r.type==='income'?parseFloat(r.amount):-parseFloat(r.amount)); });
+        getArray(appData.records['Tapabrata']).forEach(r => { if(appData.config?.enablePastCF || r.date >= cutoffDate) tapBalToDisplay += (r.type==='income'?parseFloat(r.amount):-parseFloat(r.amount)); });
+    }
+
+    let tanData = getHistoricalBal('Tanmoy', selectedMonthText); let tapData = getHistoricalBal('Tapabrata', selectedMonthText);
+    let carryTextTanmoy = selectedMonthText === "All Time" ? "₹0" : `₹${tanData.bal.toLocaleString('en-IN')}`;
+    let carryTextTapabrata = selectedMonthText === "All Time" ? "₹0" : `₹${tapData.bal.toLocaleString('en-IN')}`;
+    
+    // Extracted Trackers
+    let billList = getArray(appData.submittedBills); let pendingBillsArr = billList.filter(b => !b.isPaid);
+    let pendingBillAmt = pendingBillsArr.reduce((sum, b) => sum + (parseFloat(b.amount) || 0), 0);
+    let pendingBillsHTML = `<div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse; font-size:13px;"><tr style="background:#f5eef8; color:#8e44ad; text-align:left;"><th style="padding:8px; border-bottom:1px solid #ddd;">Date</th><th style="padding:8px; border-bottom:1px solid #ddd;">Location / Party</th><th style="padding:8px; border-bottom:1px solid #ddd;">Bill No. & Period</th><th style="padding:8px; border-bottom:1px solid #ddd;">Amount</th></tr>`;
+    if(pendingBillsArr.length > 0) pendingBillsHTML += pendingBillsArr.map(b => `<tr><td style="padding:8px; border-bottom:1px solid #eee;">${formatDate(b.date)}</td><td style="padding:8px; border-bottom:1px solid #eee;"><strong>${b.location}</strong></td><td style="padding:8px; border-bottom:1px solid #eee;">${b.billNo}</td><td style="padding:8px; border-bottom:1px solid #eee; font-weight:bold; color:#e21d4f;">₹${b.amount}</td></tr>`).join('');
+    else pendingBillsHTML += `<tr><td colspan="4" style="text-align:center; padding:15px; color:#888;">All bills paid! 💸</td></tr>`;
+    pendingBillsHTML += `</table></div>`;
+
+    let invRecords = getArray(appData.invoices); let pendingInvArr = invRecords.filter(i => !i.isPaid);
+    let pendingInvAmt = pendingInvArr.reduce((sum, i) => sum + (parseFloat(i.gTotal) || 0), 0);
+    let pendingInvHTML = `<div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse; font-size:13px;"><tr style="background:#fcf3cf; color:#d35400; text-align:left;"><th style="padding:8px; border-bottom:1px solid #ddd;">Date</th><th style="padding:8px; border-bottom:1px solid #ddd;">Voucher No.</th><th style="padding:8px; border-bottom:1px solid #ddd;">Name</th><th style="padding:8px; border-bottom:1px solid #ddd;">Amount</th></tr>`;
+    if(pendingInvArr.length > 0) pendingInvHTML += pendingInvArr.map(i => `<tr><td style="padding:8px; border-bottom:1px solid #eee;">${i.date || '-'}</td><td style="padding:8px; border-bottom:1px solid #eee;"><strong>${i.invNo}</strong></td><td style="padding:8px; border-bottom:1px solid #eee;"><strong>${i.bName}</strong></td><td style="padding:8px; border-bottom:1px solid #eee; font-weight:bold; color:#e21d4f;">₹${i.gTotal}</td></tr>`).join('');
+    else pendingInvHTML += `<tr><td colspan="4" style="text-align:center; padding:15px; color:#888;">No pending petty cash records! ✅</td></tr>`;
+    pendingInvHTML += `</table></div>`;
+
+    let poList = getArray(appData.poRecords); let ongoingPOs = poList.filter(p => !p.isCompleted);
+    let ongoingPOsHTML = `<div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse; font-size:13px;"><tr style="background:#d4e6f1; color:#2980b9; text-align:left;"><th style="padding:8px; border-bottom:1px solid #ddd;">Issue Date</th><th style="padding:8px; border-bottom:1px solid #ddd;">Authority</th><th style="padding:8px; border-bottom:1px solid #ddd;">PO No.</th><th style="padding:8px; border-bottom:1px solid #ddd;">Amount</th></tr>`;
+    if(ongoingPOs.length > 0) ongoingPOsHTML += ongoingPOs.map(p => `<tr><td style="padding:8px; border-bottom:1px solid #eee;">${formatDate(p.date)}</td><td style="padding:8px; border-bottom:1px solid #eee;"><strong>${p.authority}</strong></td><td style="padding:8px; border-bottom:1px solid #eee;">${p.poNo}</td><td style="padding:8px; border-bottom:1px solid #eee; font-weight:bold; color:#e67e22;">₹${p.amount}</td></tr>`).join('');
+    else ongoingPOsHTML += `<tr><td colspan="4" style="text-align:center; padding:15px; color:#888;">No ongoing POs! 🎉</td></tr>`;
+    ongoingPOsHTML += `</table></div>`;
+
+    document.getElementById('profileArea').innerHTML = `
+    <div class="card"><h2>📊 Partner Overview</h2><div class="grid">
+        <div class="stat"><div style="display:flex; justify-content:space-between; align-items:center;"><span>Tanmoy's Balance</span>${generateMiniMonthDropdown(selectedMonthText)}</div><b class="${tanBalToDisplay >= 0 ? 'positive' : 'negative'}">₹${tanBalToDisplay.toLocaleString('en-IN')}</b><div style="font-size:12px; color:#8e44ad; margin-top:8px; display:flex; justify-content:space-between; border-top:1px solid #cce3d8; padding-top:6px;"><span>🟣 Profit Booked:</span><b>₹${tanDataMonth.prof.toLocaleString('en-IN')}</b></div></div>
+        <div class="stat"><div style="display:flex; justify-content:space-between; align-items:center;"><span>Tapabrata's Balance</span>${generateMiniMonthDropdown(selectedMonthText)}</div><b class="${tapBalToDisplay >= 0 ? 'positive' : 'negative'}">₹${tapBalToDisplay.toLocaleString('en-IN')}</b><div style="font-size:12px; color:#8e44ad; margin-top:8px; display:flex; justify-content:space-between; border-top:1px solid #cce3d8; padding-top:6px;"><span>🟣 Profit Booked:</span><b>₹${tapDataMonth.prof.toLocaleString('en-IN')}</b></div></div>
+        <div class="stat">Tanmoy Carry Fwd <span style="font-size:11px; font-weight:normal; display:block; color:#555;">(${tanData.month} End)</span><b class="${tanData.bal >= 0 ? 'positive' : 'negative'}">${carryTextTanmoy}</b></div>
+        <div class="stat">Tapabrata Carry Fwd <span style="font-size:11px; font-weight:normal; display:block; color:#555;">(${tapData.month} End)</span><b class="${tapData.bal >= 0 ? 'positive' : 'negative'}">${carryTextTapabrata}</b></div>
+    </div></div>
+    
+    <div class="card"><h2>📈 Detailed Business Tracker</h2>
+        <div style="display:flex; flex-direction:column; gap:15px;">
+            <div style="background:#f9ebf9; padding:16px; border-radius:12px;"><strong style="font-size:18px; color:#8e44ad; border-bottom:1px solid #bdc3c7; padding-bottom:5px; margin-bottom:10px; display:block;">📋 Bill Track</strong><div style="display:flex; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap;"><span style="font-size:14px;">Total Bills: <strong style="font-size:16px;">${totalBills}</strong></span><span style="font-size:14px; color:#e21d4f;">⏳ Pending: <strong style="font-size:16px;">${pendingBillsArr.length}</strong> <br><span style="font-size:11px;">(₹${pendingBillAmt.toLocaleString('en-IN')})</span></span><span style="font-size:14px; color:#07865b;">✅ Paid: <strong style="font-size:16px;">${paidBills}</strong></span></div><div class="scroll-list" style="padding:0;">${pendingBillsHTML}</div></div>
+            <div style="background:#fef5e7; padding:16px; border-radius:12px;"><strong style="font-size:18px; color:#f39c12; border-bottom:1px solid #bdc3c7; padding-bottom:5px; margin-bottom:10px; display:block;">🧾 Petty Cash</strong><div style="display:flex; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap;"><span style="font-size:14px;">Total Petty Cash: <strong style="font-size:16px;">${totalInv}</strong></span><span style="font-size:14px; color:#e21d4f;">⏳ Pending: <strong style="font-size:16px;">${pendingInvArr.length}</strong> <br><span style="font-size:11px;">(₹${pendingInvAmt.toLocaleString('en-IN')})</span></span><span style="font-size:14px; color:#07865b;">✅ Paid: <strong style="font-size:16px;">${paidInv}</strong></span></div><div class="scroll-list" style="padding:0;">${pendingInvHTML}</div></div>
+            <div style="background:#e8f4f8; padding:16px; border-radius:12px;"><strong style="font-size:18px; color:#2980b9; border-bottom:1px solid #bdc3c7; padding-bottom:5px; margin-bottom:10px; display:block;">📄 PO Track</strong><div style="display:flex; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap;"><span style="font-size:14px;">Total POs: <strong style="font-size:16px;">${totalPO}</strong></span><span style="font-size:14px; color:#e67e22;">⏳ Ongoing: <strong style="font-size:16px;">${ongoingPOs.length}</strong></span><span style="font-size:14px; color:#07865b;">✅ Completed: <strong style="font-size:16px;">${completedPO}</strong></span></div><div class="scroll-list" style="padding:0;">${ongoingPOsHTML}</div></div>
+        </div>
+    </div>`;
+}
+
+// ====== PARTNER PROFILE ======
+function partnerProfile(name){
+    setActiveAdminTab(name === 'Tanmoy' ? 'tab-tanmoy' : 'tab-tapabrata');
+    currentEditId = null; currentEntryType = 'income'; 
+    let todayDate = new Date().toISOString().split('T')[0];
+    
+    let allDetails = [];
+    getArray(appData.records['Tanmoy']).forEach(r => { if(r.details && !r.isAuto) allDetails.push(r.details); });
+    getArray(appData.records['Tapabrata']).forEach(r => { if(r.details && !r.isAuto) allDetails.push(r.details); });
+    let detailsSuggest = [...new Set(allDetails)].sort().map(v => `<option value="${v}">`).join('');
+    let pendingBills = getArray(appData.submittedBills).filter(b => !b.isPaid).map(b => `<option value="${b.billNo}">`).join('');
+    let globalMonth = document.getElementById('headerMonthSelect') ? document.getElementById('headerMonthSelect').value : '';
+
+    document.getElementById('profileArea').innerHTML = `
+    <datalist id="dlPartnerDetails">${detailsSuggest}</datalist>
+    <datalist id="dlPendingBills">${pendingBills}</datalist>
+
+    <div class="card"><h2>👨‍💼 Partner Profile — ${name}</h2><div id="partnerBalArea"></div></div>
+    <div class="card"><h2>＋ Add Entry for ${name}</h2>
+        <div class="grid" style="grid-template-columns: 1fr 1fr 1fr;">
+            <button id="incomeBtn" onclick="setEntryType('income')">Income</button>
+            <button id="expenseBtn" class="alt" onclick="setEntryType('expense')">Expenditure</button>
+            <button id="profitBtn" class="alt" onclick="setEntryType('profit')">Profit Book</button>
+        </div>
+        
+        <div id="transferCheckboxDiv" style="margin:12px 0; background:#eff7f3; border:1px solid #cce3d8; padding:12px; border-radius:8px; display:none;">
+            <label style="font-weight:bold; color:#176b4d; display:flex; align-items:center; cursor:pointer; margin:0;">
+                <input type="checkbox" id="transferCheckbox" style="width:auto; margin:0 10px 0 0; transform:scale(1.2);"> 
+                🔄 Transfer / Handover to ${name === 'Tanmoy' ? 'Tapabrata' : 'Tanmoy'}
+            </label>
+        </div>
+
+        <div id="quickVehicleDiv" style="margin:12px 0; background:#fdf2e9; border:1px solid #f5cba7; padding:12px; border-radius:8px; display:none;">
+            <label style="font-weight:bold; color:#d35400; display:flex; align-items:center; cursor:pointer; margin:0;">
+                <input type="checkbox" id="isVehicleExpense" style="width:auto; margin:0 10px 0 0; transform:scale(1.2);" onchange="document.getElementById('vehicleOptions').style.display = this.checked ? 'flex' : 'none'"> 
+                🚗 Add as Vehicle Expense?
+            </label>
+            <div id="vehicleOptions" style="display:none; gap:10px; flex-wrap:wrap; margin-top:10px;">
+                <div style="flex:1; min-width:120px;"><label style="font-size:12px; margin-bottom:4px; display:block;">Select Car</label><select id="qvCar" style="margin:0;"><option value="Tcl car">Tcl car</option><option value="Dcl car">Dcl car</option></select></div>
+                <div style="flex:1; min-width:120px;"><label style="font-size:12px; margin-bottom:4px; display:block;">Category</label><select id="qvCategory" style="margin:0;"><option value="Fuel">⛽ Fuel</option><option value="Maintenance">🛠️ Maintenance</option><option value="Toll/Parking">🎫 Toll/Parking</option><option value="Other">📝 Other</option></select></div>
+            </div>
+        </div>
+
+        <div id="billNoDiv" style="margin:6px 0 12px; display:block;">
+            <label style="display:block; margin-bottom:4px;">Bill No. <span style="font-size:11px; font-weight:normal; color:#555;">(Optional - Auto-receives in Bill Track)</span></label>
+            <input id="entryBillNo" list="dlPendingBills" placeholder="Optional Bill No..." style="margin:0;">
+        </div>
+
+        <label>Date</label><input type="date" id="entryDate" value="${todayDate}">
+        <label>Amount (₹)</label><input type="number" id="entryAmount">
+        <label>Details <span style="font-size:11px; font-weight:normal; color:#555;">(Optional if Vehicle)</span></label>
+        <input id="entryDetails" list="dlPartnerDetails">
+        <label>Photo</label><input type="file" id="entryPhoto" accept="image/*">
+        <button onclick="savePartnerEntry('${name}')" style="width:100%;margin-top:8px;" id="entrySaveBtn">Save Entry</button>
+    </div>
+    <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
+            <h2 style="margin:0;">📋 Monthly Records</h2>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                <button onclick="downloadPartnerCSV('${name}')" style="background:#16a085; color:white; padding:8px 12px; margin:0; border-radius:8px;">📥 Export Excel</button>
+                <input type="text" id="partnerSearchInput" placeholder="🔍 Search Details, Bill or Amount..." oninput="renderPartnerData('${name}')" style="max-width:260px; margin:0; padding:8px 12px;">
+            </div>
+        </div>
+        <div id="recordsGrid" class="dual-records-grid">
+            <div id="incTable"></div>
+            <div id="expTable"></div>
+            <div id="profTable" style="display:none;"></div>
+        </div>
+    </div>`;
+    
+    renderPartnerData(name); setEntryType('income');
+}
+
+function renderPartnerData(name) {
+    let globalMonth = document.getElementById('headerMonthSelect') ? document.getElementById('headerMonthSelect').value : '';
+    let monthQuery = '';
+    
+    if (globalMonth && globalMonth !== 'All Time') {
+        let parts = globalMonth.split(' '); 
+        let mIdx = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].indexOf(parts[0]) + 1;
+        let mStr = mIdx < 10 ? '0' + mIdx : mIdx.toString();
+        monthQuery = parts[1] + '-' + mStr; 
+    }
+
+    let query = document.getElementById('partnerSearchInput') ? document.getElementById('partnerSearchInput').value.toLowerCase() : '';
+    let recs = [...getArray(appData.records[name])].sort((a,b)=>new Date(b.date)-new Date(a.date));
+    
+    if (monthQuery) recs = recs.filter(r => r.date && r.date.startsWith(monthQuery));
+    if (query) recs = recs.filter(r => (r.details && r.details.toLowerCase().includes(query)) || (r.amount && r.amount.toString().includes(query)) || (r.date && r.date.includes(query)) || (r.billNo && r.billNo.toLowerCase().includes(query)));
+    
+    let totalInc = 0, totalExp = 0, totalProf = 0;
+
+    let incs = recs.filter(r=>r.type==='income').map(r=> {
+        totalInc += parseFloat(r.amount) || 0;
+        let proof = '-'; 
+        if (r.photo && r.photo.length > 5) proof = `<a href="${r.photo}" target="_blank" style="text-decoration:none; font-size:16px;">📷</a>`; 
+        else if (r.link && r.link.length > 5) proof = `<a href="${r.link}" target="_blank" style="text-decoration:none; font-size:16px;">🔗</a>`;
+        let bTag = r.billNo ? `<br><span style="font-size:11px; color:#8e44ad; font-weight:bold;">🧾 ${r.billNo}</span>` : '';
+        let rState = r.reconState !== undefined ? r.reconState : (r.isReconciled ? 1 : 0);
+        let statusIcon = rState === 1 ? '✅' : (rState === 2 ? '❌' : '⬜');
+        let bgStyle = rState === 1 ? 'background-color:#eefdf6 !important;' : (rState === 2 ? 'background-color:#fadbd8 !important;' : '');
+
+        return `<tr onclick="toggleRowCheck(this, event, 'inc', '${r.id}', '${name}')" style="cursor:pointer; transition: background 0.2s; ${bgStyle}">
+            <td style="text-align:center; user-select:none;" class="recon-cell" data-state="${rState}" data-id="${r.id}" data-amt="${r.amount}">${statusIcon}</td>
+            <td>${formatDate(r.date)}</td><td>${r.details}${bTag}</td><td style="text-align:center;">${proof}</td><td class="positive">₹${r.amount}</td>
+            <td style="white-space:nowrap;"><button onclick="editEntry('${r.id}', 'income', '${name}')" style="background:#f39c12; color:white; border:none; border-radius:4px; padding:4px 6px;">✏️</button><button onclick="deleteEntry('${r.id}', '${name}')" style="background:#e21d4f; color:white; border:none; border-radius:4px; padding:4px 6px; margin-left:4px;">🗑️</button></td></tr>`;
+    }).join('');
+    
+    let exps = recs.filter(r=>r.type==='expense').map(r=> {
+        totalExp += parseFloat(r.amount) || 0;
+        let proof = '-'; 
+        if (r.photo && r.photo.length > 5) proof = `<a href="${r.photo}" target="_blank" style="text-decoration:none; font-size:16px;">📷</a>`; 
+        else if (r.link && r.link.length > 5) proof = `<a href="${r.link}" target="_blank" style="text-decoration:none; font-size:16px;">🔗</a>`;
+        let rState = r.reconState !== undefined ? r.reconState : (r.isReconciled ? 1 : 0);
+        let statusIcon = rState === 1 ? '✅' : (rState === 2 ? '❌' : '⬜');
+        let bgStyle = rState === 1 ? 'background-color:#fdedec !important;' : (rState === 2 ? 'background-color:#fadbd8 !important;' : '');
+
+        return `<tr onclick="toggleRowCheck(this, event, 'exp', '${r.id}', '${name}')" style="cursor:pointer; transition: background 0.2s; ${bgStyle}">
+            <td style="text-align:center; user-select:none;" class="recon-cell" data-state="${rState}" data-id="${r.id}" data-amt="${r.amount}">${statusIcon}</td>
+            <td>${formatDate(r.date)}</td><td>${r.details}</td><td style="text-align:center;">${proof}</td><td class="negative">₹${r.amount}</td>
+            <td style="white-space:nowrap;"><button onclick="editEntry('${r.id}', 'expense', '${name}')" style="background:#f39c12; color:white; border:none; border-radius:4px; padding:4px 6px;">✏️</button><button onclick="deleteEntry('${r.id}', '${name}')" style="background:#e21d4f; color:white; border:none; border-radius:4px; padding:4px 6px; margin-left:4px;">🗑️</button></td></tr>`;
+    }).join('');
+
+    let profs = recs.filter(r=>r.type==='profit').map(r=> {
+        totalProf += parseFloat(r.amount) || 0;
+        let proof = '-'; 
+        if (r.photo && r.photo.length > 5) proof = `<a href="${r.photo}" target="_blank" style="text-decoration:none; font-size:16px;">📷</a>`; 
+        else if (r.link && r.link.length > 5) proof = `<a href="${r.link}" target="_blank" style="text-decoration:none; font-size:16px;">🔗</a>`;
+        let rState = r.reconState !== undefined ? r.reconState : (r.isReconciled ? 1 : 0);
+        let statusIcon = rState === 1 ? '✅' : (rState === 2 ? '❌' : '⬜');
+        let bgStyle = rState === 1 ? 'background-color:#f4ecf7 !important;' : (rState === 2 ? 'background-color:#fadbd8 !important;' : '');
+
+        return `<tr onclick="toggleRowCheck(this, event, 'prof', '${r.id}', '${name}')" style="cursor:pointer; transition: background 0.2s; ${bgStyle}">
+            <td style="text-align:center; user-select:none;" class="recon-cell" data-state="${rState}" data-id="${r.id}" data-amt="${r.amount}">${statusIcon}</td>
+            <td>${formatDate(r.date)}</td><td>${r.details}</td><td style="text-align:center;">${proof}</td><td style="color:#8e44ad; font-weight:bold;">₹${r.amount}</td>
+            <td style="white-space:nowrap;"><button onclick="editEntry('${r.id}', 'profit', '${name}')" style="background:#f39c12; color:white; border:none; border-radius:4px; padding:4px 6px;">✏️</button><button onclick="deleteEntry('${r.id}', '${name}')" style="background:#e21d4f; color:white; border:none; border-radius:4px; padding:4px 6px; margin-left:4px;">🗑️</button></td></tr>`;
+    }).join('');
+    
+    document.getElementById('incTable').innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #07865b; margin-bottom:8px; padding-bottom:4px;"><div style="display:flex; align-items:center;"><h3 style="color:#07865b; margin:0;">🟢 Income</h3><span id="incGroupTotalBadge" style="display:none; background:#d4efdf; color:#07865b; padding:4px 8px; border-radius:10px; font-size:13px; margin-left:10px; font-weight:bold;">Matched: ₹0</span></div><b style="color:#07865b;">Total: ₹${totalInc.toLocaleString('en-IN')}</b></div><div style="overflow-x:auto;"><table><tr><th style="width:40px; text-align:center;"><button onclick="toggleAllRows('inc', '${name}')" style="background:#eee; border:1px solid #ccc; border-radius:4px; cursor:pointer; font-size:11px; padding:3px 5px; color:#333;">All</button></th><th>Date</th><th>Details</th><th style="text-align:center;">Proof</th><th>Amt</th><th>Action</th></tr>${incs||'<tr><td colspan="6" style="text-align:center;">No records</td></tr>'}</table></div>`;
+    document.getElementById('expTable').innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #e21d4f; margin-bottom:8px; padding-bottom:4px;"><div style="display:flex; align-items:center;"><h3 style="color:#e21d4f; margin:0;">🔴 Expense</h3><span id="expGroupTotalBadge" style="display:none; background:#fadbd8; color:#e21d4f; padding:4px 8px; border-radius:10px; font-size:13px; margin-left:10px; font-weight:bold;">Matched: ₹0</span></div><b style="color:#e21d4f;">Total: ₹${totalExp.toLocaleString('en-IN')}</b></div><div style="overflow-x:auto;"><table><tr><th style="width:40px; text-align:center;"><button onclick="toggleAllRows('exp', '${name}')" style="background:#eee; border:1px solid #ccc; border-radius:4px; cursor:pointer; font-size:11px; padding:3px 5px; color:#333;">All</button></th><th>Date</th><th>Details</th><th style="text-align:center;">Proof</th><th>Amt</th><th>Action</th></tr>${exps||'<tr><td colspan="6" style="text-align:center;">No records</td></tr>'}</table></div>`;
+    document.getElementById('profTable').innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #8e44ad; margin-bottom:8px; padding-bottom:4px;"><div style="display:flex; align-items:center;"><h3 style="color:#8e44ad; margin:0;">🟣 Profit Booked</h3><span id="profGroupTotalBadge" style="display:none; background:#ebdef0; color:#8e44ad; padding:4px 8px; border-radius:10px; font-size:13px; margin-left:10px; font-weight:bold;">Matched: ₹0</span></div><b style="color:#8e44ad;">Total: ₹${totalProf.toLocaleString('en-IN')}</b></div><div style="overflow-x:auto;"><table><tr><th style="width:40px; text-align:center;"><button onclick="toggleAllRows('prof', '${name}')" style="background:#eee; border:1px solid #ccc; border-radius:4px; cursor:pointer; font-size:11px; padding:3px 5px; color:#333;">All</button></th><th>Date</th><th>Details</th><th style="text-align:center;">Proof</th><th>Amt</th><th>Action</th></tr>${profs||'<tr><td colspan="6" style="text-align:center;">No records</td></tr>'}</table></div>`;
+
+    // SMART BALANCE CALCULATION LOGIC
+    let currentNetBalance = totalInc - totalExp - totalProf;
+    let cfBalance = 0; let totalCashInHand = currentNetBalance;
+    let cutoffDate = (appData.config && appData.config.cfStartMonth) ? appData.config.cfStartMonth + '-01' : '2026-08-01';
+
+    if (globalMonth && globalMonth !== 'All Time') {
+        let parts = globalMonth.split(' '); let mIdx = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].indexOf(parts[0]); let yNum = parseInt(parts[1]);
+        let endOfPrevMonth = new Date(yNum, mIdx, 0, 23, 59, 59);
+        let validPastInc = 0, validPastExp = 0, validPastProf = 0;
+
+        getArray(appData.records[name]).forEach(r => {
+            if(r.date) {
+                let rParts = r.date.split('-');
+                if(rParts.length === 3) {
+                    let rDate = new Date(parseInt(rParts[0]), parseInt(rParts[1])-1, parseInt(rParts[2]), 12, 0, 0);
+                    if(rDate <= endOfPrevMonth) {
+                        if(appData.config?.enablePastCF || r.date >= cutoffDate) {
+                            let amt = parseFloat(r.amount) || 0;
+                            if(r.type === 'income') validPastInc += amt;
+                            else if(r.type === 'expense') validPastExp += amt;
+                            else if(r.type === 'profit') validPastProf += amt;
+                        }
+                    }
+                }
+            }
+        });
+        cfBalance = validPastInc - validPastExp - validPastProf;
+        totalCashInHand = cfBalance + currentNetBalance;
+    } else {
+        let validNet = 0;
+        getArray(appData.records[name]).forEach(r => {
+            if(appData.config?.enablePastCF || (r.date && r.date >= cutoffDate)) {
+                let amt = parseFloat(r.amount) || 0; validNet += (r.type === 'income') ? amt : -amt;
+            }
+        });
+        totalCashInHand = validNet; cfBalance = 0; currentNetBalance = totalCashInHand;
+    }
+
+    let balTitleText = (globalMonth && globalMonth !== 'All Time') ? `Financial Summary (${globalMonth})` : `Overall Summary (All Time)`;
+
+    document.getElementById('partnerBalArea').innerHTML = `
+    <div style="background:#eff7f3; padding:15px; border-radius:12px; margin-bottom:10px; border:1px solid #cce3d8;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #cce3d8; padding-bottom:10px; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
+            <span style="font-weight:bold; color:#176b4d; font-size:15px;">💰 ${balTitleText}</span>
+            ${generateMiniMonthDropdown(globalMonth)}
+        </div>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap:10px; text-align:center;">
+            <div style="background:#fff; padding:10px; border-radius:8px; border:1px solid #cce3d8;">
+                <span style="font-size:11px; color:#555; display:block; margin-bottom:4px;">Previous Balance (CF)</span>
+                <b class="${cfBalance >= 0 ? 'positive' : 'negative'}" style="font-size:15px;">₹${cfBalance.toLocaleString('en-IN')}</b>
+            </div>
+            <div style="background:#fff; padding:10px; border-radius:8px; border:1px solid #cce3d8;">
+                <span style="font-size:11px; color:#555; display:block; margin-bottom:4px;">Net This Month</span>
+                <b class="${currentNetBalance >= 0 ? 'positive' : 'negative'}" style="font-size:15px;">₹${currentNetBalance.toLocaleString('en-IN')}</b>
+            </div>
+            <div style="background:#fff; padding:10px; border-radius:8px; border:2px solid #176b4d; box-shadow:0 2px 4px #0002;">
+                <span style="font-size:12px; font-weight:bold; color:#17352b; display:block; margin-bottom:4px;">Total Cash In Hand</span>
+                <b class="${totalCashInHand >= 0 ? 'positive' : 'negative'}" style="font-size:18px;">₹${totalCashInHand.toLocaleString('en-IN')}</b>
+            </div>
+        </div>
+    </div>`;
+
+    setTimeout(() => { calcGroupTotal('inc'); calcGroupTotal('exp'); calcGroupTotal('prof'); }, 100);
+}
+
+function setEntryType(t) {
+    currentEntryType = t; 
+    let i = document.getElementById('incomeBtn'), e = document.getElementById('expenseBtn'), p = document.getElementById('profitBtn');
+    if(i) { i.className='alt'; i.style=''; } if(e) { e.className='alt'; e.style=''; } if(p) { p.className='alt'; p.style=''; }
+    if(t==='income') { i.className=''; i.style.background='white'; i.style.color='#07865b'; i.style.border='2px solid #07865b'; }
+    else if(t==='expense') { e.className=''; e.style.background='white'; e.style.color='#e21d4f'; e.style.border='2px solid #e21d4f'; }
+    else if(t==='profit') { p.className=''; p.style.background='white'; p.style.color='#8e44ad'; p.style.border='2px solid #8e44ad'; }
+
+    let tc = document.getElementById('transferCheckboxDiv'), qv = document.getElementById('quickVehicleDiv'), bn = document.getElementById('billNoDiv');
+    if(tc) { if(t === 'profit' || t === 'income') { tc.style.display = 'none'; if(document.getElementById('transferCheckbox')) document.getElementById('transferCheckbox').checked = false; } else { tc.style.display = 'block'; } }
+    if(qv) { if(t === 'expense') { qv.style.display = 'block'; } else { qv.style.display = 'none'; if(document.getElementById('isVehicleExpense')) { document.getElementById('isVehicleExpense').checked = false; document.getElementById('vehicleOptions').style.display = 'none'; } } }
+    if(bn) { if(t === 'income') { bn.style.display = 'block'; } else { bn.style.display = 'none'; if(document.getElementById('entryBillNo')) document.getElementById('entryBillNo').value = ''; } }
+
+    let grid = document.getElementById('recordsGrid'), profTable = document.getElementById('profTable');
+    if(grid && profTable) { if(t === 'profit') { grid.className = 'tri-records-grid'; profTable.style.display = 'block'; } else { grid.className = 'dual-records-grid'; profTable.style.display = 'none'; } }
+}
+
+async function savePartnerEntry(name) {
+    let date = document.getElementById('entryDate').value, amt = parseFloat(document.getElementById('entryAmount').value), det = document.getElementById('entryDetails').value.trim();
+    let billNo = document.getElementById('entryBillNo') ? document.getElementById('entryBillNo').value.trim() : '';
+    let photoInput = document.getElementById('entryPhoto'); let file = photoInput.files[0];
+    
+    let isTransfer = document.getElementById('transferCheckbox') && document.getElementById('transferCheckbox').checked && currentEntryType !== 'profit';
+    let isVehicle = document.getElementById('isVehicleExpense') && document.getElementById('isVehicleExpense').checked && currentEntryType === 'expense';
+    let otherName = name === 'Tanmoy' ? 'Tapabrata' : 'Tanmoy';
+
+    if(isNaN(amt) || amt <= 0) return alert("Valid Amount is required!");
+    if(!isVehicle && !det) return alert("Details are required!");
+    if(file && !file.type.startsWith('image/')) return alert("⚠️ ERROR: Only image files are allowed!");
+    
+    if(currentEditId !== null && (isTransfer || isVehicle)) {
+        let oldR = getArray(appData.records[name]).find(r => String(r.id) === String(currentEditId));
+        if (oldR) { appData.balances[name] -= (oldR.type === 'income' ? oldR.amount : -oldR.amount); appData.records[name] = getArray(appData.records[name]).filter(r => String(r.id) !== String(currentEditId)); }
+        currentEditId = null; 
+    }
+
+    if (!isVehicle) {
+        let isDuplicate = getArray(appData.records[name]).some(r => String(r.id) !== String(currentEditId) && r.date === date && r.amount === amt && (r.details||'').toLowerCase() === det.toLowerCase() && r.type === currentEntryType);
+        if(isDuplicate) return alert("❌ DUPLICATE ENTRY!");
+    }
+
+    if(currentEntryType === 'income' && billNo) {
+        let allRecs = [ ...getArray(appData.records['Tanmoy']), ...getArray(appData.records['Tapabrata']) ];
+        let isBillUsed = allRecs.some(r => String(r.id) !== String(currentEditId) && r.billNo && r.billNo.toLowerCase() === billNo.toLowerCase());
+        if(isBillUsed) return alert(`❌ DUPLICATE BILL!\nThis Bill No. (${billNo}) has already been received.`);
+    }
+
+    let btn = document.getElementById('entrySaveBtn'); let origText = btn.innerText; btn.innerText = "⏳ Saving..."; btn.disabled = true;
+
+    try {
+        appData.records[name] = getArray(appData.records[name]);
+        let photoUrl = currentEditId && appData.records[name].find(r=>String(r.id)===String(currentEditId))?.photo ? appData.records[name].find(r=>String(r.id)===String(currentEditId)).photo : '';
+        let oldLink = currentEditId && appData.records[name].find(r=>String(r.id)===String(currentEditId))?.link ? appData.records[name].find(r=>String(r.id)===String(currentEditId)).link : '';
+        let oldReconState = currentEditId && appData.records[name].find(r=>String(r.id)===String(currentEditId))?.reconState !== undefined ? appData.records[name].find(r=>String(r.id)===String(currentEditId)).reconState : 0;
+        
+        if(file) { let b64 = await compressImage(file); photoUrl = await uploadToImgBB(b64); }
+        if(!appData.balances[name]) appData.balances[name] = 0;
+        
+        let newEntryId = currentEditId || Date.now(), linkedEntryId = newEntryId + "_linked";
+
+        if(currentEditId !== null) {
+            let idx = appData.records[name].findIndex(r => String(r.id) === String(currentEditId));
+            let oldR = appData.records[name][idx];
+            appData.balances[name] -= (oldR.type==='income' ? oldR.amount : -oldR.amount);
+            appData.balances[name] += (currentEntryType==='income' ? amt : -amt);
+            appData.records[name][idx] = {id: currentEditId, date, details: det, amount: amt, type: currentEntryType, photo: photoUrl || '', link: oldLink || '', isAuto: oldR.isAuto || false, linkedId: oldR.linkedId || null, billNo: billNo, reconState: oldReconState};
+        } else {
+            if (isVehicle) {
+                let qvCar = document.getElementById('qvCar').value, qvCat = document.getElementById('qvCategory').value, finalDetails = det || '-';
+                let partnerDesc = det ? `🚗 ${qvCar} - ${qvCat} (${det})` : `🚗 ${qvCar} - ${qvCat}`;
+                appData.vehicles = getArray(appData.vehicles);
+                appData.vehicles.unshift({ id: newEntryId, date, car: qvCar, category: qvCat, details: finalDetails, amount: amt, photo: photoUrl || '', paidBy: name });
+                appData.records[name].unshift({ id: newEntryId, date, details: partnerDesc, amount: amt, type: 'expense', photo: photoUrl || '', link: oldLink || '', isAuto: true, reconState: 0 });
+                appData.balances[name] -= amt;
+            } else {
+                let mainDesc = isTransfer ? `${det} (To ${otherName})` : det;
+                appData.records[name].unshift({ id: newEntryId, date, details: mainDesc, amount: amt, type: currentEntryType, photo: photoUrl || '', link: oldLink || '', isAuto: false, linkedId: isTransfer ? linkedEntryId : null, billNo: billNo, reconState: 0 });
+                appData.balances[name] += (currentEntryType==='income' ? amt : -amt);
+                if (isTransfer) {
+                    let otherType = currentEntryType === 'expense' ? 'income' : 'expense', otherDesc = `${det} (From ${name})`;
+                    appData.records[otherName] = getArray(appData.records[otherName]);
+                    appData.records[otherName].unshift({ id: linkedEntryId, date, details: otherDesc, amount: amt, type: otherType, photo: photoUrl || '', link: '', isAuto: true, linkedId: newEntryId, reconState: 0 });
+                    if(!appData.balances[otherName]) appData.balances[otherName] = 0;
+                    appData.balances[otherName] += (otherType === 'income' ? amt : -amt);
+                }
+            }
+        }
+
+        if(currentEntryType === 'income' && billNo) {
+            appData.submittedBills = getArray(appData.submittedBills);
+            let bIdx = appData.submittedBills.findIndex(b => b.billNo && b.billNo.toLowerCase() === billNo.toLowerCase() && !b.isPaid);
+            if(bIdx !== -1) appData.submittedBills[bIdx].isPaid = true;
+        }
+
+        await saveDataToLocal(); partnerProfile(name);
+    } catch(e) { alert("Error saving."); btn.innerText = origText; btn.disabled = false; }
+}
+
+function deleteEntry(id, name) {
+    let r = getArray(appData.records[name]).find(x=>String(x.id)===String(id));
+    if(r && r.isAuto && !r.linkedId) {
+        if(confirm("🚗 This is a Vehicle expense. Are you sure you want to permanently delete it?")) {
+            appData.balances[name] -= (r.type==='income' ? r.amount : -r.amount);
+            appData.records[name] = getArray(appData.records[name]).filter(x=>String(x.id)!==String(id));
+            appData.vehicles = getArray(appData.vehicles).filter(x=>String(x.id)!==String(id));
+            saveDataToLocal().then(()=>partnerProfile(name));
+        } return;
+    }
+    let msg = r && r.linkedId ? "⚠️ This is a TRANSFER entry. Deleting it will also reverse the amount from the other partner's account. Do you want to proceed?" : "Delete entry?";
+    if(confirm(msg)) {
+        if(r) { 
+            appData.balances[name] -= (r.type==='income' ? r.amount : -r.amount); 
+            appData.records[name] = getArray(appData.records[name]).filter(x=>String(x.id)!==String(id)); 
+            if (r.linkedId) {
+                let otherName = name === 'Tanmoy' ? 'Tapabrata' : 'Tanmoy';
+                let lr = getArray(appData.records[otherName]).find(x=>String(x.id) === String(r.linkedId));
+                if(lr) { appData.balances[otherName] -= (lr.type==='income' ? lr.amount : -lr.amount); appData.records[otherName] = getArray(appData.records[otherName]).filter(x=>String(x.id) !== String(r.linkedId)); }
+            }
+            saveDataToLocal().then(()=>partnerProfile(name)); 
+        }
+    }
+}
+
+function editEntry(id, type, name) {
+    let r = getArray(appData.records[name]).find(x=>String(x.id)===String(id));
+    if(r && r.isAuto && !r.linkedId) {
+        alert("🚗 Taking you to the 'Vehicles' tab to edit this specific entry."); showVehicles(); setTimeout(() => { editVehicle(id); }, 150); return;
+    }
+    if(r && r.linkedId) return alert("⚠️ This is a 'Transfer' entry. It cannot be edited directly. Please DELETE it and create a new entry to keep both accounts balanced.");
+    if(r) { 
+        currentEditId = id; document.getElementById('entryDate').value = r.date; document.getElementById('entryDetails').value = r.details; document.getElementById('entryAmount').value = r.amount; 
+        if(document.getElementById('entryBillNo')) document.getElementById('entryBillNo').value = r.billNo || '';
+        setEntryType(type); let btn = document.getElementById('entrySaveBtn');
+        if(btn) { btn.innerText = "✏️ Update Entry"; btn.style.background = "#f39c12"; } window.scrollTo({ top: 0, behavior: 'smooth' }); 
+    }
+}
+
+function toggleRowCheck(row, event, type, id, name) {
+    if(event.target.tagName === 'BUTTON' || event.target.tagName === 'A') return;
+    let cell = row.querySelector('.recon-cell');
+    if(cell) {
+        let currentState = parseInt(cell.getAttribute('data-state') || '0'); let newState = (currentState + 1) % 3; 
+        cell.setAttribute('data-state', newState); cell.innerText = newState === 1 ? '✅' : (newState === 2 ? '❌' : '⬜');
+        if(newState === 1) row.style.setProperty('background-color', '#eefdf6', 'important'); 
+        else if(newState === 2) row.style.setProperty('background-color', '#fadbd8', 'important'); 
+        else row.style.removeProperty('background-color'); 
+        calcGroupTotal(type);
+        if(id && name && appData.records[name]) {
+            let rIndex = appData.records[name].findIndex(x => String(x.id) === String(id));
+            if(rIndex !== -1) { appData.records[name][rIndex].reconState = newState; db.ref('ServiceTracker/records/' + name + '/' + rIndex + '/reconState').set(newState); }
+        }
+    }
+}
+
+function toggleAllRows(type, name) {
+    let tableId = type === 'inc' ? 'incTable' : (type === 'exp' ? 'expTable' : 'profTable');
+    let table = document.getElementById(tableId); if(!table) return;
+    let cells = table.querySelectorAll('.recon-cell'); let allGreen = true;
+    cells.forEach(c => { if(parseInt(c.getAttribute('data-state')||'0') !== 1) allGreen = false; });
+    let targetState = allGreen ? 0 : 1; let updates = {};
+    cells.forEach(cell => {
+        cell.setAttribute('data-state', targetState); cell.innerText = targetState === 1 ? '✅' : '⬜'; let row = cell.closest('tr');
+        if(targetState === 1) row.style.setProperty('background-color', '#eefdf6', 'important'); else row.style.removeProperty('background-color');
+        let id = cell.getAttribute('data-id');
+        if(id && name && appData.records[name]) {
+            let rIndex = appData.records[name].findIndex(x => String(x.id) === String(id));
+            if(rIndex !== -1) { appData.records[name][rIndex].reconState = targetState; updates[rIndex + '/reconState'] = targetState; }
+        }
+    });
+    calcGroupTotal(type); if(Object.keys(updates).length > 0) db.ref('ServiceTracker/records/' + name).update(updates);
+}
+
+function calcGroupTotal(type) {
+    let tableId = type === 'inc' ? 'incTable' : (type === 'exp' ? 'expTable' : 'profTable');
+    let table = document.getElementById(tableId); if(!table) return;
+    let cells = table.querySelectorAll('.recon-cell'); let total = 0; let count = 0;
+    cells.forEach(cell => { let state = parseInt(cell.getAttribute('data-state') || '0'); if(state === 1) { total += parseFloat(cell.getAttribute('data-amt')) || 0; count++; } });
+    let badge = document.getElementById(type + 'GroupTotalBadge');
+    if(badge) { if(count > 0) { badge.style.display = 'inline-block'; badge.innerText = 'Matched (' + count + '): ₹' + total.toLocaleString('en-IN'); } else { badge.style.display = 'none'; } }
+}
+
+// ====== VEHICLES TRACKER ======
+function showVehicles() {
+    setActiveAdminTab('tab-vehicles'); currentVehicleEditId = null;
+    let todayDate = new Date().toISOString().split('T')[0];
+    let globalMonth = document.getElementById('headerMonthSelect') ? document.getElementById('headerMonthSelect').value : '';
+    let monthQuery = ''; let displayMonthText = globalMonth && globalMonth !== 'All Time' ? `(${globalMonth})` : '(All Time)';
+    if (globalMonth && globalMonth !== 'All Time') {
+        let parts = globalMonth.split(' '); let mIdx = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].indexOf(parts[0]) + 1;
+        let mStr = mIdx < 10 ? '0' + mIdx : mIdx.toString(); monthQuery = parts[1] + '-' + mStr; 
+    }
+    let tclCarTotal = 0, dclCarTotal = 0;
+    getArray(appData.vehicles).forEach(v => {
+        if (!monthQuery || (v.date && v.date.startsWith(monthQuery))) {
+            let amt = parseFloat(v.amount) || 0;
+            if(v.car === 'Tcl car' || v.car === 'Car 1') tclCarTotal += amt; if(v.car === 'Dcl car' || v.car === 'Car 2') dclCarTotal += amt;
+        }
+    });
+    let detailsSuggest = getUniqueOptions(appData.vehicles, 'details');
+
+    document.getElementById('profileArea').innerHTML = `
+    <datalist id="dlVDet">${detailsSuggest}</datalist>
+    <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
+            <h2 style="margin:0;">🚗 Vehicle Expense Tracker <span style="font-size:16px; color:#555; font-weight:normal;">${displayMonthText}</span></h2>
+            ${generateMiniMonthDropdown(globalMonth)}
+        </div>
+        <div class="grid" style="margin-bottom:20px;">
+            <div class="stat" style="background:#fdf2e9;">Tcl car Expense<b class="negative">₹${tclCarTotal.toLocaleString('en-IN')}</b></div>
+            <div class="stat" style="background:#fdf2e9;">Dcl car Expense<b class="negative">₹${dclCarTotal.toLocaleString('en-IN')}</b></div>
+            <div class="stat"><div style="display:flex; justify-content:space-between; align-items:center;"><span>Fuel <span style="font-size:11px;color:#555;">${displayMonthText}</span></span><select id="fuelCarFilter" onchange="calcMonthlyFuel()" style="padding:2px; font-size:12px; border:1px solid #ccd8d4; border-radius:4px; margin:0; width:auto; background:#fff;"><option value="All">All Cars</option><option value="Tcl car">Tcl car</option><option value="Dcl car">Dcl car</option></select></div><b class="negative" id="fuelMonthDisplay">₹0</b></div>
+        </div>
+        <div style="background:#fafcfb; padding:15px; border-radius:10px; border:1px solid #ccd8d4;">
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+                <div style="flex:1; min-width:150px;"><label>Date</label><input type="date" id="vDate" value="${todayDate}"></div>
+                <div style="flex:1; min-width:150px;"><label>Select Car</label><select id="vCar"><option value="Tcl car">Tcl car</option><option value="Dcl car">Dcl car</option></select></div>
+                <div style="flex:1; min-width:150px;"><label>Category</label><select id="vCategory"><option value="Fuel">⛽ Fuel</option><option value="Maintenance">🛠️ Maintenance</option><option value="Toll/Parking">🎫 Toll/Parking</option><option value="Other">📝 Other</option></select></div>
+                <div style="flex:1; min-width:150px;"><label>Paid By</label><select id="vPaidBy"><option value="Tanmoy">Tanmoy</option><option value="Tapabrata">Tapabrata</option></select></div>
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+                <div style="flex:1; min-width:150px;"><label>Amount (₹)</label><input type="number" id="vAmount" placeholder="0.00"></div>
+                <div style="flex:2; min-width:200px;"><label>Details (Optional)</label><input id="vDetails" list="dlVDet" placeholder="Description..."></div>
+            </div>
+            <label>Bill Photo</label><input type="file" id="vPhoto" accept="image/*" style="border:none; padding:0; margin-bottom:15px;">
+            <button id="vSaveBtn" onclick="saveVehicle()" style="width:100%; background:#e67e22; font-size:16px; padding:12px;">💾 Save Vehicle Expense</button>
+        </div>
+    </div>
+    <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
+            <h2 style="margin:0;">📋 Vehicle History <span style="font-size:14px; color:#555; font-weight:normal;">${displayMonthText}</span></h2>
+            <input type="text" id="vehSearchInput" placeholder="🔍 Search..." oninput="renderVehicleTable()" style="max-width:250px; margin:0; padding:8px 12px; border-radius:8px; border:1px solid #ccd8d4;">
+        </div>
+        <div style="overflow-x:auto;"><table style="min-width:700px;">
+            <thead><tr><th>Date</th><th>Car</th><th>Category</th><th>Details</th><th>Paid By</th><th style="text-align:center;">Proof</th><th>Amount</th><th style="text-align:center;">Action</th></tr></thead>
+            <tbody id="vTableBody"></tbody>
+        </table></div>
+    </div>`;
+    renderVehicleTable(); calcMonthlyFuel(); 
+}
+
+function calcMonthlyFuel() {
+    let el = document.getElementById('fuelCarFilter'); if(!el) return;
+    let filter = el.value; let fuelTotal = 0;
+    let globalMonth = document.getElementById('headerMonthSelect') ? document.getElementById('headerMonthSelect').value : '';
+    let monthQuery = '';
+    if (globalMonth && globalMonth !== 'All Time') { let parts = globalMonth.split(' '); let mIdx = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].indexOf(parts[0]) + 1; let mStr = mIdx < 10 ? '0' + mIdx : mIdx.toString(); monthQuery = parts[1] + '-' + mStr; }
+    getArray(appData.vehicles).forEach(v => {
+        if (!monthQuery || (v.date && v.date.startsWith(monthQuery))) {
+            let amt = parseFloat(v.amount) || 0;
+            if(v.category === 'Fuel') { if (filter === 'All' || v.car === filter || (filter === 'Tcl car' && v.car === 'Car 1') || (filter === 'Dcl car' && v.car === 'Car 2')) { fuelTotal += amt; } }
+        }
+    });
+    let display = document.getElementById('fuelMonthDisplay'); if(display) display.innerText = '₹' + fuelTotal.toLocaleString('en-IN');
+}
+
+function renderVehicleTable() {
+    let tbody = document.getElementById('vTableBody'); if(!tbody) return;
+    let globalMonth = document.getElementById('headerMonthSelect') ? document.getElementById('headerMonthSelect').value : '';
+    let monthQuery = '';
+    if (globalMonth && globalMonth !== 'All Time') { let parts = globalMonth.split(' '); let mIdx = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].indexOf(parts[0]) + 1; let mStr = mIdx < 10 ? '0' + mIdx : mIdx.toString(); monthQuery = parts[1] + '-' + mStr; }
+    let query = document.getElementById('vehSearchInput') ? document.getElementById('vehSearchInput').value.toLowerCase() : '';
+    let vList = [...getArray(appData.vehicles)];
+    if (monthQuery) vList = vList.filter(v => v.date && v.date.startsWith(monthQuery));
+    if (query) vList = vList.filter(v => (v.car && v.car.toLowerCase().includes(query)) || (v.category && v.category.toLowerCase().includes(query)) || (v.details && v.details.toLowerCase().includes(query)) || (v.amount && v.amount.toString().includes(query)));
+    vList.sort((a,b) => new Date(b.date) - new Date(a.date));
+    
+    let rows = vList.map(v => {
+        let proofHTML = '-'; if (v.photo && v.photo.length > 5) proofHTML = `<a href="${v.photo}" target="_blank" style="color:#2980b9; font-weight:bold; text-decoration:none; font-size:16px;">📷</a>`;
+        return `<tr><td>${formatDate(v.date)}</td><td><b>${v.car}</b></td><td>${v.category}</td><td>${v.details}</td><td>👤 ${v.paidBy || 'Tanmoy'}</td><td style="text-align:center;">${proofHTML}</td><td style="font-weight:bold; color:#e21d4f;">₹${v.amount}</td><td style="white-space:nowrap;"><button onclick="editVehicle('${v.id}')" style="background:#f39c12; padding:4px 6px; border-radius:4px; font-size:12px; color:white; border:none; cursor:pointer;">✏️</button><button onclick="deleteVehicle('${v.id}')" style="background:#444; padding:4px 6px; border-radius:4px; font-size:12px; color:white; border:none; cursor:pointer; margin-left:4px;">🗑️</button></td></tr>`;
+    }).join('');
+    tbody.innerHTML = rows || `<tr><td colspan="8" style="text-align:center;">No vehicle expenses found!</td></tr>`;
+}
+
+async function saveVehicle() {
+    let date = document.getElementById('vDate').value, car = document.getElementById('vCar').value, category = document.getElementById('vCategory').value, details = document.getElementById('vDetails').value.trim(), amount = parseFloat(document.getElementById('vAmount').value), paidBy = document.getElementById('vPaidBy').value;
+    let photoInput = document.getElementById('vPhoto'); let file = photoInput.files[0];
+    if(isNaN(amount) || amount <= 0) return alert("Valid Amount is required!");
+    if(file && !file.type.startsWith('image/')) return alert("⚠️ ERROR: Only image files are allowed!");
+    let btn = document.getElementById('vSaveBtn'); let originalText = btn.innerText; btn.innerText = "⏳ Saving..."; btn.disabled = true;
+
+    try {
+        appData.vehicles = getArray(appData.vehicles); appData.records[paidBy] = getArray(appData.records[paidBy]);
+        let photoUrl = currentVehicleEditId && appData.vehicles.find(v=>String(v.id)===String(currentVehicleEditId))?.photo ? appData.vehicles.find(v=>String(v.id)===String(currentVehicleEditId)).photo : '';
+        if(file) { let b64 = await compressImage(file); photoUrl = await uploadToImgBB(b64); }
+        let finalDetails = details || '-';
+        
+        let isDuplicateVeh = appData.vehicles.some(v => String(v.id) !== String(currentVehicleEditId) && v.date === date && v.amount === amount && v.car === car && v.category === category && (v.details || '-') === finalDetails);
+        if(isDuplicateVeh) { btn.innerText = originalText; btn.disabled = false; return alert("❌ DUPLICATE ENTRY!\nThis exact vehicle expense has already been saved."); }
+
+        let newEntry = { id: currentVehicleEditId || Date.now(), date, car, category, details: finalDetails, amount, photo: photoUrl || '', paidBy };
+        let partnerDesc = details ? `🚗 ${car} - ${category} (${details})` : `🚗 ${car} - ${category}`;
+
+        if(currentVehicleEditId) {
+            let oldV = appData.vehicles.find(v => String(v.id) === String(currentVehicleEditId));
+            if(oldV) { appData.balances[oldV.paidBy] += oldV.amount; appData.records[oldV.paidBy] = getArray(appData.records[oldV.paidBy]).filter(r => String(r.id) !== String(currentVehicleEditId)); }
+            let idx = appData.vehicles.findIndex(v => String(v.id) === String(currentVehicleEditId)); appData.vehicles[idx] = newEntry; currentVehicleEditId = null;
+        } else { appData.vehicles.unshift(newEntry); }
+
+        if(!appData.balances[paidBy]) appData.balances[paidBy] = 0;
+        appData.balances[paidBy] -= amount;
+        appData.records[paidBy].unshift({ id: newEntry.id, date: date, details: partnerDesc, amount: amount, type: 'expense', photo: photoUrl || '', link: '', isAuto: true, reconState: 0 });
+
+        await saveDataToLocal(); showVehicles();
+    } catch(e) { alert("Error saving."); btn.innerText = originalText; btn.disabled = false; }
+}
+
+function deleteVehicle(id) { 
+    if(confirm("Are you sure you want to delete this vehicle expense?")) { 
+        let oldV = getArray(appData.vehicles).find(x=>String(x.id)===String(id));
+        if(oldV) { appData.balances[oldV.paidBy] += oldV.amount; appData.records[oldV.paidBy] = getArray(appData.records[oldV.paidBy]).filter(r => String(r.id) !== String(id)); appData.vehicles = getArray(appData.vehicles).filter(x=>String(x.id)!==String(id)); saveDataToLocal().then(()=>showVehicles()); }
+    } 
+}
+
+function editVehicle(id) {
+    let v = getArray(appData.vehicles).find(x=>String(x.id)===String(id));
+    if(v) {
+        currentVehicleEditId = id; document.getElementById('vDate').value=v.date||''; document.getElementById('vCar').value=v.car||'Tcl car'; document.getElementById('vCategory').value=v.category||''; document.getElementById('vDetails').value= (v.details === '-' ? '' : v.details || ''); document.getElementById('vAmount').value=v.amount||'';
+        if(document.getElementById('vPaidBy')) document.getElementById('vPaidBy').value=v.paidBy||'Tanmoy';
+        let btn = document.getElementById('vSaveBtn'); if(btn) { btn.innerText = "✏️ Update Expense"; btn.style.background = "#f39c12"; } window.scrollTo({top:0});
+    }
+}
+
+// ====== PO TRACKER ======
+function showPOTracker() {
+    setActiveAdminTab('tab-po'); currentPOEditId = null; 
+    let todayDate = new Date().toISOString().split('T')[0];
+    let authOptions = getUniqueOptions(appData.poRecords, 'authority');
+    let poOptions = getUniqueOptions(appData.poRecords, 'poNo');
+
+    document.getElementById('profileArea').innerHTML = `
+    <datalist id="dlAuth">${authOptions}</datalist>
+    <datalist id="dlPoNum">${poOptions}</datalist>
+    <div class="card"><h2>📄 Purchase Order (PO) Tracker</h2>
+        <div style="background:#fafcfb; padding:15px; border-radius:10px; border:1px solid #ccd8d4; margin-bottom:20px;">
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;"><div style="flex:1; min-width:150px;"><label>Issue Date</label><input type="date" id="poDate" value="${todayDate}"></div><div style="flex:2; min-width:200px;"><label>Issuing Authority / Client</label><input id="poAuthority" list="dlAuth" placeholder="e.g. WBSETCL"></div></div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;"><div style="flex:1; min-width:150px;"><label>PO / Tender Number</label><input id="poNumber" list="dlPoNum" placeholder="PO No."></div><div style="flex:2; min-width:200px;"><label>Work Details</label><input id="poWorkDesc" placeholder="e.g. AMC of ACs"></div></div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;"><div style="flex:1; min-width:150px;"><label>Total Amount (₹)</label><input type="number" id="poAmount"></div><div style="flex:1; min-width:150px;"><label>Target / Deadline Date</label><input type="date" id="poDeadline"></div></div>
+            <label>Attach PO Screenshot</label><input type="file" id="poPhoto" accept="image/*" style="border:none; padding:0; margin-bottom:15px;">
+            <button id="poSaveBtn" onclick="savePO()" style="width:100%; background:#16a085; font-size:16px; padding:12px;">💾 Save Purchase Order</button>
+        </div>
+    </div>
+    <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;"><h2 style="margin:0;">📂 PO Track Record</h2><input type="text" id="poSearchInput" placeholder="🔍 Search PO..." oninput="renderPOTableRows()" style="max-width:320px; margin:0; padding:8px 12px;"></div>
+        <div style="overflow-x:auto;"><table style="min-width:800px;"><thead><tr><th>Issue Date</th><th>Authority & Work</th><th>PO No.</th><th>Deadline</th><th>Amount</th><th style="text-align:center;">Copy</th><th style="text-align:center;">Status & Action</th></tr></thead><tbody id="poTableBody"></tbody></table></div>
+    </div>`;
+    renderPOTableRows();
+}
+
+function renderPOTableRows() {
+    let tbody = document.getElementById('poTableBody'); if(!tbody) return;
+    let query = document.getElementById('poSearchInput') ? document.getElementById('poSearchInput').value.toLowerCase() : '';
+    let poList = getArray(appData.poRecords);
+    if(query) poList = poList.filter(p => (p.poNo && p.poNo.toLowerCase().includes(query)) || (p.authority && p.authority.toLowerCase().includes(query)));
+    poList.sort((a, b) => (a.isCompleted === b.isCompleted) ? 0 : a.isCompleted ? 1 : -1);
+    
+    let historyRows = poList.map(p => {
+        let rowBg = p.isCompleted ? 'background:#eefdf6; color:#555;' : 'background:#fff;';
+        let statusBtn = p.isCompleted ? `<button onclick="togglePOStatus('${p.id}')" style="background:#07865b; padding:4px 8px; border-radius:4px; font-size:11px; color:white; border:none; cursor:pointer; width:80px;">✅ Completed</button>` : `<button onclick="togglePOStatus('${p.id}')" style="background:#f39c12; padding:4px 8px; border-radius:4px; font-size:11px; color:white; border:none; cursor:pointer; width:80px;">⏳ Ongoing</button>`;
+        let proofHTML = '-'; if (p.photo && p.photo.length > 5) { proofHTML = `<a href="${p.photo}" target="_blank" style="color:#2980b9; font-weight:bold; text-decoration:none; font-size:16px;">📷</a>`; } else if (p.link && p.link.length > 5) { proofHTML = `<a href="${p.link}" target="_blank" style="color:#2980b9; font-weight:bold; text-decoration:none; font-size:16px;">🔗</a>`; }
+        return `<tr style="${rowBg}"><td>${formatDate(p.date)}</td><td><b>${p.authority}</b><br><span style="font-size:11px;color:#555;">${p.workDesc}</span></td><td>${p.poNo}</td><td>${p.deadline ? formatDate(p.deadline) : '-'}</td><td style="font-weight:bold;">₹${p.amount}</td><td style="text-align:center;">${proofHTML}</td><td style="display:flex; gap:2px; justify-content:center; align-items:center;">${statusBtn}<button onclick="editPO('${p.id}')" style="background:#3498db; padding:4px 6px; border-radius:4px; font-size:12px; color:white; border:none; cursor:pointer; margin-left:4px;">✏️</button><button onclick="deletePO('${p.id}')" style="background:#e21d4f; padding:4px 6px; border-radius:4px; font-size:12px; color:white; border:none; cursor:pointer; margin-left:4px;">🗑️</button></td></tr>`;
+    }).join('');
+    tbody.innerHTML = historyRows || `<tr><td colspan="7" style="text-align:center; color:#888;">No Purchase Orders found</td></tr>`;
+}
+
+async function savePO() {
+    let date = document.getElementById('poDate').value, authority = document.getElementById('poAuthority').value.trim(), poNo = document.getElementById('poNumber').value.trim(), workDesc = document.getElementById('poWorkDesc').value.trim(), amount = document.getElementById('poAmount').value, deadline = document.getElementById('poDeadline').value;
+    let photoInput = document.getElementById('poPhoto'); let file = photoInput.files[0];
+    if(!authority || !poNo || !amount) { alert("Authority, PO Number and Amount required!"); return; }
+    if(file && !file.type.startsWith('image/')) { alert("⚠️ ERROR: Only image files are allowed!"); return; }
+    let btn = document.getElementById('poSaveBtn'); let originalText = btn.innerText; btn.innerText = "⏳ Uploading & Saving..."; btn.disabled = true;
+
+    try {
+        appData.poRecords = getArray(appData.poRecords);
+        let isDuplicatePO = appData.poRecords.some(p => String(p.id) !== String(currentPOEditId) && p.poNo.toLowerCase() === poNo.toLowerCase());
+        if(isDuplicatePO) { btn.innerText = originalText; btn.disabled = false; return alert(`❌ DUPLICATE PO!`); }
+
+        let existingPO = currentPOEditId ? appData.poRecords.find(p=>String(p.id) === String(currentPOEditId)) : null;
+        let photoUrl = existingPO ? existingPO.photo : ''; let oldLink = existingPO ? existingPO.link : '';
+        if(file) { let b64 = await compressImage(file); if(b64) photoUrl = await uploadToImgBB(b64); }
+        let newPO = { id: currentPOEditId || Date.now(), date, authority, poNo, workDesc, amount, deadline, photo: photoUrl || '', link: oldLink || '', isCompleted: existingPO ? existingPO.isCompleted : false };
+
+        if(currentPOEditId) { let idx = appData.poRecords.findIndex(p => String(p.id) === String(currentPOEditId)); appData.poRecords[idx] = newPO; currentPOEditId = null; } 
+        else appData.poRecords.unshift(newPO);
+        await saveDataToLocal(); showPOTracker();
+    } catch(e) { alert("Error saving: " + e.message); btn.innerText = originalText; btn.disabled = false; }
+}
+
+function togglePOStatus(id) { let p = getArray(appData.poRecords).find(x => String(x.id) === String(id)); if(p) { p.isCompleted = !p.isCompleted; saveDataToLocal().then(()=>renderPOTableRows()); } }
+function deletePO(id) { if(confirm("Are you sure you want to delete this PO?")) { appData.poRecords = getArray(appData.poRecords).filter(p => String(p.id) !== String(id)); saveDataToLocal().then(()=>renderPOTableRows()); } }
+function editPO(id) {
+    let p = getArray(appData.poRecords).find(x => String(x.id) === String(id));
+    if(p) { currentPOEditId = id; document.getElementById('poDate').value = p.date || ''; document.getElementById('poAuthority').value = p.authority || ''; document.getElementById('poNumber').value = p.poNo || ''; document.getElementById('poWorkDesc').value = p.workDesc || ''; document.getElementById('poAmount').value = p.amount || ''; document.getElementById('poDeadline').value = p.deadline || ''; let btn = document.getElementById('poSaveBtn'); if(btn) { btn.innerText = "✏️ Update PO Record"; btn.style.background = "#f39c12"; } window.scrollTo({ top: 0, behavior: 'smooth' }); }
+}
+
+// ====== BILL TRACKER ======
+function showSubmittedBills() {
+    setActiveAdminTab('tab-sub-bills'); currentSubmittedBillEditId = null; 
+    let todayDate = new Date().toISOString().split('T')[0];
+    let locOptions = getUniqueOptions(appData.submittedBills, 'location', appData.poRecords, 'authority');
+    let poOptions = getUniqueOptions(appData.poRecords, 'poNo', appData.submittedBills, 'poNo');
+
+    document.getElementById('profileArea').innerHTML = `
+    <datalist id="dlLocs">${locOptions}</datalist>
+    <datalist id="dlPoNums">${poOptions}</datalist>
+    <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;"><h2 style="margin:0;">📋 Submit Bill Track Record</h2></div>
+        <div style="background:#fafcfb; padding:15px; border-radius:10px; border:1px solid #ccd8d4; margin-bottom:20px;">
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;"><div style="flex:1; min-width:150px;"><label>Submit Date</label><input type="date" id="sbDate" value="${todayDate}"></div><div style="flex:2; min-width:200px;"><label>Location / Party Name</label><input id="sbLocation" list="dlLocs" placeholder="e.g. Sadaipur 220KV"></div></div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;"><div style="flex:1; min-width:150px;"><label>Bill Number</label><input id="sbBillNo" placeholder="Bill No."></div><div style="flex:1; min-width:150px;"><label>PO No. (Optional)</label><input id="sbPoNo" list="dlPoNums" placeholder="PO Number"></div><div style="flex:1; min-width:150px;"><label>Billing Period / Cycle</label><input id="sbPeriod" list="periodOptions" placeholder="Select or type..."><datalist id="periodOptions"><option value="Full Bill (One-time)"><option value="Monthly"><option value="Quarterly (3 Months)"><option value="Half Yearly (6 Months)"></datalist></div></div>
+            <label>Bill Amount (₹)</label><input type="number" id="sbAmount" placeholder="Total Bill Amount">
+            <button id="sbSaveBtn" onclick="saveSubBill()" style="width:100%; background:#8e44ad; font-size:16px; padding:12px;">💾 Save Track Record</button>
+        </div>
+    </div>
+    <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;"><h2 style="margin:0;">📂 Tracking History</h2><input type="text" id="sbSearchInput" placeholder="🔍 Search Bill, PO or Party..." oninput="renderSubBillRows()" style="max-width:320px; margin:0; padding:8px 12px;"></div>
+        <div style="overflow-x:auto;"><table style="min-width:700px;"><thead><tr><th>Date</th><th>Location / Party</th><th>Bill No. & Period</th><th>PO No.</th><th>Amount</th><th style="text-align:center;">Status & Action</th></tr></thead><tbody id="sbTableBody"></tbody></table></div>
+    </div>`;
+    renderSubBillRows();
+}
+
+function renderSubBillRows() {
+    let tbody = document.getElementById('sbTableBody'); if(!tbody) return;
+    let query = document.getElementById('sbSearchInput') ? document.getElementById('sbSearchInput').value.toLowerCase() : '';
+    let sBills = [...getArray(appData.submittedBills)];
+    if(query) { sBills = sBills.filter(b => (b.billNo && b.billNo.toLowerCase().includes(query)) || (b.poNo && b.poNo.toLowerCase().includes(query)) || (b.location && b.location.toLowerCase().includes(query))); }
+    sBills.sort((a,b) => a.isPaid - b.isPaid);
+    
+    let rows = sBills.map(b => {
+        let rowBg = b.isPaid ? 'background:#eefdf6; color:#555;' : 'background:#fff;';
+        let statusBtn = b.isPaid ? `<button onclick="toggleSubBillStatus('${b.id}')" style="background:#07865b; padding:4px 8px; border-radius:4px; font-size:11px; color:white; border:none; cursor:pointer;">✅ Paid</button>` : `<button onclick="toggleSubBillStatus('${b.id}')" style="background:#e21d4f; padding:4px 8px; border-radius:4px; font-size:11px; color:white; border:none; cursor:pointer;">⏳ Pending</button>`;
+        return `<tr style="${rowBg}"><td>${formatDate(b.date)}</td><td><b>${b.location}</b></td><td>${b.billNo}${b.period ? `<br><span style="font-size:11px;color:#555;">${b.period}</span>` : ''}</td><td>${b.poNo || '-'}</td><td style="font-weight:bold;">₹${b.amount}</td><td style="display:flex; gap:2px; justify-content:center;">${statusBtn}<button onclick="editSubBill('${b.id}')" style="background:#f39c12; padding:4px 6px; border-radius:4px; font-size:12px; color:white; border:none; cursor:pointer; margin-left:4px;">✏️</button><button onclick="deleteSubBill('${b.id}')" style="background:#444; padding:4px 6px; border-radius:4px; font-size:12px; color:white; border:none; cursor:pointer; margin-left:4px;">🗑️</button></td></tr>`;
+    }).join('');
+    tbody.innerHTML = rows || `<tr><td colspan="6" style="text-align:center;">No bills found</td></tr>`;
+}
+
+function saveSubBill() {
+    let date = document.getElementById('sbDate').value, location = document.getElementById('sbLocation').value.trim(), billNo = document.getElementById('sbBillNo').value.trim(), poNo = document.getElementById('sbPoNo').value.trim(), period = document.getElementById('sbPeriod').value.trim(), amount = document.getElementById('sbAmount').value;
+    if(!location || !billNo || !amount) return alert("Required fields missing!");
+    let btn = document.getElementById('sbSaveBtn'); let originalText = btn.innerText; btn.innerText = "⏳ Saving..."; btn.disabled = true;
+    appData.submittedBills = getArray(appData.submittedBills);
+
+    let isDuplicateBill = appData.submittedBills.some(b => String(b.id) !== String(currentSubmittedBillEditId) && b.billNo.toLowerCase() === billNo.toLowerCase());
+    if(isDuplicateBill) { btn.innerText = originalText; btn.disabled = false; return alert(`❌ DUPLICATE BILL!`); }
+    
+    let newBill = { id: currentSubmittedBillEditId || Date.now(), date, location, billNo, poNo, period, amount, isPaid: false };
+    if(currentSubmittedBillEditId) {
+        let idx = appData.submittedBills.findIndex(b => String(b.id) === String(currentSubmittedBillEditId));
+        newBill.isPaid = appData.submittedBills[idx].isPaid; appData.submittedBills[idx] = newBill; currentSubmittedBillEditId = null;
+    } else appData.submittedBills.unshift(newBill);
+    saveDataToLocal().then(() => showSubmittedBills()).catch(e => { alert("Error saving data!"); btn.innerText = originalText; btn.disabled = false; });
+}
+
+function toggleSubBillStatus(id) { let b = getArray(appData.submittedBills).find(x=>String(x.id)===String(id)); if(b){ b.isPaid = !b.isPaid; saveDataToLocal().then(()=>renderSubBillRows()); } }
+function deleteSubBill(id) { if(confirm("Are you sure you want to delete this Bill?")) { appData.submittedBills = getArray(appData.submittedBills).filter(x=>String(x.id)!==String(id)); saveDataToLocal().then(()=>renderSubBillRows()); } }
+function editSubBill(id) {
+    let b = getArray(appData.submittedBills).find(x=>String(x.id)===String(id));
+    if(b) {
+        currentSubmittedBillEditId = id; document.getElementById('sbDate').value=b.date||''; document.getElementById('sbLocation').value=b.location||''; document.getElementById('sbBillNo').value=b.billNo||''; document.getElementById('sbPoNo').value=b.poNo||''; document.getElementById('sbPeriod').value=b.period||''; document.getElementById('sbAmount').value=b.amount||'';
+        let btn = document.getElementById('sbSaveBtn'); if(btn) { btn.innerText="✏️ Update Record"; btn.style.background="#f39c12"; } window.scrollTo({top:0});
+    }
+}
+
+// ====== INVOICE GENERATOR ======
+function showInvoice() {
+    setActiveAdminTab('tab-invoice'); currentInvoiceEditId = null; 
+    let defaultInv = `TD/24-25/${appData.invoiceCount || 314}`;
+    let buyerOptions = getUniqueOptions(appData.invoices, 'bName'); let addOptions = getUniqueOptions(appData.invoices, 'bAdd');
+    let allDesc = []; getArray(appData.invoices).forEach(inv => { getArray(inv.items).forEach(it => { if(it.desc) allDesc.push(it.desc); }); });
+    let descOptions = [...new Set(allDesc)].sort().map(v => `<option value="${v}">`).join('');
+
+    document.getElementById('profileArea').innerHTML = `
+    <datalist id="dlBuyers">${buyerOptions}</datalist>
+    <datalist id="dlAdds">${addOptions}</datalist>
+    <datalist id="dlDescs">${descOptions}</datalist>
+
+    <div class="card"><h2>🧾 Add Petty Cash</h2>
+        <div style="background:#fafcfb; padding:15px; border-radius:10px; border:1px solid #ccd8d4; margin-bottom:20px;">
+            <label style="font-weight:bold; display:flex; align-items:center;"><input type="checkbox" id="includeMyGST" checked style="width:auto; margin:0 8px 0 0;"> Include My GSTIN & PAN</label>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;"><input id="invBuyerName" list="dlBuyers" placeholder="Name / Party" style="flex:1;"><input id="invBuyerGST" placeholder="Party GST (Optional)" style="flex:1;"></div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;"><input id="invAddress" list="dlAdds" placeholder="Address" style="flex:2;"><input id="invPin" placeholder="PIN" style="flex:1;"></div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;"><input id="invNumber" value="${defaultInv}" style="flex:1;"><input id="invDate" placeholder="Date (e.g. 15-08-2026)" style="flex:1;"></div>
+        </div>
+        <div style="overflow-x:auto;"><table class="bill-table" style="min-width:600px;">
+            <thead><tr><th style="text-align:left;">Description</th><th style="width:80px;">Qty</th><th style="width:120px;">Rate (₹)</th><th style="width:120px;">Total (₹)</th><th style="width:50px;"></th></tr></thead>
+            <tbody id="billItemsContainer"></tbody>
+        </table></div>
+        <button onclick="addBillItem()" style="background:#2980b9; margin:10px 0 20px;">＋ Add Item</button>
+        <div style="background:#eff7f3; padding:15px; border-radius:10px; text-align:right; font-size:18px;"><b>Total: <span style="color:#e21d4f; font-size:24px;">₹<span id="billGrandTotal">0</span></span></b></div>
+        <button id="invoiceSaveBtn" onclick="printBill()" style="width:100%; background:#07865b; margin-top:10px;">🖨️ Save & Print Petty Cash</button>
+    </div>
+    <div class="card"><h2>📜 Petty Cash History</h2><div style="overflow-x:auto;"><table style="min-width:700px;">
+        <thead><tr><th>Voucher No.</th><th>Date</th><th>Name & Details</th><th>Amount</th><th style="text-align:center;">Action & Status</th></tr></thead>
+        <tbody id="invTableBody"></tbody>
+    </table></div></div>`;
+    addBillItem(); renderInvTable();
+}
+
+function renderInvTable() {
+    let tbody = document.getElementById('invTableBody'); if(!tbody) return;
+    let invs = [...getArray(appData.invoices)].sort((a,b) => a.isPaid - b.isPaid);
+    
+    let rows = invs.map(inv => {
+        let rowBg = inv.isPaid ? 'background:#eefdf6; color:#555;' : 'background:#fff;';
+        let statusBtn = inv.isPaid ? `<button onclick="togglePayStatus('${inv.id}')" style="background:#07865b; padding:4px 8px; border-radius:4px; font-size:11px; color:white; border:none; cursor:pointer;">✅ Paid</button>` : `<button onclick="togglePayStatus('${inv.id}')" style="background:#e21d4f; padding:4px 8px; border-radius:4px; font-size:11px; color:white; border:none; cursor:pointer;">⏳ Pending</button>`;
+        let itemSummary = inv.items && inv.items.length > 0 ? inv.items[0].desc : 'No items';
+        if (inv.items && inv.items.length > 1) itemSummary += ` (+${inv.items.length - 1} more)`;
+
+        return `<tr style="${rowBg}"><td>${inv.invNo}</td><td>${inv.date || '-'}</td><td><b>${inv.bName}</b><br><span style="font-size:11px;color:#555;">${itemSummary}</span></td><td style="font-weight:bold;">₹${inv.gTotal}</td><td style="display:flex; gap:2px; justify-content:center;">${statusBtn}<button onclick="reprintBill('${inv.id}')" style="background:#2980b9; padding:4px 6px; border-radius:4px; font-size:12px; color:white; border:none; cursor:pointer; margin-left:4px;">🖨️</button><button onclick="editInvoice('${inv.id}')" style="background:#f39c12; padding:4px 6px; border-radius:4px; font-size:12px; color:white; border:none; cursor:pointer; margin-left:4px;">✏️</button><button onclick="deleteInvoice('${inv.id}')" style="background:#444; padding:4px 6px; border-radius:4px; font-size:12px; color:white; border:none; cursor:pointer; margin-left:4px;">🗑️</button></td></tr>`;
+    }).join('');
+    tbody.innerHTML = rows || `<tr><td colspan="5" style="text-align:center;">No records yet</td></tr>`;
+}
+
+function addBillItem(desc='', qty=1, rate=0) {
+    let tbody = document.getElementById('billItemsContainer'); let rowId = 'b-item-' + Date.now() + Math.floor(Math.random()*100);
+    let tr = document.createElement('tr'); tr.id = rowId;
+    tr.innerHTML = `<td><input class="b-desc" list="dlDescs" value="${desc}" oninput="calcBill()"></td><td><input class="b-qty" type="number" value="${qty}" oninput="calcBill()"></td><td><input class="b-rate" type="number" value="${rate}" oninput="calcBill()"></td><td class="b-total" style="text-align:center;font-weight:bold;">0</td><td style="text-align:center;"><button onclick="document.getElementById('${rowId}').remove();calcBill();" style="background:#e21d4f;color:white;border:none;border-radius:5px;padding:5px;">✖</button></td>`;
+    tbody.appendChild(tr); calcBill();
+}
+
+function calcBill() {
+    let total = 0;
+    document.querySelectorAll('#billItemsContainer tr').forEach(row => { let q = parseFloat(row.querySelector('.b-qty').value) || 0; let r = parseFloat(row.querySelector('.b-rate').value) || 0; let t = q * r; row.querySelector('.b-total').innerText = t.toFixed(2); total += t; });
+    document.getElementById('billGrandTotal').innerText = total.toFixed(2);
+}
+
+function numberToWords(num) {
+    let a=['','ONE ','TWO ','THREE ','FOUR ','FIVE ','SIX ','SEVEN ','EIGHT ','NINE ','TEN ','ELEVEN ','TWELVE ','THIRTEEN ','FOURTEEN ','FIFTEEN ','SIXTEEN ','SEVENTEEN ','EIGHTEEN ','NINETEEN '];
+    let b=['','','TWENTY ','THIRTY ','FORTY ','FIFTY ','SIXTY ','SEVENTY ','EIGHTY ','NINETY '];
+    let n = parseInt(num, 10); if(n===0) return 'ZERO ONLY'; let nArray = ('000000000' + n).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+    if(!nArray) return ''; let str='';
+    str+=(nArray[1]!=0)?(a[Number(nArray[1])]||b[nArray[1][0]]+a[nArray[1][1]])+'CRORE ':''; str+=(nArray[2]!=0)?(a[Number(nArray[2])]||b[nArray[2][0]]+a[nArray[2][1]])+'LAKH ':''; str+=(nArray[3]!=0)?(a[Number(nArray[3])]||b[nArray[3][0]]+a[nArray[3][1]])+'THOUSAND ':''; str+=(nArray[4]!=0)?(a[Number(nArray[4])]||b[nArray[4][0]]+a[nArray[4][1]])+'HUNDRED ':''; str+=(nArray[5]!=0)?((str!='')?'& ':'')+(a[Number(nArray[5])]||b[nArray[5][0]]+a[nArray[5][1]])+'ONLY':'ONLY';
+    return str;
+}
+
+async function printBill() {
+    let bName = document.getElementById('invBuyerName').value, bGST = document.getElementById('invBuyerGST').value, bAdd = document.getElementById('invAddress').value, bPin = document.getElementById('invPin').value, invNo = document.getElementById('invNumber').value, date = document.getElementById('invDate').value, incGST = document.getElementById('includeMyGST').checked;
+    let gTotal = parseFloat(document.getElementById('billGrandTotal').innerText).toFixed(2); let itemsToSave = [];
+    document.querySelectorAll('#billItemsContainer tr').forEach(r => { let d = r.querySelector('.b-desc').value.trim(), q = r.querySelector('.b-qty').value; let ra = parseFloat(r.querySelector('.b-rate').value||0).toFixed(2), t = parseFloat(r.querySelector('.b-total').innerText||0).toFixed(2); if(d) itemsToSave.push({desc:d, qty:q, rate:ra, total:t}); });
+    if(!itemsToSave.length) return alert('Add items!');
+    appData.invoices = getArray(appData.invoices);
+
+    let isDuplicateInv = appData.invoices.some(i => String(i.id) !== String(currentInvoiceEditId) && i.invNo.toLowerCase() === invNo.toLowerCase());
+    if(isDuplicateInv) return alert(`❌ DUPLICATE VOUCHER!\nThis Voucher No. (${invNo}) has already been generated. Please enter a new number.`);
+
+    let invData = { id: currentInvoiceEditId || Date.now(), invNo, date, bName, bGST, bAdd, bPin, gTotal, amountWords: numberToWords(gTotal), items: itemsToSave, includeMyGST: incGST, isPaid: false };
+    if(currentInvoiceEditId) { let idx = appData.invoices.findIndex(i => String(i.id) === String(currentInvoiceEditId)); invData.isPaid = appData.invoices[idx].isPaid; appData.invoices[idx] = invData; } 
+    else { appData.invoices.unshift(invData); appData.invoiceCount = (appData.invoiceCount||314)+1; }
+    await saveDataToLocal(); showInvoice(); generateInvoiceHTML(invData);
+}
+
+function reprintBill(id) { let i = getArray(appData.invoices).find(x=>String(x.id)===String(id)); if(i) generateInvoiceHTML(i); }
+function togglePayStatus(id) { let i = getArray(appData.invoices).find(x=>String(x.id)===String(id)); if(i) { i.isPaid = !i.isPaid; saveDataToLocal().then(()=>renderInvTable()); } }
+function deleteInvoice(id) { if(confirm("Are you sure you want to delete this Petty Cash record?")) { appData.invoices = getArray(appData.invoices).filter(x=>String(x.id)!==String(id)); saveDataToLocal().then(()=>renderInvTable()); } }
+function editInvoice(id) {
+    let i = getArray(appData.invoices).find(x=>String(x.id)===String(id));
+    if(i) {
+        currentInvoiceEditId = id; document.getElementById('invBuyerName').value=i.bName||''; document.getElementById('invBuyerGST').value=i.bGST||''; document.getElementById('invAddress').value=i.bAdd||''; document.getElementById('invPin').value=i.bPin||''; document.getElementById('invNumber').value=i.invNo||''; document.getElementById('invDate').value=i.date||''; document.getElementById('includeMyGST').checked = i.includeMyGST; document.getElementById('billItemsContainer').innerHTML = ''; i.items.forEach(x => addBillItem(x.desc, x.qty, x.rate));
+        let btn = document.getElementById('invoiceSaveBtn'); if(btn) { btn.innerText = "🖨️ Update Petty Cash"; btn.style.background = "#f39c12"; } window.scrollTo({top:0});
+    }
+}
+
+function generateInvoiceHTML(inv) {
+    let rowsHTML = inv.items.map((it, idx) => `<tr><td class="text-center">${idx+1}</td><td>${it.desc}</td><td class="text-center">${it.qty<10?'0'+it.qty:it.qty}</td><td class="text-right">${it.rate}</td><td class="text-center">1</td><td class="text-right">${it.total}</td></tr>`).join('');
+    let myGST = inv.includeMyGST ? `GSTIN- 19CEEPD8412F1ZP<br>PAN- CEEPD8412F1ZP<br><br><br>` : `<br><br><br><br><br>`;
+    let upiStr = `upi://pay?pa=7583972716@ybl&pn=TANMOY%20DUTTA&am=${inv.gTotal}&cu=INR`;
+    let qrUrl = `https://chart.googleapis.com/chart?chs=150x150&cht=qr&chl=${encodeURIComponent(upiStr)}`;
+    let w = window.open('','_blank'); if(!w) return alert("Popup Blocked!");
+    let scrOpen = '<scr' + 'ipt>'; let scrClose = '</scr' + 'ipt>';
+
+    w.document.write(`<html><head><title>Inv-${inv.invNo}</title><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>@page { size: A4; margin: 15mm; } body { font-family: 'Arial', sans-serif; font-size: 14px; padding: 20px; background: white; color: black; margin: 0; } * { box-sizing: border-box; } .invoice-box { width: 100%; max-width: 210mm; margin: auto; } table { width: 100%; border-collapse: collapse; margin-bottom: 20px; page-break-inside: auto; } tr { page-break-inside: avoid; page-break-after: auto; } th, td { border: 1px solid #333; padding: 8px 10px; text-align: left; } .no-border, .no-border th, .no-border td { border: none !important; } .text-center { text-align: center; } .text-right { text-align: right; } h2 { text-align: center; text-transform: uppercase; font-size: 24px; border-bottom: 2px solid #000; padding-bottom: 10px; margin-top: 0; } @media print { body { padding: 0; } .invoice-box { max-width: 100%; width: 100%; } th { background-color: #f0f0f0 !important; -webkit-print-color-adjust: exact; color-adjust: exact; } }</style></head><body><div class="invoice-box"><h2>Invoice</h2><table class="no-border"><tr class="no-border"><td class="no-border" style="width:40%; padding:0 10px 10px 0; vertical-align:top;"><b>TANMOY DUTTA</b><br>DUBRAJPUR ROAD, SURI<br>BIRBHUM, WEST BENGAL<br>PH No.: 7583972716</td><td class="no-border" style="width:30%; padding:0 10px 10px 0; vertical-align:top;">${myGST}<b>Buyer GST:</b> ${inv.bGST || 'N/A'}</td><td class="no-border" style="width:30%; padding:0 0 10px 0; vertical-align:top;"><b>Date:</b> ${inv.date}<br><b>Inv No:</b> ${inv.invNo}<br><b>Buyer:</b> ${inv.bName}<br>${inv.bAdd}</td></tr></table><table><tr><th style="width:5%;" class="text-center">SL</th><th style="width:45%;">Description</th><th style="width:10%;" class="text-center">Qty</th><th style="width:15%;" class="text-right">Rate</th><th style="width:10%;" class="text-center">Per</th><th style="width:15%;" class="text-right">Amount</th></tr>${rowsHTML}<tr><td colspan="5" class="text-right"><b>Total</b></td><td class="text-right"><b>₹${inv.gTotal}</b></td></tr></table><p style="border:1px solid #333; padding:10px; font-weight:bold; margin-top:0;">Amount in words: ${inv.amountWords}</p><table class="no-border" style="margin-top:40px;"><tr class="no-border"><td class="no-border" style="width:60%; vertical-align:top;"><b>Bank Details:</b><br>TANMOY DUTTA<br>Canara Bank, A/C: 3715101001134<br>IFSC: CNRB0003715</td><td class="no-border text-center" style="width:40%; vertical-align:top;"><img src="${qrUrl}" width="100" style="display:block; margin:auto;"><br><span style="font-size:12px;">Scan to Pay</span></td></tr></table><div style="text-align:center; margin-top:40px; font-size:12px; color:#555; border-top:1px dashed #ccc; padding-top:10px;"><i>This is a computer-generated document. No signature or stamp is required.</i></div></div>${scrOpen} var imgs = document.images, len = imgs.length, counter = 0; if(len === 0) { setTimeout(window.print, 800); } else { for(var i=0; i<len; i++) { if(imgs[i].complete) incrementCounter(); else { imgs[i].onload = incrementCounter; imgs[i].onerror = incrementCounter; } } } function incrementCounter() { counter++; if(counter === len) { setTimeout(window.print, 800); } } ${scrClose}</body></html>`);
+    w.document.close();
+}
+
+// ====== CF BAL ======
+function showCarryForward() {
+    setActiveAdminTab('tab-carry');
+    document.getElementById('profileArea').innerHTML = `
+    <div class="card"><h2>🔄 Historical CF Balance</h2>
+    <div style="background:#eff7f3; padding:20px; border-radius:12px; border:1px solid #dfe9e5;">
+        <label>Select Partner</label><select id="cfP" onchange="calcCF()"><option value="Tanmoy">Tanmoy</option><option value="Tapabrata">Tapabrata</option></select>
+        <label>Select Month</label>${generateMonthDropdown().replace('headerMonthSelect','cfM').replace('handleGlobalMonthChange()','calcCF()')}
+        <br><br><b id="cfResult" style="font-size:24px;">₹ 0</b>
+    </div></div>`;
+    calcCF();
+}
+
+function calcCF() {
+    let p = document.getElementById('cfP').value;
+    let monthInput = document.getElementById('cfM').value;
+    let cutoffDate = (appData.config && appData.config.cfStartMonth) ? appData.config.cfStartMonth + '-01' : '2026-08-01';
+
+    if (monthInput === "All Time") {
+        let validNet = 0;
+        getArray(appData.records[p]).forEach(r => {
+            if(appData.config?.enablePastCF || (r.date && r.date >= cutoffDate)) {
+                let amt = parseFloat(r.amount) || 0; validNet += (r.type === 'income') ? amt : -amt;
+            }
+        });
+        document.getElementById('cfResult').innerText = "₹ " + validNet.toLocaleString('en-IN');
+        return;
+    }
+
+    let m = monthInput.split(' '); let mIdx = ["January","February","March","April","May","June","July","August","September","October","November","December"].indexOf(m[0]);
+    let endOfSelectedMonth = new Date(parseInt(m[1]), mIdx+1, 0, 23, 59, 59);
+    
+    let validPastNet = 0;
+    getArray(appData.records[p]).forEach(r => {
+        if(r.date) {
+            let rParts = r.date.split('-');
+            if(rParts.length === 3) {
+                let rDate = new Date(parseInt(rParts[0]), parseInt(rParts[1])-1, parseInt(rParts[2]), 12, 0, 0);
+                if(rDate <= endOfSelectedMonth) {
+                    if(appData.config?.enablePastCF || r.date >= cutoffDate) {
+                        let amt = parseFloat(r.amount) || 0; validPastNet += (r.type === 'income') ? amt : -amt;
+                    }
+                }
+            }
+        }
+    });
+    
+    document.getElementById('cfResult').innerText = "₹ " + validPastNet.toLocaleString('en-IN');
+}
+
+// ====== SETTINGS & EXPORT ======
+function showSettings() {
+    setActiveAdminTab('tab-settings');
+    let sigPreview = appData.signature ? `<img src="${appData.signature}" style="max-height:130px; margin-top:10px;">` : '';
+    let currentCFMonth = (appData.config && appData.config.cfStartMonth) ? appData.config.cfStartMonth : '2026-08';
+    let isPastCFEnabled = (appData.config && appData.config.enablePastCF) ? 'checked' : '';
+    
+    document.getElementById('profileArea').innerHTML = `
+    <div class="card">
+        <h2>⚙️ Advanced Configurations</h2>
+        <div style="background:#eff7f3; padding:15px; border-radius:10px; border:1px solid #cce3d8; margin-bottom:15px;">
+            <label style="font-weight:bold; color:#176b4d;">Calculate Balance From Month:</label>
+            <p style="font-size:12px; color:#555; margin:4px 0 10px 0;">Select the month from which you want to calculate the Total Cash In Hand and CF. (Older entries will be ignored in calculations).</p>
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+                <input type="month" id="cfStartInput" value="${currentCFMonth}" style="max-width:200px; margin:0;">
+                <button onclick="saveCFStart()" style="background:#176b4d;">Save Month</button>
+            </div>
+            
+            <label style="display:flex; align-items:center; gap:10px; cursor:pointer; background:#fff; padding:12px; border-radius:8px; border:1px solid #cce3d8;">
+                <input type="checkbox" id="togglePastCF" style="width:auto; margin:0; transform:scale(1.2);" onchange="togglePastCFLogic()" ${isPastCFEnabled}>
+                <div>
+                    <b style="color:#176b4d; font-size:14px;">Enable Old CF Balance</b>
+                    <span style="display:block; font-size:11px; color:#555; margin-top:4px;">When checked, entries before the above selected month will also be included in your cash in hand calculation.</span>
+                </div>
+            </label>
+        </div>
+    </div>
+    <div class="card"><h2>✒️ Signature Setup</h2><input type="file" id="sigUpload" accept="image/*"><button onclick="saveSignature()">Upload</button>${sigPreview}</div>
+    <div class="card"><h2>💾 Backup & Restore</h2><button onclick="downloadJSON()" style="margin-right:10px;">📥 JSON</button><button onclick="downloadCSV()">📊 CSV</button><br><br><label>Restore:</label><input type="file" accept=".json" onchange="restoreData(event)"></div>
+    <div class="card"><h2>🔑 Passwords</h2><select id="sP"><option value="Tanmoy">Tanmoy</option><option value="Tapabrata">Tapabrata</option><option value="Technician">Technician</option></select><input type="text" id="oP" placeholder="Old Password"><input type="text" id="nP" placeholder="New Password"><button onclick="updatePartnerPassword()">Update</button></div>`;
+}
+
+window.saveCFStart = function() {
+    if(!appData.config) appData.config = {};
+    let val = document.getElementById('cfStartInput').value;
+    if(!val) return alert("Select a valid month!");
+    appData.config.cfStartMonth = val;
+    saveDataToLocal().then(() => { alert("✅ Start Month Updated Successfully! Your balances have been recalculated."); });
+};
+
+window.togglePastCFLogic = function() {
+    if(!appData.config) appData.config = {};
+    appData.config.enablePastCF = document.getElementById('togglePastCF').checked;
+    saveDataToLocal().then(() => { alert('Preference updated! CF Balance will now recalculate automatically.'); });
+};
+
+function saveSignature() {
+    let input = document.getElementById('sigUpload');
+    if(input.files[0]) {
+        if(!input.files[0].type.startsWith('image/')) return alert("Upload Image only!");
+        let r = new FileReader(); r.onload = async function(e) { let b64 = await compressImage(input.files[0]); appData.signature = await uploadToImgBB(b64); await saveDataToLocal(); alert("Signature Saved!"); showSettings(); }; r.readAsDataURL(input.files[0]);
+    } else alert("Select an image first!");
+}
+function downloadJSON() { let a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(appData,null,2)])); a.download="Backup.json"; a.click(); }
+function downloadCSV() { let csv = "Partner,Date,Details,Amt,Type\n"; for(let p in appData.records) getArray(appData.records[p]).forEach(r=>csv+=`${p},${r.date},${r.details},${r.amount},${r.type}\n`); let a=document.createElement('a'); a.href=encodeURI("data:text/csv;charset=utf-8,"+csv); a.download="Data.csv"; a.click(); }
+function restoreData(e) { let f=e.target.files[0]; if(!f)return; let r=new FileReader(); r.onload=x=>{ try{appData=JSON.parse(x.target.result); saveDataToLocal().then(()=>location.reload());}catch(err){alert("Invalid backup file!");} }; r.readAsText(f); }
+
+async function updatePartnerPassword() {
+    let u = document.getElementById('sP').value, o = document.getElementById('oP').value.trim(), n = document.getElementById('nP').value.trim();
+    let st = (appData.passwords && appData.passwords[u]) ? appData.passwords[u] : defaultData.passwords[u];
+    let enteredOldHash = await hashPassword(o); let match = (st.length === 64) ? (enteredOldHash === st) : (o === st);
+    if(match && n.length >= 4) { let newHash = await hashPassword(n); appData.passwords[u] = newHash; saveDataToLocal().then(()=>alert("Password Updated Successfully!")); } else { alert("Old password incorrect or new password too short!"); }
+}
+
+function downloadPartnerCSV(name) {
+    let globalMonth = document.getElementById('headerMonthSelect') ? document.getElementById('headerMonthSelect').value : '';
+    let monthQuery = '';
+    if (globalMonth && globalMonth !== 'All Time') { let parts = globalMonth.split(' '); let mIdx = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].indexOf(parts[0]) + 1; let mStr = mIdx < 10 ? '0' + mIdx : mIdx.toString(); monthQuery = parts[1] + '-' + mStr; }
+    let query = document.getElementById('partnerSearchInput') ? document.getElementById('partnerSearchInput').value.toLowerCase() : '';
+    let recs = [...getArray(appData.records[name])].sort((a,b)=>new Date(b.date)-new Date(a.date));
+    if (monthQuery) recs = recs.filter(r => r.date && r.date.startsWith(monthQuery));
+    if (query) recs = recs.filter(r => (r.details && r.details.toLowerCase().includes(query)) || (r.amount && r.amount.toString().includes(query)) || (r.date && r.date.includes(query)) || (r.billNo && r.billNo.toLowerCase().includes(query)));
+    let csv = "Date,Details,Type,Amount (Rs),Bill No\n";
+    recs.forEach(r => { let det = r.details ? r.details.replace(/,/g, ' ') : ''; let bNo = r.billNo ? r.billNo : ''; let type = r.type === 'income' ? 'Income' : (r.type === 'expense' ? 'Expense' : 'Profit Booked'); csv += `${formatDate(r.date)},${det},${type},${r.amount},${bNo}\n`; });
+    let a = document.createElement('a'); let fileSuffix = (globalMonth && globalMonth !== 'All Time') ? globalMonth.replace(' ', '_') : 'All_Time'; a.href = encodeURI("data:text/csv;charset=utf-8," + csv); a.download = `${name}_Records_${fileSuffix}.csv`; a.click();
+}
+
+// ====== TECHNICIAN DASHBOARD ======
+function showTechDashboard() { setActiveAdminTab('tab-tech'); document.getElementById('profileArea').innerHTML = user(); }
+function user() { return `<div class="card"><h2>👤 Select Technician Profile</h2><div class="grid"><div class="role" onclick="tech('computer')">💻 <b>Computer</b></div><div class="role" onclick="tech('water')">💧 <b>Water Purifier</b></div></div></div><div id="techArea"></div>`; }
+
+function tech(type){
+    currentTechEditId = null; currentTechEditPhoto = ''; let todayDate = new Date().toISOString().split('T')[0];
+    if(type === 'computer') {
+        let compJobs = getArray(appData.computerJobs);
+        let rows = compJobs.map(j => {
+            let partsDisplay = getArray(j.parts).map(p => `<div style="margin-bottom:4px;">• <b>${p.part||'-'}</b><br><span style="font-size:11px;color:#555;">SN: ${p.serial||'N/A'}</span></div>`).join('');
+            let proofDisplay = getArray(j.parts).map((p, idx) => p.photo ? `<a href="${p.photo}" target="_blank" style="display:block; font-size:12px; margin-bottom:4px; text-decoration:none;">📷 ${idx+1}</a>` : '').join('');
+            return `<tr><td>${j.location}</td><td>${j.shop}</td><td>${partsDisplay}</td><td>${formatDate(j.date)}</td><td style="text-align:center;">${proofDisplay || '-'}</td><td style="white-space:nowrap;"><button onclick="editTechJob('${j.id}', 'computer')" style="background:#f39c12; color:white; border:none; border-radius:4px; padding:4px 6px;">✏️</button><button onclick="deleteTechJob('${j.id}', 'computer')" style="background:#e21d4f; color:white; border:none; border-radius:4px; padding:4px 6px; margin-left:4px;">🗑️</button></td></tr>`;
+        }).join('');
+        document.getElementById('techArea').innerHTML = `<div class="card"><h2>💻 Computer Service</h2><label>Location</label><input id="cLoc"><label>Shop</label><input id="cShop"><label>Date</label><input type="date" id="cDate" value="${todayDate}"><div style="margin:15px 0;"><h3>🛠️ Parts Replaced</h3><div id="partsContainer"></div><button type="button" onclick="addPartRow()" style="background:#2980b9;width:100%;padding:12px;border:none;border-radius:10px;color:white;">＋ Add Part</button></div><label>Remarks</label><input id="cRemarks"><button id="cSaveBtn" onclick="saveComputerJob()" style="width:100%; background:#176b4d;">Save Job</button></div><div class="card"><div style="overflow-x:auto;"><table><tr><th>Location</th><th>Shop</th><th>Parts</th><th>Date</th><th style="text-align:center;">Proof</th><th>Action</th></tr>${rows||'<tr><td colspan="6" style="text-align:center;">No jobs</td></tr>'}</table></div></div>`;
+        addPartRow(); 
+    } else {
+        let wJobs = getArray(appData.waterJobs);
+        let rows = wJobs.map(j => `<tr><td>${j.customer}</td><td>${j.mobile}</td><td>${j.model}</td><td>${j.part}</td><td>${formatDate(j.date)}</td><td style="text-align:center;">${j.photo ? `<a href="${j.photo}" target="_blank" style="text-decoration:none; font-size:16px;">📷</a>` : '-'}</td><td style="white-space:nowrap;"><button onclick="editTechJob('${j.id}', 'water')" style="background:#f39c12; color:white; border:none; border-radius:4px; padding:4px 6px;">✏️</button><button onclick="deleteTechJob('${j.id}', 'water')" style="background:#e21d4f; color:white; border:none; border-radius:4px; padding:4px 6px; margin-left:4px;">🗑️</button></td></tr>`).join('');
+        document.getElementById('techArea').innerHTML = `<div class="card"><h2>💧 Water Purifier Service</h2><label>Customer</label><input id="wCust"><label>Mobile</label><input id="wMob"><label>Model</label><input id="wModel"><label>Part Replaced</label><input id="wPart"><label>Photo</label><input id="wPhoto" type="file" accept="image/*"><label>Date</label><input type="date" id="wDate" value="${todayDate}"><button id="wSaveBtn" onclick="saveWaterJob()" style="width:100%;">Save Job</button></div><div class="card"><div style="overflow-x:auto;"><table><tr><th>Customer</th><th>Mobile</th><th>Model</th><th>Part</th><th>Date</th><th style="text-align:center;">Proof</th><th>Action</th></tr>${rows||'<tr><td colspan="7" style="text-align:center;">No jobs</td></tr>'}</table></div></div>`;
+    }
+}
+
+function addPartRow(part='', serial='', photoB64='') {
+    let container = document.getElementById('partsContainer'); let rowId = 'part-row-' + Date.now() + Math.floor(Math.random()*1000);
+    let div = document.createElement('div'); div.id = rowId; div.className = 'part-row-box';
+    div.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;"><b style="font-size:14px;">📦 Part Details</b><button type="button" onclick="document.getElementById('${rowId}').remove()" style="background:#e21d4f; color:white; border:none; border-radius:6px; padding:4px 8px; font-size:11px;">✖ Remove</button></div><label>Part Name</label><input class="p-name" value="${part}"><label>Serial</label><input class="p-serial" value="${serial}"><label>Barcode Photo</label><input type="hidden" class="p-hidden-b64" value="${photoB64}"><input type="file" class="p-photo" accept="image/*" onchange="handlePartImage(this, '${rowId}')">${photoB64?'<div style="font-size:11px;color:#07865b;">✓ Old Photo Attached</div>':''}<p class="scan-status" style="font-size:11px; display:none;"></p>`;
+    container.appendChild(div);
+}
+
+async function saveComputerJob() {
+    let loc = document.getElementById('cLoc').value.trim(), shop = document.getElementById('cShop').value.trim(), d = document.getElementById('cDate').value, rem = document.getElementById('cRemarks').value.trim();
+    if(!loc) return alert("Location is required!");
+    let btn = document.getElementById('cSaveBtn'); let orig=btn.innerText; btn.innerText="⏳ Saving..."; btn.disabled=true;
+    appData.computerJobs = getArray(appData.computerJobs);
+    let partsList = []; let boxes = document.querySelectorAll('.part-row-box');
+    for(let i=0; i<boxes.length; i++) {
+        let n = boxes[i].querySelector('.p-name').value.trim(), s = boxes[i].querySelector('.p-serial').value.trim(), h = boxes[i].querySelector('.p-hidden-b64').value;
+        let u = h; if(h.startsWith('data:image')) u = await uploadToImgBB(h);
+        if(n) partsList.push({part:n, serial:s, photo:u});
+    }
+    if(!partsList.length) { btn.innerText=orig; btn.disabled=false; return alert("Add at least 1 part!"); }
+    let j = { id: currentTechEditId||Date.now(), location:loc, shop, date:d, remarks:rem, parts:partsList };
+    if(currentTechEditId) { let idx=appData.computerJobs.findIndex(x=>String(x.id)===String(currentTechEditId)); appData.computerJobs[idx]=j; currentTechEditId=null; } else appData.computerJobs.unshift(j);
+    await saveDataToLocal(); tech('computer');
+}
+
+async function saveWaterJob() {
+    let c = document.getElementById('wCust').value.trim(), m = document.getElementById('wMob').value.trim(), mod = document.getElementById('wModel').value.trim(), p = document.getElementById('wPart').value.trim(), d = document.getElementById('wDate').value, file = document.getElementById('wPhoto').files[0];
+    if(!c || !m) return alert("Customer and Mobile Number are required!");
+    if(file && !file.type.startsWith('image/')) return alert("Upload Image only!");
+    let btn = document.getElementById('wSaveBtn'); let orig=btn.innerText; btn.innerText="⏳ Saving..."; btn.disabled=true;
+    appData.waterJobs = getArray(appData.waterJobs);
+    let url = currentTechEditId && appData.waterJobs.find(x=>String(x.id)===String(currentTechEditId))?.photo ? appData.waterJobs.find(x=>String(x.id)===String(currentTechEditId)).photo : ''; 
+    if(file){ let b64 = await compressImage(file); url = await uploadToImgBB(b64); }
+    let j = { id: currentTechEditId||Date.now(), customer:c, mobile:m, model:mod, part:p, date:d, photo:url };
+    if(currentTechEditId) { let idx=appData.waterJobs.findIndex(x=>String(x.id)===String(currentTechEditId)); appData.waterJobs[idx]=j; currentTechEditId=null; currentTechEditPhoto=''; } else appData.waterJobs.unshift(j);
+    await saveDataToLocal(); tech('water');
+}
+
+function deleteTechJob(id, t) { if(confirm("Are you sure you want to delete this job?")){ t==='computer'?appData.computerJobs=getArray(appData.computerJobs).filter(x=>String(x.id)!==String(id)):appData.waterJobs=getArray(appData.waterJobs).filter(x=>String(x.id)!==String(id)); saveDataToLocal().then(()=>tech(t)); } }
+function editTechJob(id, t) {
+    let arr = t==='computer'?getArray(appData.computerJobs):getArray(appData.waterJobs); let j = arr.find(x=>String(x.id)===String(id)); if(!j)return;
+    currentTechEditId = id;
+    if(t==='computer') {
+        document.getElementById('cLoc').value=j.location; document.getElementById('cShop').value=j.shop; document.getElementById('cDate').value=j.date; document.getElementById('cRemarks').value=j.remarks; document.getElementById('partsContainer').innerHTML=''; getArray(j.parts).forEach(p=>addPartRow(p.part, p.serial, p.photo));
+        let btn = document.getElementById('cSaveBtn'); if(btn) { btn.innerText="✏️ Update Job"; btn.style.background="#f39c12"; }
+    } else {
+        document.getElementById('wCust').value=j.customer; document.getElementById('wMob').value=j.mobile; document.getElementById('wModel').value=j.model; document.getElementById('wPart').value=j.part; document.getElementById('wDate').value=j.date; currentTechEditPhoto=j.photo;
+        let btn = document.getElementById('wSaveBtn'); if(btn) { btn.innerText="✏️ Update Job"; btn.style.background="#f39c12"; }
+    }
+    window.scrollTo({top:0, behavior:'smooth'});
+}
+</script>
+</body>
+</html>
