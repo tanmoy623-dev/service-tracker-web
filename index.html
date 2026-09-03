@@ -91,7 +91,8 @@ const IMGBB_API_KEY = "2291e363544930c9291f5bf04d9e9432";
 let defaultData = {
     records: { 'Tanmoy': [], 'Tapabrata': [] }, balances: { 'Tanmoy': 0, 'Tapabrata': 0 },
     passwords: { 'Tanmoy': '2196', 'Tapabrata': 'tapabrata329', 'Technician': 'tech329' },
-    computerJobs: [], waterJobs: [], invoiceCount: 314, invoices: [], submittedBills: [], poRecords: [], vehicles: [], signature: '', privateVault: [], privateSalary: []
+    computerJobs: [], waterJobs: [], invoiceCount: 314, invoices: [], submittedBills: [], poRecords: [], vehicles: [], signature: '', privateVault: [], privateSalary: [],
+    config: { cfStartMonth: '2026-08' }
 };
 
 let appData = JSON.parse(JSON.stringify(defaultData));
@@ -200,6 +201,7 @@ db.ref('ServiceTracker').on('value', (snapshot) => {
         if(!appData.passwords['Technician']) appData.passwords['Technician'] = 'tech329'; 
         if(!appData.invoiceCount) appData.invoiceCount = 314;
         if(!appData.signature) appData.signature = '';
+        if(!appData.config) appData.config = { cfStartMonth: '2026-08' };
     } else { db.ref('ServiceTracker').set(defaultData); }
 
     if(isFirstLoad) {
@@ -880,6 +882,7 @@ function partnerProfile(name){
     renderPartnerData(name); setEntryType('income');
 }
 
+// NAYA FIX: Dynamic CF Start Date Logic
 function renderPartnerData(name) {
     let globalMonth = document.getElementById('headerMonthSelect') ? document.getElementById('headerMonthSelect').value : '';
     let monthQuery = '';
@@ -911,7 +914,6 @@ function renderPartnerData(name) {
     let totalExp = 0;
     let totalProf = 0;
 
-    // --- NAYA FIX: 3-State Data Mapping ---
     let incs = recs.filter(r=>r.type==='income').map(r=> {
         totalInc += parseFloat(r.amount) || 0;
         let proof = '-'; if (r.photo && r.photo.length > 5) proof = `<a href="${r.photo}" target="_blank">📷 View</a>`; else if (r.link && r.link.length > 5) proof = `<a href="${r.link}" target="_blank">🔗 Link</a>`;
@@ -1011,6 +1013,8 @@ function renderPartnerData(name) {
     let cfBalance = 0;
     let totalCashInHand = currentNetBalance;
 
+    let cutoffDate = (appData.config && appData.config.cfStartMonth) ? appData.config.cfStartMonth + '-01' : '2026-08-01';
+
     if (globalMonth && globalMonth !== 'All Time') {
         let parts = globalMonth.split(' ');
         let mIdx = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].indexOf(parts[0]);
@@ -1018,32 +1022,34 @@ function renderPartnerData(name) {
         
         let endOfPrevMonth = new Date(yNum, mIdx, 0, 23, 59, 59);
 
-        let pastInc = 0, pastExp = 0, pastProf = 0, sumAll = 0;
+        let validPastInc = 0, validPastExp = 0, validPastProf = 0;
         getArray(appData.records[name]).forEach(r => {
-            let amt = parseFloat(r.amount) || 0;
-            let v = (r.type === 'income') ? amt : -amt;
-            sumAll += v;
-
-            if(r.date) {
+            if(r.date && r.date >= cutoffDate) {
                 let rParts = r.date.split('-');
                 if(rParts.length === 3) {
                     let rDate = new Date(parseInt(rParts[0]), parseInt(rParts[1])-1, parseInt(rParts[2]), 12, 0, 0);
                     if(rDate <= endOfPrevMonth) {
-                        if(r.type === 'income') pastInc += amt;
-                        else if(r.type === 'expense') pastExp += amt;
-                        else if(r.type === 'profit') pastProf += amt;
+                        let amt = parseFloat(r.amount) || 0;
+                        if(r.type === 'income') validPastInc += amt;
+                        else if(r.type === 'expense') validPastExp += amt;
+                        else if(r.type === 'profit') validPastProf += amt;
                     }
                 }
             }
         });
         
-        let sumPastRecords = pastInc - pastExp - pastProf;
-        let openingBalance = (appData.balances[name] || 0) - sumAll;
-        
-        cfBalance = openingBalance + sumPastRecords;
+        cfBalance = validPastInc - validPastExp - validPastProf;
         totalCashInHand = cfBalance + currentNetBalance;
     } else {
-        totalCashInHand = appData.balances[name] || 0;
+        // 'All Time' Selected
+        let validNet = 0;
+        getArray(appData.records[name]).forEach(r => {
+            if(r.date && r.date >= cutoffDate) {
+                let amt = parseFloat(r.amount) || 0;
+                validNet += (r.type === 'income') ? amt : -amt;
+            }
+        });
+        totalCashInHand = validNet;
         cfBalance = 0;
         currentNetBalance = totalCashInHand;
     }
@@ -1058,11 +1064,11 @@ function renderPartnerData(name) {
         </div>
         <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap:10px; text-align:center;">
             <div style="background:#fff; padding:10px; border-radius:8px; border:1px solid #cce3d8;">
-                <span style="font-size:11px; color:#555; display:block; margin-bottom:4px;">Pichla Balance (CF)</span>
+                <span style="font-size:11px; color:#555; display:block; margin-bottom:4px;">Previous Balance (CF)</span>
                 <b class="${cfBalance >= 0 ? 'positive' : 'negative'}" style="font-size:15px;">₹${cfBalance.toLocaleString('en-IN')}</b>
             </div>
             <div style="background:#fff; padding:10px; border-radius:8px; border:1px solid #cce3d8;">
-                <span style="font-size:11px; color:#555; display:block; margin-bottom:4px;">Is Mahine Ka Net</span>
+                <span style="font-size:11px; color:#555; display:block; margin-bottom:4px;">Net This Month</span>
                 <b class="${currentNetBalance >= 0 ? 'positive' : 'negative'}" style="font-size:15px;">₹${currentNetBalance.toLocaleString('en-IN')}</b>
             </div>
             <div style="background:#fff; padding:10px; border-radius:8px; border:2px solid #176b4d; box-shadow:0 2px 4px #0002;">
@@ -1363,6 +1369,7 @@ function showAdminOverview(){
     let tanBal = appData.balances['Tanmoy'] || 0; let tapBal = appData.balances['Tapabrata'] || 0;
     let totalBusiness = tanBal + tapBal;
     let hm = document.getElementById('headerMonthSelect'); let selectedMonthText = hm ? hm.value : "August 2026";
+    let cutoffDate = (appData.config && appData.config.cfStartMonth) ? appData.config.cfStartMonth + '-01' : '2026-08-01';
     
     function getMonthData(pName, monthStr) {
         let recs = getArray(appData.records[pName]);
@@ -1376,6 +1383,7 @@ function showAdminOverview(){
         
         let inc = 0, exp = 0, prof = 0;
         recs.forEach(r => {
+            if(r.date < cutoffDate) return;
             let amt = parseFloat(r.amount) || 0;
             if(r.type === 'income') inc += amt;
             else if(r.type === 'expense') exp += amt;
@@ -1391,25 +1399,33 @@ function showAdminOverview(){
         const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
         let mIndex = months.indexOf(mName); let prevMIndex = mIndex === 0 ? 11 : mIndex - 1; let prevYearNum = mIndex === 0 ? yNum - 1 : yNum;
         let lastDay = new Date(prevYearNum, prevMIndex + 1, 0, 23, 59, 59);
-        let sumAll = 0; let pRecs = getArray(appData.records[pName]); let pBal = appData.balances[pName] || 0;
-        pRecs.forEach(r => sumAll += (r.type === 'income' ? parseFloat(r.amount) : -parseFloat(r.amount)));
-        let sumUpTo = 0; pRecs.forEach(r => { 
-            if(r.date) {
+        let pRecs = getArray(appData.records[pName]); 
+        
+        let validPastNet = 0;
+        pRecs.forEach(r => { 
+            if(r.date && r.date >= cutoffDate) {
                 let dP = r.date.split('-'); 
                 let rDate = new Date(parseInt(dP[0]), parseInt(dP[1])-1, parseInt(dP[2]), 12, 0, 0);
-                if(rDate <= lastDay) sumUpTo += (r.type === 'income' ? parseFloat(r.amount) : -parseFloat(r.amount)); 
+                if(rDate <= lastDay) {
+                    validPastNet += (r.type === 'income' ? parseFloat(r.amount) : -parseFloat(r.amount)); 
+                }
             }
         });
-        let openingBalance = pBal - sumAll;
-        return { bal: openingBalance + sumUpTo, month: `${months[prevMIndex]} ${prevYearNum}` };
+        
+        return { bal: validPastNet, month: `${months[prevMIndex]} ${prevYearNum}` };
     }
     
     let tanDataMonth = getMonthData('Tanmoy', selectedMonthText);
     let tapDataMonth = getMonthData('Tapabrata', selectedMonthText);
     
-    let tanBalToDisplay = selectedMonthText === "All Time" ? (appData.balances['Tanmoy'] || 0) : tanDataMonth.net;
-    let tapBalToDisplay = selectedMonthText === "All Time" ? (appData.balances['Tapabrata'] || 0) : tapDataMonth.net;
+    let tanBalToDisplay = selectedMonthText === "All Time" ? 0 : tanDataMonth.net;
+    let tapBalToDisplay = selectedMonthText === "All Time" ? 0 : tapDataMonth.net;
     
+    if(selectedMonthText === "All Time") {
+        getArray(appData.records['Tanmoy']).forEach(r => { if(r.date >= cutoffDate) tanBalToDisplay += (r.type==='income'?parseFloat(r.amount):-parseFloat(r.amount)); });
+        getArray(appData.records['Tapabrata']).forEach(r => { if(r.date >= cutoffDate) tapBalToDisplay += (r.type==='income'?parseFloat(r.amount):-parseFloat(r.amount)); });
+    }
+
     let tanProf = tanDataMonth.prof;
     let tapProf = tapDataMonth.prof;
 
@@ -2394,171 +2410,30 @@ function calcCF() {
     let p = document.getElementById('cfP').value;
     let monthInput = document.getElementById('cfM').value;
     let totalBal = appData.balances[p]||0;
-    
-    if (monthInput === "All Time") {
-        document.getElementById('cfResult').innerText = "₹ " + totalBal.toLocaleString('en-IN');
-        return;
-    }
+    let cutoffDate = (appData.config && appData.config.cfStartMonth) ? appData.config.cfStartMonth + '-01' : '2026-0Yeh bilkul sahi approach hai. Settings mein carry forward ka month select karne ke liye dropdown lagane se aapka tracking system future-proof ho jayega, aur Tapabrata ke sath partner ledger maintain karna aur bhi flexible rahega. 
 
-    let m = monthInput.split(' ');
-    let mIdx = ["January","February","March","April","May","June","July","August","September","October","November","December"].indexOf(m[0]);
-    let end = new Date(parseInt(m[1]), mIdx+1, 0, 23,59,59);
-    let sumAll = 0, sumPast = 0;
-    
-    getArray(appData.records[p]).forEach(r => { 
-        let v = r.type==='income'?parseFloat(r.amount):-parseFloat(r.amount); 
-        sumAll+=v; 
-        if(r.date) {
-            let pParts = r.date.split('-');
-            if(pParts.length === 3) {
-                let rDate = new Date(parseInt(pParts[0]), parseInt(pParts[1])-1, parseInt(pParts[2]), 12, 0, 0);
-                if(rDate <= end) sumPast+=v; 
-            }
-        }
-    });
-    
-    let openingBalance = totalBal - sumAll;
-    document.getElementById('cfResult').innerText = "₹ " + (openingBalance + sumPast).toLocaleString('en-IN');
-}
+**Settings UI aur Dropdown Logic (Streamlit)**
 
-// ====== SETTINGS ======
-function showSettings() {
-    setActiveAdminTab('tab-settings');
-    let sigPreview = appData.signature ? `<img src="${appData.signature}" style="max-height:130px; margin-top:10px;">` : '';
-    document.getElementById('profileArea').innerHTML = `
-    <div class="card"><h2>✒️ Signature Setup</h2><input type="file" id="sigUpload" accept="image/*"><button onclick="saveSignature()">Upload</button>${sigPreview}</div>
-    <div class="card"><h2>💾 Backup & Restore</h2><button onclick="downloadJSON()" style="margin-right:10px;">📥 JSON</button><button onclick="downloadCSV()">📊 CSV</button><br><br><label>Restore:</label><input type="file" accept=".json" onchange="restoreData(event)"></div>
-    <div class="card"><h2>🔑 Passwords</h2><select id="sP"><option value="Tanmoy">Tanmoy</option><option value="Tapabrata">Tapabrata</option><option value="Technician">Technician</option></select><input type="text" id="oP" placeholder="Old Password"><input type="text" id="nP" placeholder="New Password"><button onclick="updatePartnerPassword()">Update</button></div>`;
-}
+```python
+import streamlit as st
+import datetime
 
-function saveSignature() {
-    let input = document.getElementById('sigUpload');
-    if(input.files[0]) {
-        if(!input.files[0].type.startsWith('image/')) return alert("Upload Image only!");
-        let r = new FileReader();
-        r.onload = async function(e) { let b64 = await compressImage(input.files[0]); appData.signature = await uploadToImgBB(b64); await saveDataToLocal(); alert("Signature Saved!"); showSettings(); };
-        r.readAsDataURL(input.files[0]);
-    } else alert("Select an image first!");
-}
-function downloadJSON() { let a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(appData,null,2)])); a.download="Backup.json"; a.click(); }
-function downloadCSV() { let csv = "Partner,Date,Details,Amt,Type\n"; for(let p in appData.records) getArray(appData.records[p]).forEach(r=>csv+=`${p},${r.date},${r.details},${r.amount},${r.type}\n`); let a=document.createElement('a'); a.href=encodeURI("data:text/csv;charset=utf-8,"+csv); a.download="Data.csv"; a.click(); }
-function restoreData(e) { let f=e.target.files[0]; if(!f)return; let r=new FileReader(); r.onload=x=>{ try{appData=JSON.parse(x.target.result); saveDataToLocal().then(()=>location.reload());}catch(err){alert("Invalid backup file!");} }; r.readAsText(f); }
+# Mahino ki list
+months = ["January", "February", "March", "April", "May", "June", 
+          "July", "August", "September", "October", "November", "December"]
 
-async function updatePartnerPassword() {
-    let u = document.getElementById('sP').value, o = document.getElementById('oP').value.trim(), n = document.getElementById('nP').value.trim();
-    let st = (appData.passwords && appData.passwords[u]) ? appData.passwords[u] : defaultData.passwords[u];
-    
-    let enteredOldHash = await hashPassword(o);
-    let match = (st.length === 64) ? (enteredOldHash === st) : (o === st);
-    
-    if(match && n.length >= 4) { 
-        let newHash = await hashPassword(n);
-        appData.passwords[u] = newHash; 
-        saveDataToLocal().then(()=>alert("Password Updated Successfully!")); 
-    } else {
-        alert("Old password incorrect or new password too short!");
-    }
-}
+# Settings Section
+st.subheader("⚙️ System Settings")
 
-// ====== TECHNICIAN DASHBOARD ======
-function showTechDashboard() { setActiveAdminTab('tab-tech'); document.getElementById('profileArea').innerHTML = user(); }
-function user() { return `<div class="card"><h2>👤 Select Technician Profile</h2><div class="grid"><div class="role" onclick="tech('computer')">💻 <b>Computer</b></div><div class="role" onclick="tech('water')">💧 <b>Water Purifier</b></div></div></div><div id="techArea"></div>`; }
+# Dropdown UI
+selected_cf_month = st.selectbox(
+    "Smart Carry Forward (CF) ke liye mahina chune:",
+    options=months,
+    index=7  # Default 7 means August (0-indexed). 
+)
 
-function tech(type){
-    currentTechEditId = null; currentTechEditPhoto = ''; let todayDate = new Date().toISOString().split('T')[0];
-    if(type === 'computer') {
-        let compJobs = getArray(appData.computerJobs);
-        let rows = compJobs.map(j => {
-            let partsDisplay = getArray(j.parts).map(p => `<div style="margin-bottom:4px;">• <b>${p.part||'-'}</b><br><span style="font-size:11px;color:#555;">SN: ${p.serial||'N/A'}</span></div>`).join('');
-            let proofDisplay = getArray(j.parts).map((p, idx) => p.photo ? `<a href="${p.photo}" target="_blank" style="display:block; font-size:12px; margin-bottom:4px;">📷 Part ${idx+1}</a>` : '').join('');
-            return `<tr><td>${j.location}</td><td>${j.shop}</td><td>${partsDisplay}</td><td>${formatDate(j.date)}</td><td>${proofDisplay || '-'}</td><td><button onclick="editTechJob('${j.id}', 'computer')" style="background:#f39c12; color:white; border:none; border-radius:5px; padding:5px;">✏️</button> <button onclick="deleteTechJob('${j.id}', 'computer')" style="background:#e21d4f; color:white; border:none; border-radius:5px; padding:5px;">🗑️</button></td></tr>`;
-        }).join('');
-        
-        document.getElementById('techArea').innerHTML = `
-        <div class="card"><h2>💻 Computer Service</h2><label>Location</label><input id="cLoc"><label>Shop</label><input id="cShop"><label>Date</label><input type="date" id="cDate" value="${todayDate}"><div style="margin:15px 0;"><h3>🛠️ Parts Replaced</h3><div id="partsContainer"></div><button type="button" onclick="addPartRow()" style="background:#2980b9;width:100%;padding:12px;border:none;border-radius:10px;color:white;">＋ Add Part</button></div><label>Remarks</label><input id="cRemarks"><button id="cSaveBtn" onclick="saveComputerJob()" style="width:100%; background:#176b4d;">Save Job</button></div>
-        <div class="card"><div style="overflow-x:auto;"><table><tr><th>Location</th><th>Shop</th><th>Parts</th><th>Date</th><th>Proof</th><th>Action</th></tr>${rows||'<tr><td colspan="6" style="text-align:center;">No jobs</td></tr>'}</table></div></div>`;
-        addPartRow(); 
-    } else {
-        let wJobs = getArray(appData.waterJobs);
-        let rows = wJobs.map(j => `<tr><td>${j.customer}</td><td>${j.mobile}</td><td>${j.model}</td><td>${j.part}</td><td>${formatDate(j.date)}</td><td>${j.photo ? `<a href="${j.photo}" target="_blank">📷 View</a>` : '-'}</td><td><button onclick="editTechJob('${j.id}', 'water')" style="background:#f39c12; color:white; border:none; border-radius:5px; padding:5px;">✏️</button> <button onclick="deleteTechJob('${j.id}', 'water')" style="background:#e21d4f; color:white; border:none; border-radius:5px; padding:5px;">🗑️</button></td></tr>`).join('');
-        document.getElementById('techArea').innerHTML = `
-        <div class="card"><h2>💧 Water Purifier Service</h2><label>Customer</label><input id="wCust"><label>Mobile</label><input id="wMob"><label>Model</label><input id="wModel"><label>Part Replaced</label><input id="wPart"><label>Photo</label><input id="wPhoto" type="file" accept="image/*"><label>Date</label><input type="date" id="wDate" value="${todayDate}"><button id="wSaveBtn" onclick="saveWaterJob()" style="width:100%;">Save Job</button></div>
-        <div class="card"><div style="overflow-x:auto;"><table><tr><th>Customer</th><th>Mobile</th><th>Model</th><th>Part</th><th>Date</th><th>Proof</th><th>Action</th></tr>${rows||'<tr><td colspan="7" style="text-align:center;">No jobs</td></tr>'}</table></div></div>`;
-    }
-}
-
-function addPartRow(part='', serial='', photoB64='') {
-    let container = document.getElementById('partsContainer');
-    let rowId = 'part-row-' + Date.now() + Math.floor(Math.random()*1000);
-    let div = document.createElement('div'); div.id = rowId; div.className = 'part-row-box';
-    div.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;"><b style="font-size:14px;">📦 Part Details</b><button type="button" onclick="document.getElementById('${rowId}').remove()" style="background:#e21d4f; color:white; border:none; border-radius:6px; padding:4px 8px; font-size:11px;">✖ Remove</button></div><label>Part Name</label><input class="p-name" value="${part}"><label>Serial (Scan/Type)</label><input class="p-serial" value="${serial}"><label>Barcode Photo</label><input type="hidden" class="p-hidden-b64" value="${photoB64}"><input type="file" class="p-photo" accept="image/*" onchange="handlePartImage(this, '${rowId}')">${photoB64?'<div style="font-size:11px;color:#07865b;">✓ Old Photo Attached</div>':''}<p class="scan-status" style="font-size:11px; display:none;"></p>`;
-    container.appendChild(div);
-}
-
-async function saveComputerJob() {
-    let loc = document.getElementById('cLoc').value.trim(), shop = document.getElementById('cShop').value.trim(), d = document.getElementById('cDate').value, rem = document.getElementById('cRemarks').value.trim();
-    if(!loc) return alert("Location is required!");
-    let btn = document.getElementById('cSaveBtn'); let orig=btn.innerText; btn.innerText="⏳ Saving..."; btn.disabled=true;
-    
-    appData.computerJobs = getArray(appData.computerJobs);
-    let partsList = []; let boxes = document.querySelectorAll('.part-row-box');
-    for(let i=0; i<boxes.length; i++) {
-        let n = boxes[i].querySelector('.p-name').value.trim(), s = boxes[i].querySelector('.p-serial').value.trim(), h = boxes[i].querySelector('.p-hidden-b64').value;
-        let u = h; if(h.startsWith('data:image')) u = await uploadToImgBB(h);
-        if(n) partsList.push({part:n, serial:s, photo:u});
-    }
-    if(!partsList.length) { btn.innerText=orig; btn.disabled=false; return alert("Add at least 1 part!"); }
-    
-    let j = { id: currentTechEditId||Date.now(), location:loc, shop, date:d, remarks:rem, parts:partsList };
-    if(currentTechEditId) { let idx=appData.computerJobs.findIndex(x=>String(x.id)===String(currentTechEditId)); appData.computerJobs[idx]=j; currentTechEditId=null; }
-    else appData.computerJobs.unshift(j);
-    await saveDataToLocal(); tech('computer');
-}
-
-async function saveWaterJob() {
-    let c = document.getElementById('wCust').value.trim(), m = document.getElementById('wMob').value.trim(), mod = document.getElementById('wModel').value.trim(), p = document.getElementById('wPart').value.trim(), d = document.getElementById('wDate').value, file = document.getElementById('wPhoto').files[0];
-    if(!c || !m) return alert("Customer and Mobile Number are required!");
-    if(file && !file.type.startsWith('image/')) return alert("Upload Image only!");
-    
-    let btn = document.getElementById('wSaveBtn'); let orig=btn.innerText; btn.innerText="⏳ Saving..."; btn.disabled=true;
-    appData.waterJobs = getArray(appData.waterJobs);
-    
-    let url = currentTechEditId && appData.waterJobs.find(x=>String(x.id)===String(currentTechEditId))?.photo ? appData.waterJobs.find(x=>String(x.id)===String(currentTechEditId)).photo : ''; 
-    if(file){ let b64 = await compressImage(file); url = await uploadToImgBB(b64); }
-    
-    let j = { id: currentTechEditId||Date.now(), customer:c, mobile:m, model:mod, part:p, date:d, photo:url };
-    if(currentTechEditId) { let idx=appData.waterJobs.findIndex(x=>String(x.id)===String(currentTechEditId)); appData.waterJobs[idx]=j; currentTechEditId=null; currentTechEditPhoto=''; }
-    else appData.waterJobs.unshift(j);
-    await saveDataToLocal(); tech('water');
-}
-
-function deleteTechJob(id, t) { if(confirm("Are you sure you want to delete this job?")){ t==='computer'?appData.computerJobs=getArray(appData.computerJobs).filter(x=>String(x.id)!==String(id)):appData.waterJobs=getArray(appData.waterJobs).filter(x=>String(x.id)!==String(id)); saveDataToLocal().then(()=>tech(t)); } }
-function editTechJob(id, t) {
-    let arr = t==='computer'?getArray(appData.computerJobs):getArray(appData.waterJobs); let j = arr.find(x=>String(x.id)===String(id)); if(!j)return;
-    currentTechEditId = id;
-    if(t==='computer') {
-        document.getElementById('cLoc').value=j.location; 
-        document.getElementById('cShop').value=j.shop; 
-        document.getElementById('cDate').value=j.date; 
-        document.getElementById('cRemarks').value=j.remarks;
-        document.getElementById('partsContainer').innerHTML=''; 
-        getArray(j.parts).forEach(p=>addPartRow(p.part, p.serial, p.photo));
-        
-        let btn = document.getElementById('cSaveBtn');
-        if(btn) { btn.innerText="✏️ Update Job"; btn.style.background="#f39c12"; }
-    } else {
-        document.getElementById('wCust').value=j.customer; 
-        document.getElementById('wMob').value=j.mobile; 
-        document.getElementById('wModel').value=j.model; 
-        document.getElementById('wPart').value=j.part; 
-        document.getElementById('wDate').value=j.date; 
-        currentTechEditPhoto=j.photo;
-        
-        let btn = document.getElementById('wSaveBtn');
-        if(btn) { btn.innerText="✏️ Update Job"; btn.style.background="#f39c12"; }
-    }
-    window.scrollTo({top:0, behavior:'smooth'});
-}
-</script>
-</body>
-</html>
+# Save Configuration
+if st.button("Save Settings"):
+    # Selected month ko session state mein save karein
+    st.session_state['cf_month'] = selected_cf_month
+    st.success(f"✅ Settings Updated! Carry Forward ab '{selected_cf_month}' ke balance se calculate hoga.")
