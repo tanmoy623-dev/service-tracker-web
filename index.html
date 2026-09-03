@@ -1075,8 +1075,14 @@ async function savePartnerEntry(name) {
     if(!isVehicle && !det) return alert("Details are required!");
     if(file && !file.type.startsWith('image/')) return alert("⚠️ ERROR: Only image files are allowed!");
     
+    // --- NAYA FIX: Seamless Conversion ---
     if(currentEditId !== null && (isTransfer || isVehicle)) {
-        return alert("⚠️ You cannot select Transfer/Vehicle in edit mode. Please create a new entry!");
+        let oldR = getArray(appData.records[name]).find(r => r.id === currentEditId);
+        if (oldR) {
+            appData.balances[name] -= (oldR.type === 'income' ? oldR.amount : -oldR.amount);
+            appData.records[name] = getArray(appData.records[name]).filter(r => r.id !== currentEditId);
+        }
+        currentEditId = null; 
     }
 
     // --- NAYA DUPLICATE CHECK ---
@@ -1244,11 +1250,8 @@ function editEntry(id, type, name) {
 
         setEntryType(type); 
         
-        let tc = document.getElementById('transferCheckboxDiv');
-        if(tc) tc.style.display = 'none';
-
-        let qv = document.getElementById('quickVehicleDiv');
-        if(qv) qv.style.display = 'none';
+        let btn = document.getElementById('entrySaveBtn');
+        if(btn) { btn.innerText = "✏️ Update Entry"; btn.style.background = "#f39c12"; }
         
         window.scrollTo({ top: 0, behavior: 'smooth' }); 
     }
