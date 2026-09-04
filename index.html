@@ -134,7 +134,8 @@ function compressImage(file) {
                 canvas.width = width; canvas.height = height; ctx.drawImage(img, 0, 0, width, height);
                 resolve(canvas.toDataURL('image/jpeg', 0.7)); 
             };
-            img.onerror = () => resolve(''); img.src = event.target.result;
+            img.onerror = () => { alert("⚠️ File error! Please upload a valid image."); resolve(''); };
+            img.src = event.target.result;
         };
         reader.onerror = () => resolve(''); reader.readAsDataURL(file);
     });
@@ -922,7 +923,7 @@ async function saveVehicle() {
         let isDuplicateVeh = appData.vehicles.some(v => String(v.id) !== String(currentVehicleEditId) && v.date === date && v.amount === amount && v.car === car && v.category === category && (v.details || '-') === finalDetails);
         if(isDuplicateVeh) { btn.innerText = originalText; btn.disabled = false; return alert("❌ DUPLICATE ENTRY!\nThis exact vehicle expense has already been saved."); }
 
-        let newEntry = { id: currentVehicleEditId || Date.now(), date, car, category, details: finalDetails, amount, photo: photoUrl || '', paidBy };
+        let newEntry = { id: currentVehicleEditId || Date.now(), date, car, category, details: finalDetails, amount: amt, photo: photoUrl || '', paidBy };
         let partnerDesc = details ? `🚗 ${car} - ${category} (${details})` : `🚗 ${car} - ${category}`;
 
         if(currentVehicleEditId) {
