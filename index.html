@@ -211,6 +211,53 @@ input, select {
 }
 input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12); }
 
+
+/* PARTNER BALANCE & ENTRY TYPE GRIDS (MOBILE-RESPONSIVE) */
+.partner-bal-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  text-align: center;
+}
+
+.entry-type-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.entry-type-grid button {
+  width: 100%;
+  padding: 10px 6px;
+  font-size: 13px;
+  white-space: nowrap;
+  justify-content: center;
+}
+
+@media (max-width: 640px) {
+  .partner-bal-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .partner-bal-grid .total-cash-box {
+    grid-column: 1 / -1;
+    order: -1;
+    padding: 14px !important;
+  }
+  .partner-bal-grid .total-cash-box b {
+    font-size: 24px !important;
+  }
+  .entry-type-grid {
+    gap: 6px;
+  }
+  .entry-type-grid button {
+    padding: 8px 4px;
+    font-size: 11.5px;
+    letter-spacing: -0.2px;
+  }
+}
+
 /* Scrollbars */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -654,7 +701,7 @@ function partnerProfile(name){
     <datalist id="dlPartnerDetails">${detailsSuggest}</datalist><datalist id="dlPendingBills">${pendingBills}</datalist>
     <div class="card"><h2>👨‍💼 Partner Profile — ${name}</h2><div id="partnerBalArea"></div></div>
     <div class="card"><h2>＋ Add Entry for ${name}</h2>
-        <div class="grid" style="grid-template-columns: 1fr 1fr 1fr;"><button id="incomeBtn" onclick="setEntryType('income')">Income</button><button id="expenseBtn" class="alt" onclick="setEntryType('expense')">Expenditure</button><button id="profitBtn" class="alt" onclick="setEntryType('profit')">Profit Book</button></div>
+        <div class="entry-type-grid"><button id="incomeBtn" onclick="setEntryType('income')">Income</button><button id="expenseBtn" class="alt" onclick="setEntryType('expense')">Expenditure</button><button id="profitBtn" class="alt" onclick="setEntryType('profit')">Profit Book</button></div>
         <div id="transferCheckboxDiv" style="margin:12px 0; background:#eff7f3; border:1px solid #cce3d8; padding:12px; border-radius:8px; display:none;"><label style="font-weight:bold; color:#176b4d; display:flex; align-items:center; cursor:pointer; margin:0;"><input type="checkbox" id="transferCheckbox" style="width:auto; margin:0 10px 0 0; transform:scale(1.2);"> 🔄 Transfer to ${name === 'Tanmoy' ? 'Tapabrata' : 'Tanmoy'}</label></div>
         <div id="quickVehicleDiv" style="margin:12px 0; background:#fdf2e9; border:1px solid #f5cba7; padding:12px; border-radius:8px; display:none;"><label style="font-weight:bold; color:#d35400; display:flex; align-items:center; cursor:pointer; margin:0;"><input type="checkbox" id="isVehicleExpense" style="width:auto; margin:0 10px 0 0; transform:scale(1.2);" onchange="document.getElementById('vehicleOptions').style.display = this.checked ? 'flex' : 'none'"> 🚗 Add as Vehicle Expense?</label><div id="vehicleOptions" style="display:none; gap:10px; flex-wrap:wrap; margin-top:10px;"><div style="flex:1; min-width:120px;"><label style="font-size:12px; margin-bottom:4px; display:block;">Select Car</label><select id="qvCar" style="margin:0;"><option value="Tcl car">Tcl car</option><option value="Dcl car">Dcl car</option></select></div><div style="flex:1; min-width:120px;"><label style="font-size:12px; margin-bottom:4px; display:block;">Category</label><select id="qvCategory" style="margin:0;"><option value="Fuel">⛽ Fuel</option><option value="Maintenance">🛠️ Maintenance</option><option value="Toll/Parking">🎫 Toll/Parking</option><option value="Other">📝 Other</option></select></div></div></div>
         <div id="billNoDiv" style="margin:6px 0 12px; display:block;"><label style="display:block; margin-bottom:4px;">Bill No. <span style="font-size:11px; font-weight:normal; color:#555;">(Optional)</span></label><input id="entryBillNo" list="dlPendingBills" placeholder="Optional Bill No..." style="margin:0;"></div>
@@ -708,7 +755,27 @@ function renderPartnerData(name) {
     }
     let totalCashInHand = cfBalance + currentNetBalance; let balTitleText = (globalMonth && globalMonth !== 'All Time') ? `Financial Summary (${globalMonth})` : `Overall Summary (All Time)`;
 
-    document.getElementById('partnerBalArea').innerHTML = `<div style="background:#eff7f3; padding:15px; border-radius:12px; margin-bottom:10px; border:1px solid #cce3d8;"><div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #cce3d8; padding-bottom:10px; margin-bottom:12px; flex-wrap:wrap; gap:10px;"><span style="font-weight:bold; color:#176b4d; font-size:15px;">💰 ${balTitleText}</span>${generateMiniMonthDropdown(globalMonth)}</div><div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap:10px; text-align:center;"><div style="background:#fff; padding:10px; border-radius:8px; border:1px solid #cce3d8;"><span style="font-size:11px; color:#555; display:block; margin-bottom:4px;">Previous Balance (CF)</span><b class="${cfBalance >= 0 ? 'positive' : 'negative'}" style="font-size:15px;">₹${cfBalance.toLocaleString('en-IN')}</b></div><div style="background:#fff; padding:10px; border-radius:8px; border:1px solid #cce3d8;"><span style="font-size:11px; color:#555; display:block; margin-bottom:4px;">Net This Month</span><b class="${currentNetBalance >= 0 ? 'positive' : 'negative'}" style="font-size:15px;">₹${currentNetBalance.toLocaleString('en-IN')}</b></div><div style="background:#fff; padding:10px; border-radius:8px; border:2px solid #176b4d; box-shadow:0 2px 4px #0002;"><span style="font-size:12px; font-weight:bold; color:#17352b; display:block; margin-bottom:4px;">Total Cash In Hand</span><b class="${totalCashInHand >= 0 ? 'positive' : 'negative'}" style="font-size:18px;">₹${totalCashInHand.toLocaleString('en-IN')}</b></div></div></div>`;
+    document.getElementById('partnerBalArea').innerHTML = `
+    <div style="background:#f8fafc; padding:16px; border-radius:14px; margin-bottom:12px; border:1px solid #e2e8f0; box-shadow:var(--shadow-xs);">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e2e8f0; padding-bottom:10px; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+            <span style="font-weight:700; color:#0f172a; font-size:14.5px;">💰 ${balTitleText}</span>
+            ${generateMiniMonthDropdown(globalMonth)}
+        </div>
+        <div class="partner-bal-grid">
+            <div class="total-cash-box" style="background:#ecfdf5; padding:12px 14px; border-radius:10px; border:2px solid #059669; box-shadow:var(--shadow-xs);">
+                <span style="font-size:11.5px; font-weight:700; color:#065f46; display:block; margin-bottom:2px; text-transform:uppercase; letter-spacing:0.5px;">Total Cash In Hand</span>
+                <b class="${totalCashInHand >= 0 ? 'positive' : 'negative'}" style="font-size:22px; word-break:break-all;">₹${totalCashInHand.toLocaleString('en-IN')}</b>
+            </div>
+            <div style="background:#ffffff; padding:10px 8px; border-radius:10px; border:1px solid #cbd5e1;">
+                <span style="font-size:11px; color:#64748b; display:block; margin-bottom:4px; font-weight:600;">Previous (CF)</span>
+                <b class="${cfBalance >= 0 ? 'positive' : 'negative'}" style="font-size:15px;">₹${cfBalance.toLocaleString('en-IN')}</b>
+            </div>
+            <div style="background:#ffffff; padding:10px 8px; border-radius:10px; border:1px solid #cbd5e1;">
+                <span style="font-size:11px; color:#64748b; display:block; margin-bottom:4px; font-weight:600;">Net This Month</span>
+                <b class="${currentNetBalance >= 0 ? 'positive' : 'negative'}" style="font-size:15px;">₹${currentNetBalance.toLocaleString('en-IN')}</b>
+            </div>
+        </div>
+    </div>`;
     setTimeout(() => { 
         calcGroupTotal('inc'); calcGroupTotal('exp'); calcGroupTotal('prof');
         let pt = document.getElementById('profTable');
