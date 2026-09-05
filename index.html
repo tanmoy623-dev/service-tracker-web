@@ -14,59 +14,33 @@
 :root {
   --primary: #2563eb;
   --primary-hover: #1d4ed8;
-  --primary-light: #eff6ff;
-  --primary-border: #bfdbfe;
-  
   --emerald: #059669;
   --emerald-hover: #047857;
-  --emerald-light: #ecfdf5;
-  --emerald-border: #a7f3d0;
-  
   --rose: #e11d48;
-  --rose-hover: #be123c;
-  --rose-light: #fff1f2;
-  --rose-border: #fecdd3;
-  
   --purple: #7c3aed;
-  --purple-hover: #6d28d9;
-  --purple-light: #f5f3ff;
-  --purple-border: #ddd6fe;
-
   --amber: #d97706;
-  --amber-hover: #b45309;
-  --amber-light: #fffbeb;
-  --amber-border: #fde68a;
-
   --slate-50: #f8fafc;
   --slate-100: #f1f5f9;
   --slate-200: #e2e8f0;
   --slate-300: #cbd5e1;
-  --slate-400: #94a3b8;
   --slate-500: #64748b;
-  --slate-600: #475569;
   --slate-700: #334155;
   --slate-800: #1e293b;
   --slate-900: #0f172a;
-
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 20px;
-
   --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.07), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.03);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.07);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
 }
 
 * { box-sizing: border-box; }
 
-
 body {
   font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   margin: 0;
-  background-color: #0f172a; /* Deep dark/slate base for rich contrast */
   background-color: #f8fafc;
   background-image: 
     radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
@@ -78,67 +52,24 @@ body {
   background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 24px 24px;
   background-attachment: fixed;
   color: var(--slate-800);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
   line-height: 1.5;
   position: relative;
   min-height: 100vh;
 }
 
-/* DECORATIVE AMBIENT BACKGROUND GLOW ORBS */
+/* Background Ambient Orbs */
 .bg-decorations {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: -1;
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  overflow: hidden; pointer-events: none; z-index: -1;
 }
+.bg-orb { position: absolute; border-radius: 50%; filter: blur(90px); opacity: 0.6; }
+.bg-orb-1 { width: 500px; height: 500px; background: rgba(99, 102, 241, 0.3); top: -100px; left: -100px; }
+.bg-orb-2 { width: 450px; height: 450px; background: rgba(16, 185, 129, 0.25); top: 100px; right: -100px; }
+.bg-orb-3 { width: 550px; height: 550px; background: rgba(236, 72, 153, 0.2); bottom: -150px; left: 30%; }
 
-.bg-orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(90px);
-  opacity: 0.65;
-  animation: floatOrb 20s ease-in-out infinite alternate;
-}
+.app { max-width: 1240px; margin: 0 auto; padding: 24px 20px; }
 
-.bg-orb-1 {
-  width: 550px;
-  height: 550px;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.35), rgba(79, 70, 229, 0.05));
-  top: -150px;
-  left: -100px;
-}
-
-.bg-orb-2 {
-  width: 500px;
-  height: 500px;
-  background: radial-gradient(circle, rgba(16, 185, 129, 0.30), rgba(5, 150, 105, 0.05));
-  top: 100px;
-  right: -120px;
-  animation-duration: 25s;
-  animation-direction: alternate-reverse;
-}
-
-.bg-orb-3 {
-  width: 600px;
-  height: 600px;
-  background: radial-gradient(circle, rgba(236, 72, 153, 0.22), rgba(217, 70, 239, 0.05));
-  bottom: -180px;
-  left: 25%;
-  animation-duration: 22s;
-}
-
-@keyframes floatOrb {
-  0% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(30px, 40px) scale(1.08); }
-  100% { transform: translate(-20px, 20px) scale(0.95); }
-}
-
-/* GLASSMORPHISM CARD STYLING */
+/* Glassmorphism Cards */
 .card {
   background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(16px);
@@ -146,450 +77,133 @@ body {
   padding: 24px;
   border-radius: var(--radius-lg);
   margin: 18px 0;
-  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05), 0 8px 10px -6px rgba(15, 23, 42, 0.03);
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.9);
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
-.card:hover {
-  box-shadow: 0 16px 30px -6px rgba(15, 23, 42, 0.08), 0 10px 12px -6px rgba(15, 23, 42, 0.04);
-}
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
 
-.app {
-  max-width: 1240px;
-  margin: 0 auto;
-  padding: 24px 20px;
-}
-
-/* CARDS */
-.card {
-  background: #ffffff;
-  padding: 24px;
-  border-radius: var(--radius-lg);
-  margin: 18px 0;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--slate-200);
-  transition: box-shadow 0.2s ease;
-}
-
-.card h1 {
-  margin: 0 0 8px 0;
-  font-size: 26px;
-  font-weight: 800;
-  color: var(--slate-900);
-  letter-spacing: -0.5px;
-}
-
-.card h2 {
-  margin: 0 0 16px 0;
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--slate-900);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  letter-spacing: -0.3px;
-}
-
-.card h3 {
-  margin: 0 0 12px 0;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--slate-700);
-}
-
-/* GRIDS */
-.grid {
+/* MONTHLY RECORDS GRID FIX: PREVENTS OVERFLOW & NEATLY WRAPS */
+#recordsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
+  gap: 20px;
+  width: 100%;
+  max-width: 100%;
 }
 
 .dual-records-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
 }
 
 .tri-records-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
 }
 
-/* STATS */
-.stat {
-  background: #ffffff;
-  border: 1px solid var(--slate-200);
-  padding: 18px 20px;
-  border-radius: var(--radius-md);
-  position: relative;
+#recordsGrid > div {
+  min-width: 0;
+  max-width: 100%;
   overflow: hidden;
-  box-shadow: var(--shadow-xs);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.stat:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+#recordsGrid table {
+  width: 100%;
 }
 
-.stat span {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--slate-500);
-  display: block;
+/* When 3 tables exist, if screen width is limited (< 1280px), Profit Booked spans cleanly below Income & Expense */
+@media (max-width: 1280px) {
+  .tri-records-grid #profTable {
+    grid-column: 1 / -1;
+  }
 }
 
-.stat b {
-  display: block;
-  font-size: 26px;
-  font-weight: 800;
-  margin-top: 8px;
-  letter-spacing: -0.5px;
-  color: var(--slate-900);
+/* Tabs - Auto Wrap (No Side Scroll) */
+.nav-tab-container {
+  display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 0 0 0;
+  margin-top: 16px; overflow: visible;
+}
+.nav-tab {
+  flex: 1 1 auto; min-width: 95px; text-align: center;
+  padding: 10px 14px; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 600; border: none; cursor: pointer;
+  transition: all 0.15s ease; white-space: nowrap;
 }
 
+/* Stats */
+.stat {
+  background: #ffffff; border: 1px solid var(--slate-200);
+  padding: 18px 20px; border-radius: var(--radius-md); box-shadow: var(--shadow-xs);
+}
+.stat span { font-size: 13px; font-weight: 600; color: var(--slate-500); display: block; }
+.stat b { display: block; font-size: 26px; font-weight: 800; margin-top: 8px; color: var(--slate-900); }
 .positive { color: var(--emerald) !important; font-weight: 800; }
 .negative { color: var(--rose) !important; font-weight: 800; }
 
-/* BUTTONS */
+/* Buttons */
 button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 10px 16px;
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: var(--emerald);
-  color: #ffffff;
-  font-family: inherit;
-  font-size: 13.5px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: var(--shadow-xs);
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 6px; padding: 10px 16px; border: 0; border-radius: var(--radius-sm);
+  background: var(--emerald); color: #ffffff; font-family: inherit;
+  font-size: 13.5px; font-weight: 600; cursor: pointer; transition: all 0.18s ease;
 }
+button:hover { background: var(--emerald-hover); }
+button.alt { background: var(--slate-100); color: var(--slate-700); border: 1px solid var(--slate-200); }
+button:disabled { background: var(--slate-300) !important; cursor: not-allowed; }
 
-button:hover {
-  background: var(--emerald-hover);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
-}
-
-button:active {
-  transform: translateY(0);
-}
-
-button.alt {
-  background: var(--slate-100);
-  color: var(--slate-700);
-  box-shadow: none;
-  border: 1px solid var(--slate-200);
-}
-
-button.alt:hover {
-  background: var(--slate-200);
-  color: var(--slate-900);
-}
-
-button:disabled {
-  background: var(--slate-300) !important;
-  color: var(--slate-500) !important;
-  cursor: not-allowed;
-  opacity: 0.7;
-  transform: none !important;
-  box-shadow: none !important;
-}
-
-/* FORMS & INPUTS */
-label {
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--slate-600);
-  margin-bottom: 6px;
-  display: block;
-}
-
+/* Inputs */
+label { font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--slate-600); margin-bottom: 6px; display: block; }
 input, select {
-  width: 100%;
-  padding: 10px 14px;
-  margin: 4px 0 14px;
-  border: 1.5px solid var(--slate-200);
-  border-radius: var(--radius-sm);
-  box-sizing: border-box;
-  font-family: inherit;
-  font-size: 14px;
-  color: var(--slate-800);
-  background-color: #ffffff;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-  outline: none;
+  width: 100%; padding: 10px 14px; margin: 4px 0 14px;
+  border: 1.5px solid var(--slate-200); border-radius: var(--radius-sm);
+  font-family: inherit; font-size: 14px; background-color: #ffffff; outline: none;
 }
+input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12); }
 
-input:focus, select:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
-}
-
-input::placeholder {
-  color: var(--slate-400);
-}
-
-input[type="file"] {
-  padding: 8px 12px;
-  background: var(--slate-50);
-  border: 1.5px dashed var(--slate-300);
-  cursor: pointer;
-}
-
-input[type="file"]::-webkit-file-upload-button {
-  background: var(--slate-200);
-  color: var(--slate-700);
-  border: none;
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-weight: 600;
-  font-size: 12px;
-  cursor: pointer;
-  margin-right: 10px;
-  transition: background 0.15s;
-}
-
-input[type="file"]::-webkit-file-upload-button:hover {
-  background: var(--slate-300);
-}
-
-/* TABLES */
-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-}
-
+/* Tables */
+table { width: 100%; border-collapse: separate; border-spacing: 0; }
 th {
-  background: var(--slate-50);
-  color: var(--slate-500);
-  font-size: 11.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 12px 14px;
-  border-bottom: 1.5px solid var(--slate-200);
-  text-align: left;
+  background: var(--slate-50); color: var(--slate-500); font-size: 11.5px;
+  font-weight: 700; text-transform: uppercase; padding: 12px 14px;
+  border-bottom: 1.5px solid var(--slate-200); text-align: left;
 }
+td { padding: 12px 14px; border-bottom: 1px solid var(--slate-100); font-size: 13.5px; color: var(--slate-700); }
+tbody tr:hover { background-color: #f8fafc; }
 
-td {
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--slate-100);
-  font-size: 13.5px;
-  vertical-align: middle;
-  color: var(--slate-700);
-}
-
-tbody tr:hover {
-  background-color: #f8fafc;
-}
-
-/* SCROLL LIST & CONTAINERS */
-.scroll-list {
-  max-height: 280px;
-  overflow-y: auto;
-  overflow-x: auto;
-  background: #ffffff;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--slate-200);
-  margin-top: 12px;
-  box-shadow: var(--shadow-xs);
-}
-
-.part-row-box {
-  background: var(--slate-50);
-  padding: 16px;
-  border: 1.5px solid var(--slate-200);
-  border-radius: var(--radius-md);
-  margin-bottom: 14px;
-}
-
-.b-qty, .b-rate, .b-desc {
-  margin: 0 !important;
-  padding: 8px 10px !important;
-}
-
-.bill-table th {
-  background: var(--slate-50);
-  color: var(--slate-700);
-}
+/* Scrollbars */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
 
 .hidden { display: none !important; }
 
-/* TOP HEADER */
-.top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #ffffff;
-  border-radius: var(--radius-lg);
-  padding: 18px 24px;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--slate-200);
-}
-
-/* LOGIN SCREEN */
-.login-card {
-  max-width: 600px;
-  margin: 40px auto;
-  padding: 36px 32px;
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-xl);
-  border: 1px solid var(--slate-200);
-  background: #ffffff;
-}
-
-.login-header {
-  text-align: center;
-  margin-bottom: 28px;
-}
-
-.login-header .logo-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
-  color: white;
-  font-size: 28px;
-  margin-bottom: 14px;
-  box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.35);
-}
-
-.login-header h1 {
-  font-size: 26px;
-  margin: 0 0 6px 0;
-  font-weight: 800;
-  color: var(--slate-900);
-  letter-spacing: -0.5px;
-}
-
-.login-header p {
-  font-size: 14px;
-  color: var(--slate-500);
-  margin: 0;
-}
-
-.partner-group {
-  border: 1.5px solid var(--slate-200);
-  border-radius: var(--radius-md);
-  padding: 20px;
-  background: var(--slate-50);
-  transition: all 0.2s ease;
-}
-
-.partner-group:hover {
-  border-color: var(--primary);
-  background: #ffffff;
-  box-shadow: var(--shadow-md);
-}
-
-.partner-group h3 {
-  margin: 0 0 14px 0;
-  color: var(--slate-900);
-  font-size: 16px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 700;
-}
-
-.role {
-  padding: 20px;
-  border: 1.5px solid var(--slate-200);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  background: var(--slate-50);
-  transition: all 0.2s ease;
-}
-
-.role:hover {
-  border-color: var(--primary);
-  background: var(--primary-light);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-
-/* NAV TABS - WRAP NATURALLY WITHOUT SCROLLBAR */
-.nav-tab-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 4px 0 0 0;
-  margin-top: 16px;
-  overflow: visible;
-}
-
-.nav-tab {
-  flex: 1 1 auto;
-  min-width: 95px;
-  text-align: center;
-  padding: 10px 14px;
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-}
-
-/* CUSTOM MODERN SUBTLE SCROLLBARS GLOBALLY */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
-
-/* RESPONSIVENESS */
 @media (max-width: 768px) {
   .app { padding: 12px; }
-  .card { padding: 16px; margin: 12px 0; border-radius: var(--radius-md); }
-  .tri-records-grid, .dual-records-grid { grid-template-columns: 1fr; gap: 14px; }
+  .card { padding: 16px; margin: 12px 0; }
+  #recordsGrid { grid-template-columns: 1fr !important; gap: 14px; }
+  #recordsGrid > div { grid-column: auto !important; }
   td, th { padding: 8px 6px; font-size: 12px; }
-  table button { padding: 5px 8px !important; font-size: 11px !important; margin: 2px; }
-  td:nth-child(2) { font-size: 12px; }
-  .recon-cell { padding: 4px !important; font-size: 15px !important; }
-  .stat b { font-size: 20px; }
-  .login-card { margin: 20px auto; padding: 24px 18px; }
+  table button { padding: 4px 6px !important; font-size: 11px !important; margin: 0 2px; }
 }
 
 </style>
 </head>
 <body>
-<div class="bg-decorations"><div class="bg-orb bg-orb-1"></div><div class="bg-orb bg-orb-2"></div><div class="bg-orb bg-orb-3"></div></div>
+
+<div class="bg-decorations">
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+  <div class="bg-orb bg-orb-3"></div>
+</div>
 
 <div class="app">
     <section id="login" class="card login-card">
-        <div class="login-header">
-            <div class="logo-badge">💼</div>
-            <h1>Service Tracker</h1>
-            <p>Business Operations & Financial Management Portal</p>
+        <div class="login-header" style="text-align:center; margin-bottom:24px;">
+            <div style="width:54px; height:54px; border-radius:16px; background:linear-gradient(135deg, #2563eb, #1d4ed8); color:white; font-size:26px; display:inline-flex; align-items:center; justify-content:center; margin-bottom:12px; box-shadow:0 10px 20px -5px rgba(37, 99, 235, 0.35);">💼</div>
+            <h1 style="margin:0 0 6px 0; font-size:24px; font-weight:800; color:var(--slate-900);">Service Tracker</h1>
+            <p style="margin:0; font-size:13.5px; color:var(--slate-500);">Business Operations & Financial Management Portal</p>
         </div>
         <div class="grid" style="gap: 16px;">
-            <div class="partner-group">
-                <h3>🔐 Admin Portal</h3>
+            <div class="partner-group" style="border: 1.5px solid var(--slate-200); border-radius: var(--radius-md); padding: 20px; background: var(--slate-50);">
+                <h3 style="margin:0 0 12px 0;">🔐 Admin Portal</h3>
                 <label for="loginPartnerSelect" style="margin-bottom: 4px;">Select Account</label>
                 <select id="loginPartnerSelect">
                     <option value="Tanmoy">Tanmoy</option>
@@ -597,7 +211,7 @@ tbody tr:hover {
                 </select>
                 <button onclick="dropdownPartnerLogin()" style="width:100%; margin-top:6px; background: var(--primary);">Login to Admin</button>
             </div>
-            <div class="role" onclick="techLoginPrompt()" style="display:flex; flex-direction:column; justify-content:center;">
+            <div class="role" onclick="techLoginPrompt()" style="display:flex; flex-direction:column; justify-content:center; padding:20px; border:1.5px solid var(--slate-200); border-radius:var(--radius-md); cursor:pointer; background:var(--slate-50);">
                 <div>
                     <span style="font-size:24px; display:block; margin-bottom:8px;">👷</span>
                     <b style="font-size:16px; color:var(--slate-900);">Technician Portal</b><br>
@@ -607,7 +221,7 @@ tbody tr:hover {
         </div>
     </section>
     <section id="dash" class="hidden">
-        <div class="card top">
+        <div class="card top" style="display:flex; justify-content:space-between; align-items:center; padding:18px 24px;">
             <div style="display:flex; align-items:center; gap:12px;">
                 <span style="font-size:24px;">💼</span>
                 <h1 id="head" style="margin:0; font-size:20px; font-weight:800; letter-spacing:-0.3px;">Dashboard</h1>
@@ -622,6 +236,7 @@ tbody tr:hover {
 </div>
 
 <script>
+
 // --- FIREBASE CONFIGURATION ---
 const firebaseConfig = { apiKey: "AIzaSyCAhAQcsnGqPTiScGJVbNR57Mbnn9jdfdU", authDomain: "servicetracker-e4887.firebaseapp.com", databaseURL: "https://servicetracker-e4887-default-rtdb.firebaseio.com/", projectId: "servicetracker-e4887", storageBucket: "servicetracker-e4887.firebasestorage.app", messagingSenderId: "64365607107", appId: "1:64365607107:web:12e4da7d9c918ad6f38a76" };
 firebase.initializeApp(firebaseConfig); const db = firebase.database(); const IMGBB_API_KEY = "2291e363544930c9291f5bf04d9e9432"; 
@@ -760,7 +375,10 @@ function showAdminOverview() {
     let tanDataMonth = getMonthData('Tanmoy', selectedMonthText); let tapDataMonth = getMonthData('Tapabrata', selectedMonthText); let tanBalToDisplay = 0; let tapBalToDisplay = 0;
     if (selectedMonthText === "All Time") { getArray(appData.records['Tanmoy']).forEach(r => { if (appData.config?.enablePastCF || r.date >= cutoffDate) tanBalToDisplay += (r.type==='income' ? parseFloat(r.amount) : -parseFloat(r.amount)); }); getArray(appData.records['Tapabrata']).forEach(r => { if (appData.config?.enablePastCF || r.date >= cutoffDate) tapBalToDisplay += (r.type==='income' ? parseFloat(r.amount) : -parseFloat(r.amount)); }); } else { tanBalToDisplay = tanDataMonth.net; tapBalToDisplay = tapDataMonth.net; }
     let tanData = getHistoricalBal('Tanmoy', selectedMonthText); let tapData = getHistoricalBal('Tapabrata', selectedMonthText); let carryTextTanmoy = selectedMonthText === "All Time" ? "₹0" : "₹" + tanData.bal.toLocaleString('en-IN'); let carryTextTapabrata = selectedMonthText === "All Time" ? "₹0" : "₹" + tapData.bal.toLocaleString('en-IN');
-    let billList = getArray(appData.submittedBills); let pendingBillsArr = billList.filter(b => !b.isPaid); let pendingBillAmt = pendingBillsArr.reduce((sum, b) => sum + (parseFloat(b.amount) || 0), 0);
+    let tanTotalCash = (selectedMonthText === "All Time") ? tanBalToDisplay : (tanData.bal + tanBalToDisplay);
+    let tapTotalCash = (selectedMonthText === "All Time") ? tapBalToDisplay : (tapData.bal + tapBalToDisplay);
+    
+let billList = getArray(appData.submittedBills); let pendingBillsArr = billList.filter(b => !b.isPaid); let pendingBillAmt = pendingBillsArr.reduce((sum, b) => sum + (parseFloat(b.amount) || 0), 0);
     let pendingBillsHTML = `<div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse; font-size:13px;"><tr style="background:#f5eef8; color:#8e44ad; text-align:left;"><th style="padding:8px; border-bottom:1px solid #ddd;">Date</th><th style="padding:8px; border-bottom:1px solid #ddd;">Location / Party</th><th style="padding:8px; border-bottom:1px solid #ddd;">Bill No. & Period</th><th style="padding:8px; border-bottom:1px solid #ddd;">Amount</th></tr>`; if (pendingBillsArr.length > 0) { pendingBillsHTML += pendingBillsArr.map(b => `<tr><td style="padding:8px; border-bottom:1px solid #eee;">${formatDate(b.date)}</td><td style="padding:8px; border-bottom:1px solid #eee;"><strong>${b.location}</strong></td><td style="padding:8px; border-bottom:1px solid #eee;">${b.billNo}${b.period ? `<br><span style="font-size:11px;color:#555;">${b.period}</span>` : ''}</td><td style="padding:8px; border-bottom:1px solid #eee; font-weight:bold; color:#e21d4f;">₹${b.amount}</td></tr>`).join(''); } else pendingBillsHTML += `<tr><td colspan="4" style="text-align:center; padding:15px; color:#888;">All bills paid! 💸</td></tr>`; pendingBillsHTML += `</table></div>`;
     let invRecords = getArray(appData.invoices); let pendingInvArr = invRecords.filter(i => !i.isPaid); let pendingInvAmt = pendingInvArr.reduce((sum, i) => sum + (parseFloat(i.gTotal) || 0), 0);
     let pendingInvHTML = `<div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse; font-size:13px;"><tr style="background:#fcf3cf; color:#d35400; text-align:left;"><th style="padding:8px; border-bottom:1px solid #ddd;">Date</th><th style="padding:8px; border-bottom:1px solid #ddd;">Voucher No.</th><th style="padding:8px; border-bottom:1px solid #ddd;">Name</th><th style="padding:8px; border-bottom:1px solid #ddd;">Amount</th></tr>`; if (pendingInvArr.length > 0) { pendingInvHTML += pendingInvArr.map(i => `<tr><td style="padding:8px; border-bottom:1px solid #eee;">${i.date || '-'}</td><td style="padding:8px; border-bottom:1px solid #eee;"><strong>${i.invNo}</strong></td><td style="padding:8px; border-bottom:1px solid #eee;"><strong>${i.bName}</strong></td><td style="padding:8px; border-bottom:1px solid #eee; font-weight:bold; color:#e21d4f;">₹${i.gTotal}</td></tr>`).join(''); } else pendingInvHTML += `<tr><td colspan="4" style="text-align:center; padding:15px; color:#888;">No pending petty cash records! ✅</td></tr>`; pendingInvHTML += `</table></div>`;
@@ -768,46 +386,80 @@ function showAdminOverview() {
     let ongoingPOsHTML = `<div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse; font-size:13px;"><tr style="background:#d4e6f1; color:#2980b9; text-align:left;"><th style="padding:8px; border-bottom:1px solid #ddd;">Issue Date</th><th style="padding:8px; border-bottom:1px solid #ddd;">Authority</th><th style="padding:8px; border-bottom:1px solid #ddd;">PO No.</th><th style="padding:8px; border-bottom:1px solid #ddd;">Amount</th></tr>`; if(ongoingPOs.length > 0) { ongoingPOsHTML += ongoingPOs.map(p => `<tr><td style="padding:8px; border-bottom:1px solid #eee;">${formatDate(p.date)}</td><td style="padding:8px; border-bottom:1px solid #eee;"><strong>${p.authority}</strong></td><td style="padding:8px; border-bottom:1px solid #eee;">${p.poNo}</td><td style="padding:8px; border-bottom:1px solid #eee; font-weight:bold; color:#e67e22;">₹${p.amount}</td></tr>`).join(''); } else ongoingPOsHTML += `<tr><td colspan="4" style="text-align:center; padding:15px; color:#888;">No ongoing POs! 🎉</td></tr>`; ongoingPOsHTML += `</table></div>`;
     document.getElementById('profileArea').innerHTML = `
     <div class="card">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
-            <h2 style="margin:0;">📊 Partner Financial Overview</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:10px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:22px;">📊</span>
+                <h2 style="margin:0; font-size:18px;">Partner Financial Overview</h2>
+            </div>
             <div>${generateMiniMonthDropdown(selectedMonthText)}</div>
         </div>
-        <div class="grid">
-            <div class="stat" style="border-top:3px solid #2563eb; background:#ffffff;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-size:13px; color:#475569; font-weight:700;">Tanmoy's Balance</span>
-                    <span style="font-size:11px; background:#eff6ff; color:#2563eb; padding:2px 8px; border-radius:999px; font-weight:700;">Active</span>
+        <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px;">
+            <!-- Tanmoy Card -->
+            <div class="stat" style="border: 1.5px solid #bfdbfe; background:#ffffff; border-radius:14px; padding:20px; box-shadow:var(--shadow-sm);">
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding-bottom:12px; margin-bottom:14px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div style="width:40px; height:40px; border-radius:10px; background:#eff6ff; color:#2563eb; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700;">👨‍💼</div>
+                        <div>
+                            <h3 style="margin:0; font-size:16px; color:#0f172a; font-weight:700;">Tanmoy</h3>
+                            <span style="font-size:12px; color:#64748b;">Partner Account</span>
+                        </div>
+                    </div>
+                    <button onclick="partnerProfile('Tanmoy')" style="padding:5px 12px; font-size:12px; background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe; border-radius:6px; box-shadow:none;">View Ledger →</button>
                 </div>
-                <b class="${tanBalToDisplay >= 0 ? 'positive' : 'negative'}">₹${tanBalToDisplay.toLocaleString('en-IN')}</b>
-                <div style="font-size:12px; color:#7c3aed; margin-top:10px; display:flex; justify-content:space-between; align-items:center; border-top:1px solid #f1f5f9; padding-top:8px;">
-                    <span>🟣 Profit Booked:</span>
-                    <b style="font-size:13px; color:#7c3aed; margin:0;">₹${tanDataMonth.prof.toLocaleString('en-IN')}</b>
+                
+                <div style="margin-bottom:16px;">
+                    <span style="font-size:12px; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Total Cash In Hand</span>
+                    <b class="${tanTotalCash >= 0 ? 'positive' : 'negative'}" style="font-size:28px; margin-top:2px;">₹${tanTotalCash.toLocaleString('en-IN')}</b>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; background:#f8fafc; padding:10px; border-radius:10px; border:1px solid #e2e8f0; text-align:center;">
+                    <div>
+                        <span style="font-size:11px; color:#64748b; display:block; font-weight:600;">Prev CF (${tanData.month.split(' ')[0]})</span>
+                        <strong class="${tanData.bal >= 0 ? 'positive' : 'negative'}" style="font-size:13.5px;">₹${tanData.bal.toLocaleString('en-IN')}</strong>
+                    </div>
+                    <div style="border-left:1px solid #e2e8f0; border-right:1px solid #e2e8f0;">
+                        <span style="font-size:11px; color:#64748b; display:block; font-weight:600;">This Month</span>
+                        <strong class="${tanBalToDisplay >= 0 ? 'positive' : 'negative'}" style="font-size:13.5px;">₹${tanBalToDisplay.toLocaleString('en-IN')}</strong>
+                    </div>
+                    <div>
+                        <span style="font-size:11px; color:#7c3aed; display:block; font-weight:600;">Profit Booked</span>
+                        <strong style="font-size:13.5px; color:#7c3aed;">₹${tanDataMonth.prof.toLocaleString('en-IN')}</strong>
+                    </div>
                 </div>
             </div>
-            <div class="stat" style="border-top:3px solid #059669; background:#ffffff;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-size:13px; color:#475569; font-weight:700;">Tapabrata's Balance</span>
-                    <span style="font-size:11px; background:#ecfdf5; color:#059669; padding:2px 8px; border-radius:999px; font-weight:700;">Active</span>
+
+            <!-- Tapabrata Card -->
+            <div class="stat" style="border: 1.5px solid #a7f3d0; background:#ffffff; border-radius:14px; padding:20px; box-shadow:var(--shadow-sm);">
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding-bottom:12px; margin-bottom:14px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div style="width:40px; height:40px; border-radius:10px; background:#ecfdf5; color:#059669; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700;">👨‍💼</div>
+                        <div>
+                            <h3 style="margin:0; font-size:16px; color:#0f172a; font-weight:700;">Tapabrata</h3>
+                            <span style="font-size:12px; color:#64748b;">Partner Account</span>
+                        </div>
+                    </div>
+                    <button onclick="partnerProfile('Tapabrata')" style="padding:5px 12px; font-size:12px; background:#ecfdf5; color:#059669; border:1px solid #a7f3d0; border-radius:6px; box-shadow:none;">View Ledger →</button>
                 </div>
-                <b class="${tapBalToDisplay >= 0 ? 'positive' : 'negative'}">₹${tapBalToDisplay.toLocaleString('en-IN')}</b>
-                <div style="font-size:12px; color:#7c3aed; margin-top:10px; display:flex; justify-content:space-between; align-items:center; border-top:1px solid #f1f5f9; padding-top:8px;">
-                    <span>🟣 Profit Booked:</span>
-                    <b style="font-size:13px; color:#7c3aed; margin:0;">₹${tapDataMonth.prof.toLocaleString('en-IN')}</b>
+                
+                <div style="margin-bottom:16px;">
+                    <span style="font-size:12px; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Total Cash In Hand</span>
+                    <b class="${tapTotalCash >= 0 ? 'positive' : 'negative'}" style="font-size:28px; margin-top:2px;">₹${tapTotalCash.toLocaleString('en-IN')}</b>
                 </div>
-            </div>
-            <div class="stat" style="border-top:3px solid #f59e0b; background:#ffffff;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-size:13px; color:#475569; font-weight:700;">Tanmoy Carry Fwd</span>
-                    <span style="font-size:11px; color:#64748b; font-weight:600;">(${tanData.month} End)</span>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; background:#f8fafc; padding:10px; border-radius:10px; border:1px solid #e2e8f0; text-align:center;">
+                    <div>
+                        <span style="font-size:11px; color:#64748b; display:block; font-weight:600;">Prev CF (${tapData.month.split(' ')[0]})</span>
+                        <strong class="${tapData.bal >= 0 ? 'positive' : 'negative'}" style="font-size:13.5px;">₹${tapData.bal.toLocaleString('en-IN')}</strong>
+                    </div>
+                    <div style="border-left:1px solid #e2e8f0; border-right:1px solid #e2e8f0;">
+                        <span style="font-size:11px; color:#64748b; display:block; font-weight:600;">This Month</span>
+                        <strong class="${tapBalToDisplay >= 0 ? 'positive' : 'negative'}" style="font-size:13.5px;">₹${tapBalToDisplay.toLocaleString('en-IN')}</strong>
+                    </div>
+                    <div>
+                        <span style="font-size:11px; color:#7c3aed; display:block; font-weight:600;">Profit Booked</span>
+                        <strong style="font-size:13.5px; color:#7c3aed;">₹${tapDataMonth.prof.toLocaleString('en-IN')}</strong>
+                    </div>
                 </div>
-                <b class="${tanData.bal >= 0 ? 'positive' : 'negative'}">${carryTextTanmoy}</b>
-            </div>
-            <div class="stat" style="border-top:3px solid #f59e0b; background:#ffffff;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-size:13px; color:#475569; font-weight:700;">Tapabrata Carry Fwd</span>
-                    <span style="font-size:11px; color:#64748b; font-weight:600;">(${tapData.month} End)</span>
-                </div>
-                <b class="${tapData.bal >= 0 ? 'positive' : 'negative'}">${carryTextTapabrata}</b>
             </div>
         </div>
     </div>
@@ -915,7 +567,13 @@ function partnerProfile(name){
         <label>Photo</label><input type="file" id="entryPhoto" accept="image/*">
         <button onclick="savePartnerEntry('${name}')" style="width:100%;margin-top:8px;" id="entrySaveBtn">Save Entry</button>
     </div>
-    <div class="card"><div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;"><h2 style="margin:0;">📋 Monthly Records</h2><div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;"><button onclick="downloadPartnerCSV('${name}')" style="background:#16a085; color:white; padding:8px 12px; margin:0; border-radius:8px;">📥 Export Excel</button><input type="text" id="partnerSearchInput" placeholder="🔍 Search..." oninput="renderPartnerData('${name}')" style="max-width:260px; margin:0; padding:8px 12px;"></div></div><div id="recordsGrid" class="dual-records-grid"><div id="incTable"></div><div id="expTable"></div><div id="profTable" style="display:none;"></div></div></div>`;
+    <div class="card"><div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;"><h2 style="margin:0;">📋 Monthly Records</h2><div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;"><button onclick="downloadPartnerCSV('${name}')" style="background:#16a085; color:white; padding:8px 12px; margin:0; border-radius:8px;">📥 Export Excel</button><input type="text" id="partnerSearchInput" placeholder="🔍 Search..." oninput="renderPartnerData('${name}')" style="max-width:260px; margin:0; padding:8px 12px;"></div></div><!-- INCOME & EXPENSE ALWAYS SIDE-BY-SIDE -->
+        <div id="recordsGrid" class="dual-records-grid">
+            <div id="incTable"></div>
+            <div id="expTable"></div>
+        </div>
+        <!-- PROFIT BOOK TABLE COMPLETELY SEPARATE BELOW -->
+        <div id="profTable" style="display:none; margin-top:20px; border-radius:12px; border:1.5px solid #ddd6fe; padding:16px; background:#faf5ff;"></div></div>`;
     renderPartnerData(name); setEntryType('income');
 }
 
@@ -954,7 +612,14 @@ function renderPartnerData(name) {
     let totalCashInHand = cfBalance + currentNetBalance; let balTitleText = (globalMonth && globalMonth !== 'All Time') ? `Financial Summary (${globalMonth})` : `Overall Summary (All Time)`;
 
     document.getElementById('partnerBalArea').innerHTML = `<div style="background:#eff7f3; padding:15px; border-radius:12px; margin-bottom:10px; border:1px solid #cce3d8;"><div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #cce3d8; padding-bottom:10px; margin-bottom:12px; flex-wrap:wrap; gap:10px;"><span style="font-weight:bold; color:#176b4d; font-size:15px;">💰 ${balTitleText}</span>${generateMiniMonthDropdown(globalMonth)}</div><div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap:10px; text-align:center;"><div style="background:#fff; padding:10px; border-radius:8px; border:1px solid #cce3d8;"><span style="font-size:11px; color:#555; display:block; margin-bottom:4px;">Previous Balance (CF)</span><b class="${cfBalance >= 0 ? 'positive' : 'negative'}" style="font-size:15px;">₹${cfBalance.toLocaleString('en-IN')}</b></div><div style="background:#fff; padding:10px; border-radius:8px; border:1px solid #cce3d8;"><span style="font-size:11px; color:#555; display:block; margin-bottom:4px;">Net This Month</span><b class="${currentNetBalance >= 0 ? 'positive' : 'negative'}" style="font-size:15px;">₹${currentNetBalance.toLocaleString('en-IN')}</b></div><div style="background:#fff; padding:10px; border-radius:8px; border:2px solid #176b4d; box-shadow:0 2px 4px #0002;"><span style="font-size:12px; font-weight:bold; color:#17352b; display:block; margin-bottom:4px;">Total Cash In Hand</span><b class="${totalCashInHand >= 0 ? 'positive' : 'negative'}" style="font-size:18px;">₹${totalCashInHand.toLocaleString('en-IN')}</b></div></div></div>`;
-    setTimeout(() => { calcGroupTotal('inc'); calcGroupTotal('exp'); calcGroupTotal('prof'); }, 100);
+    setTimeout(() => { 
+        calcGroupTotal('inc'); calcGroupTotal('exp'); calcGroupTotal('prof');
+        let pt = document.getElementById('profTable');
+        if(pt) {
+            // Show profit table if current entry is profit OR if profit has been booked
+            pt.style.display = (currentEntryType === 'profit' || totalProf > 0) ? 'block' : 'none';
+        }
+    }, 100);
 }
 
 function setEntryType(t) {
@@ -965,8 +630,18 @@ function setEntryType(t) {
     if(tc) { if(t === 'profit' || t === 'income') { tc.style.display = 'none'; if(document.getElementById('transferCheckbox')) document.getElementById('transferCheckbox').checked = false; } else tc.style.display = 'block'; }
     if(qv) { if(t === 'expense') qv.style.display = 'block'; else { qv.style.display = 'none'; if(document.getElementById('isVehicleExpense')) { document.getElementById('isVehicleExpense').checked = false; document.getElementById('vehicleOptions').style.display = 'none'; } } }
     if(bn) { if(t === 'income') bn.style.display = 'block'; else { bn.style.display = 'none'; if(document.getElementById('entryBillNo')) document.getElementById('entryBillNo').value = ''; } }
-    let grid = document.getElementById('recordsGrid'), profTable = document.getElementById('profTable');
-    if(grid && profTable) { if(t === 'profit') { grid.className = 'tri-records-grid'; profTable.style.display = 'block'; } else { grid.className = 'dual-records-grid'; profTable.style.display = 'none'; } }
+    // Profit table is separate below Income & Expense!
+    let profTable = document.getElementById('profTable');
+    if(profTable) {
+        if(t === 'profit') {
+            profTable.style.display = 'block';
+            setTimeout(() => profTable.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+        } else {
+            // If there are profit entries, keep it visible, otherwise hide
+            let hasProfit = getArray(appData.records[currentActiveTab === 'tab-tanmoy' ? 'Tanmoy' : 'Tapabrata']).some(r => r.type === 'profit');
+            profTable.style.display = hasProfit ? 'block' : 'none';
+        }
+    }
 }
 
 async function savePartnerEntry(name) {
@@ -1902,6 +1577,7 @@ async function saveComputerJob() { let loc = document.getElementById('cLoc').val
 async function saveWaterJob() { let c = document.getElementById('wCust').value.trim(), m = document.getElementById('wMob').value.trim(), mod = document.getElementById('wModel').value.trim(), p = document.getElementById('wPart').value.trim(), d = document.getElementById('wDate').value, file = document.getElementById('wPhoto').files[0]; if(!c || !m) return alert("Customer and Mobile required!"); if(file && !file.type.startsWith('image/')) return alert("Upload Image only!"); let btn = document.getElementById('wSaveBtn'); let orig=btn.innerText; btn.innerText="⏳ Saving..."; btn.disabled=true; appData.waterJobs = getArray(appData.waterJobs); let url = currentTechEditId && appData.waterJobs.find(x=>String(x.id)===String(currentTechEditId))?.photo ? appData.waterJobs.find(x=>String(x.id)===String(currentTechEditId)).photo : ''; if(file){ let b64 = await compressImage(file); url = await uploadToImgBB(b64); } let j = { id: currentTechEditId||Date.now(), customer:c, mobile:m, model:mod, part:p, date:d, photo:url }; if(currentTechEditId) { let idx=appData.waterJobs.findIndex(x=>String(x.id)===String(currentTechEditId)); appData.waterJobs[idx]=j; currentTechEditId=null; currentTechEditPhoto=''; } else appData.waterJobs.unshift(j); await saveDataToLocal(); tech('water'); }
 function deleteTechJob(id, t) { if(confirm("Delete this job?")){ t==='computer'?appData.computerJobs=getArray(appData.computerJobs).filter(x=>String(x.id)!==String(id)):appData.waterJobs=getArray(appData.waterJobs).filter(x=>String(x.id)!==String(id)); saveDataToLocal().then(()=>tech(t)); } }
 function editTechJob(id, t) { let arr = t==='computer'?getArray(appData.computerJobs):getArray(appData.waterJobs); let j = arr.find(x=>String(x.id)===String(id)); if(!j)return; currentTechEditId = id; if(t==='computer') { document.getElementById('cLoc').value=j.location; document.getElementById('cShop').value=j.shop; document.getElementById('cDate').value=j.date; document.getElementById('cRemarks').value=j.remarks; document.getElementById('partsContainer').innerHTML=''; getArray(j.parts).forEach(p=>addPartRow(p.part, p.serial, p.photo)); let btn = document.getElementById('cSaveBtn'); if(btn) { btn.innerText="✏️ Update Job"; btn.style.background="#f39c12"; } } else { document.getElementById('wCust').value=j.customer; document.getElementById('wMob').value=j.mobile; document.getElementById('wModel').value=j.model; document.getElementById('wPart').value=j.part; document.getElementById('wDate').value=j.date; currentTechEditPhoto=j.photo; let btn = document.getElementById('wSaveBtn'); if(btn) { btn.innerText="✏️ Update Job"; btn.style.background="#f39c12"; } } window.scrollTo({top:0, behavior:'smooth'}); }
+
 </script>
 </body>
 </html>
