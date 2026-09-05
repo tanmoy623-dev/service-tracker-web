@@ -8,61 +8,615 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 <style>
-body{font-family:Arial;margin:0;background:#f4f7f6;color:#17352b}
-.app{max-width:1150px;margin:auto;padding:24px}
-.card{background:white;padding:22px;border-radius:18px;margin:14px 0;box-shadow:0 6px 24px #0001}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
-.role{padding:18px;border:2px solid #dfe9e5;border-radius:14px;cursor:pointer;background:#fafcfb;}
-.role:hover{border-color:#176b4d}
-.partner-group {border:2px solid #dfe9e5;border-radius:14px;padding:18px;background:#fafcfb;}
-.partner-group h3 {margin:0 0 12px 0;color:#17352b;font-size:16px;display:flex;align-items:center;gap:6px;}
-button{padding:12px 16px;border:0;border-radius:10px;background:#176b4d;color:white;font-weight:bold;cursor:pointer;transition:all 0.2s}
-button.alt{background:#e7f0ed;color:#176b4d}
-button:disabled {background:#999; cursor:not-allowed; opacity:0.7;}
-input, select{width:100%;padding:11px;margin:6px 0 12px;border:1px solid #ccd8d4;border-radius:9px;box-sizing:border-box}
-.hidden{display:none}
-.stat{background:#eff7f3;padding:16px;border-radius:12px}
-.stat b{display:block;font-size:24px;margin-top:6px}
-.negative{color:#e21d4f !important; font-weight:bold;}
-.positive{color:#07865b !important; font-weight:bold;}
-table{width:100%;border-collapse:collapse}
-td,th{padding:10px;border-bottom:1px solid #e6ece9;text-align:left}
-.top{display:flex;justify-content:space-between;align-items:center}
-.part-row-box {background:#f8faf9; padding:12px; border:1px solid #dfe9e5; border-radius:10px; margin-bottom:12px;}
-.b-qty, .b-rate, .b-desc { margin:0; padding:8px; border-radius:6px; }
-.bill-table th { background:#eff7f3; color:#176b4d; font-size:14px; }
-.dual-records-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-.tri-records-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
-.scroll-list { max-height: 250px; overflow-y: auto; overflow-x: auto; background: white; border-radius: 8px; border: 1px solid #bdc3c7; margin-top: 10px; }
-@media (max-width: 768px) { 
-    .tri-records-grid, .dual-records-grid { grid-template-columns: 1fr; } 
-    .app { padding: 10px; } .card { padding: 12px; margin: 10px 0; }
-    td, th { padding: 6px 4px; font-size: 12px; }
-    table button { padding: 4px 6px !important; font-size: 11px !important; margin: 0 2px; }
-    td:nth-child(2) { font-size: 11px; white-space: nowrap; }
-    .recon-cell { padding: 2px !important; font-size: 14px !important; }
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-light: #eff6ff;
+  --primary-border: #bfdbfe;
+  
+  --emerald: #059669;
+  --emerald-hover: #047857;
+  --emerald-light: #ecfdf5;
+  --emerald-border: #a7f3d0;
+  
+  --rose: #e11d48;
+  --rose-hover: #be123c;
+  --rose-light: #fff1f2;
+  --rose-border: #fecdd3;
+  
+  --purple: #7c3aed;
+  --purple-hover: #6d28d9;
+  --purple-light: #f5f3ff;
+  --purple-border: #ddd6fe;
+
+  --amber: #d97706;
+  --amber-hover: #b45309;
+  --amber-light: #fffbeb;
+  --amber-border: #fde68a;
+
+  --slate-50: #f8fafc;
+  --slate-100: #f1f5f9;
+  --slate-200: #e2e8f0;
+  --slate-300: #cbd5e1;
+  --slate-400: #94a3b8;
+  --slate-500: #64748b;
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1e293b;
+  --slate-900: #0f172a;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.07), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.03);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
 }
+
+* { box-sizing: border-box; }
+
+
+body {
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  margin: 0;
+  background-color: #0f172a; /* Deep dark/slate base for rich contrast */
+  background-color: #f8fafc;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.10) 0px, transparent 50%),
+    radial-gradient(at 50% 50%, rgba(244, 63, 94, 0.05) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(14, 165, 233, 0.10) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.12) 0px, transparent 50%),
+    radial-gradient(rgba(148, 163, 184, 0.18) 1.2px, transparent 1.2px);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 24px 24px;
+  background-attachment: fixed;
+  color: var(--slate-800);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+  position: relative;
+  min-height: 100vh;
+}
+
+/* DECORATIVE AMBIENT BACKGROUND GLOW ORBS */
+.bg-decorations {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.bg-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.65;
+  animation: floatOrb 20s ease-in-out infinite alternate;
+}
+
+.bg-orb-1 {
+  width: 550px;
+  height: 550px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.35), rgba(79, 70, 229, 0.05));
+  top: -150px;
+  left: -100px;
+}
+
+.bg-orb-2 {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.30), rgba(5, 150, 105, 0.05));
+  top: 100px;
+  right: -120px;
+  animation-duration: 25s;
+  animation-direction: alternate-reverse;
+}
+
+.bg-orb-3 {
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(236, 72, 153, 0.22), rgba(217, 70, 239, 0.05));
+  bottom: -180px;
+  left: 25%;
+  animation-duration: 22s;
+}
+
+@keyframes floatOrb {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(30px, 40px) scale(1.08); }
+  100% { transform: translate(-20px, 20px) scale(0.95); }
+}
+
+/* GLASSMORPHISM CARD STYLING */
+.card {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 24px;
+  border-radius: var(--radius-lg);
+  margin: 18px 0;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05), 0 8px 10px -6px rgba(15, 23, 42, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 16px 30px -6px rgba(15, 23, 42, 0.08), 0 10px 12px -6px rgba(15, 23, 42, 0.04);
+}
+
+.app {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 24px 20px;
+}
+
+/* CARDS */
+.card {
+  background: #ffffff;
+  padding: 24px;
+  border-radius: var(--radius-lg);
+  margin: 18px 0;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--slate-200);
+  transition: box-shadow 0.2s ease;
+}
+
+.card h1 {
+  margin: 0 0 8px 0;
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--slate-900);
+  letter-spacing: -0.5px;
+}
+
+.card h2 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--slate-900);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: -0.3px;
+}
+
+.card h3 {
+  margin: 0 0 12px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--slate-700);
+}
+
+/* GRIDS */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.dual-records-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.tri-records-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+}
+
+/* STATS */
+.stat {
+  background: #ffffff;
+  border: 1px solid var(--slate-200);
+  padding: 18px 20px;
+  border-radius: var(--radius-md);
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-xs);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.stat:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.stat span {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--slate-500);
+  display: block;
+}
+
+.stat b {
+  display: block;
+  font-size: 26px;
+  font-weight: 800;
+  margin-top: 8px;
+  letter-spacing: -0.5px;
+  color: var(--slate-900);
+}
+
+.positive { color: var(--emerald) !important; font-weight: 800; }
+.negative { color: var(--rose) !important; font-weight: 800; }
+
+/* BUTTONS */
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--emerald);
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-xs);
+}
+
+button:hover {
+  background: var(--emerald-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+button.alt {
+  background: var(--slate-100);
+  color: var(--slate-700);
+  box-shadow: none;
+  border: 1px solid var(--slate-200);
+}
+
+button.alt:hover {
+  background: var(--slate-200);
+  color: var(--slate-900);
+}
+
+button:disabled {
+  background: var(--slate-300) !important;
+  color: var(--slate-500) !important;
+  cursor: not-allowed;
+  opacity: 0.7;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* FORMS & INPUTS */
+label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--slate-600);
+  margin-bottom: 6px;
+  display: block;
+}
+
+input, select {
+  width: 100%;
+  padding: 10px 14px;
+  margin: 4px 0 14px;
+  border: 1.5px solid var(--slate-200);
+  border-radius: var(--radius-sm);
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--slate-800);
+  background-color: #ffffff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  outline: none;
+}
+
+input:focus, select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+input::placeholder {
+  color: var(--slate-400);
+}
+
+input[type="file"] {
+  padding: 8px 12px;
+  background: var(--slate-50);
+  border: 1.5px dashed var(--slate-300);
+  cursor: pointer;
+}
+
+input[type="file"]::-webkit-file-upload-button {
+  background: var(--slate-200);
+  color: var(--slate-700);
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  margin-right: 10px;
+  transition: background 0.15s;
+}
+
+input[type="file"]::-webkit-file-upload-button:hover {
+  background: var(--slate-300);
+}
+
+/* TABLES */
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+th {
+  background: var(--slate-50);
+  color: var(--slate-500);
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 12px 14px;
+  border-bottom: 1.5px solid var(--slate-200);
+  text-align: left;
+}
+
+td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--slate-100);
+  font-size: 13.5px;
+  vertical-align: middle;
+  color: var(--slate-700);
+}
+
+tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+/* SCROLL LIST & CONTAINERS */
+.scroll-list {
+  max-height: 280px;
+  overflow-y: auto;
+  overflow-x: auto;
+  background: #ffffff;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--slate-200);
+  margin-top: 12px;
+  box-shadow: var(--shadow-xs);
+}
+
+.part-row-box {
+  background: var(--slate-50);
+  padding: 16px;
+  border: 1.5px solid var(--slate-200);
+  border-radius: var(--radius-md);
+  margin-bottom: 14px;
+}
+
+.b-qty, .b-rate, .b-desc {
+  margin: 0 !important;
+  padding: 8px 10px !important;
+}
+
+.bill-table th {
+  background: var(--slate-50);
+  color: var(--slate-700);
+}
+
+.hidden { display: none !important; }
+
+/* TOP HEADER */
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #ffffff;
+  border-radius: var(--radius-lg);
+  padding: 18px 24px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--slate-200);
+}
+
+/* LOGIN SCREEN */
+.login-card {
+  max-width: 600px;
+  margin: 40px auto;
+  padding: 36px 32px;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--slate-200);
+  background: #ffffff;
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.login-header .logo-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: white;
+  font-size: 28px;
+  margin-bottom: 14px;
+  box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.35);
+}
+
+.login-header h1 {
+  font-size: 26px;
+  margin: 0 0 6px 0;
+  font-weight: 800;
+  color: var(--slate-900);
+  letter-spacing: -0.5px;
+}
+
+.login-header p {
+  font-size: 14px;
+  color: var(--slate-500);
+  margin: 0;
+}
+
+.partner-group {
+  border: 1.5px solid var(--slate-200);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  background: var(--slate-50);
+  transition: all 0.2s ease;
+}
+
+.partner-group:hover {
+  border-color: var(--primary);
+  background: #ffffff;
+  box-shadow: var(--shadow-md);
+}
+
+.partner-group h3 {
+  margin: 0 0 14px 0;
+  color: var(--slate-900);
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.role {
+  padding: 20px;
+  border: 1.5px solid var(--slate-200);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  background: var(--slate-50);
+  transition: all 0.2s ease;
+}
+
+.role:hover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+
+/* NAV TABS - WRAP NATURALLY WITHOUT SCROLLBAR */
+.nav-tab-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 4px 0 0 0;
+  margin-top: 16px;
+  overflow: visible;
+}
+
+.nav-tab {
+  flex: 1 1 auto;
+  min-width: 95px;
+  text-align: center;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+/* CUSTOM MODERN SUBTLE SCROLLBARS GLOBALLY */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* RESPONSIVENESS */
+@media (max-width: 768px) {
+  .app { padding: 12px; }
+  .card { padding: 16px; margin: 12px 0; border-radius: var(--radius-md); }
+  .tri-records-grid, .dual-records-grid { grid-template-columns: 1fr; gap: 14px; }
+  td, th { padding: 8px 6px; font-size: 12px; }
+  table button { padding: 5px 8px !important; font-size: 11px !important; margin: 2px; }
+  td:nth-child(2) { font-size: 12px; }
+  .recon-cell { padding: 4px !important; font-size: 15px !important; }
+  .stat b { font-size: 20px; }
+  .login-card { margin: 20px auto; padding: 24px 18px; }
+}
+
 </style>
 </head>
 <body>
+<div class="bg-decorations"><div class="bg-orb bg-orb-1"></div><div class="bg-orb bg-orb-2"></div><div class="bg-orb bg-orb-3"></div></div>
 
 <div class="app">
-    <section id="login" class="card">
-        <h1>Service Tracker</h1>
-        <p>Select account type to continue.</p>
-        <div class="grid">
+    <section id="login" class="card login-card">
+        <div class="login-header">
+            <div class="logo-badge">💼</div>
+            <h1>Service Tracker</h1>
+            <p>Business Operations & Financial Management Portal</p>
+        </div>
+        <div class="grid" style="gap: 16px;">
             <div class="partner-group">
                 <h3>🔐 Admin Portal</h3>
-                <select id="loginPartnerSelect"><option value="Tanmoy">Tanmoy</option><option value="Tapabrata">Tapabrata</option></select>
-                <button onclick="dropdownPartnerLogin()" style="width:100%; margin-top:4px;">Login</button>
+                <label for="loginPartnerSelect" style="margin-bottom: 4px;">Select Account</label>
+                <select id="loginPartnerSelect">
+                    <option value="Tanmoy">Tanmoy</option>
+                    <option value="Tapabrata">Tapabrata</option>
+                </select>
+                <button onclick="dropdownPartnerLogin()" style="width:100%; margin-top:6px; background: var(--primary);">Login to Admin</button>
             </div>
             <div class="role" onclick="techLoginPrompt()" style="display:flex; flex-direction:column; justify-content:center;">
-                <div>👤 <b>Technician Login</b><br><span style="font-size:13px; color:#555;">Access Technician Profile</span></div>
+                <div>
+                    <span style="font-size:24px; display:block; margin-bottom:8px;">👷</span>
+                    <b style="font-size:16px; color:var(--slate-900);">Technician Portal</b><br>
+                    <span style="font-size:13px; color:var(--slate-500); margin-top:4px; display:block;">Access Computer & Water Purifier Service Logs</span>
+                </div>
             </div>
         </div>
     </section>
     <section id="dash" class="hidden">
-        <div class="card top"><h1 id="head"></h1><button class="alt" onclick="logoutApp()">Logout</button></div>
+        <div class="card top">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <span style="font-size:24px;">💼</span>
+                <h1 id="head" style="margin:0; font-size:20px; font-weight:800; letter-spacing:-0.3px;">Dashboard</h1>
+            </div>
+            <button class="alt" onclick="logoutApp()" style="display:flex; align-items:center; gap:6px;">
+                <span>Logout</span>
+                <span style="font-size:14px;">🚪</span>
+            </button>
+        </div>
         <div id="content"></div>
     </section>
 </div>
@@ -116,9 +670,58 @@ function handleGlobalMonthChange() { if (currentActiveTab === 'tab-overview') sh
 function generateMonthDropdown() { const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]; let options = '<option value="All Time">All Time</option>'; for (let year = 2026; year <= new Date().getFullYear() + 3; year++) { options += `<optgroup label="${year}">`; months.forEach((month, index) => { if (year === 2026 && index < 3) return; let sel = (month === "August" && year === 2026) ? "selected" : ""; options += `<option value="${month} ${year}" ${sel}>${month} ${year}</option>`; }); options += `</optgroup>`; } return `<select id="headerMonthSelect" style="background:white;color:#17352b;padding:8px 12px;border-radius:8px;border:none;font-weight:bold;cursor:pointer;flex-shrink:0;width:auto;margin:0;" onchange="handleGlobalMonthChange()">${options}</select>`; }
 function generateMiniMonthDropdown(currentValue) { const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]; let options = '<option value="All Time">All Time</option>'; for (let year = 2026; year <= new Date().getFullYear() + 3; year++) { months.forEach((month, index) => { if (year === 2026 && index < 3) return; let val = `${month} ${year}`; let sel = (val === currentValue) ? "selected" : ""; options += `<option value="${val}" ${sel}>${val}</option>`; }); } return `<select onchange="document.getElementById('headerMonthSelect').value=this.value; handleGlobalMonthChange()" style="width: auto; max-width: 150px; margin: 0; padding:6px 8px; font-size:13px; border:1px solid #cce3d8; border-radius:6px; background:#fff; font-weight:bold; color:#176b4d; cursor:pointer;">${options}</select>`; }
 
-function admin() { let currentUser = localStorage.getItem('st_user'); let privateBtn = (currentUser === 'Tanmoy') ? `<button id="tab-private" onclick="showPrivateVault()">🔒 Private</button>` : ''; return `<div class="card" style="background:#4635d6;color:white"><div style="display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap;"><div><h2 style="margin:0;">💼 Service Tracker — Admin Portal</h2><p style="margin:4px 0 0 0;opacity:0.9;">Tanmoy & Tapabrata Management</p></div><div style="display:none;">${generateMonthDropdown()}</div></div><div class="grid" style="margin-top:16px; grid-template-columns:repeat(auto-fit,minmax(100px,1fr));"><button id="tab-overview" onclick="showAdminOverview()">📊 Overview</button><button id="tab-po" onclick="showPOTracker()">📄 PO Track</button><button id="tab-sub-bills" onclick="showSubmittedBills()">📋 Bill Track</button><button id="tab-invoice" onclick="showInvoice()">🧾 Petty Cash</button><button id="tab-vehicles" onclick="showVehicles()">🚗 Vehicles</button><button id="tab-tanmoy" onclick="partnerProfile('Tanmoy')">👨‍💼 Tanmoy</button><button id="tab-tapabrata" onclick="partnerProfile('Tapabrata')">👨‍💼 Tapabrata</button><button id="tab-carry" onclick="showCarryForward()">🔄 CF Bal</button><button id="tab-tech" onclick="showTechDashboard()">👷 Tech</button><button id="tab-settings" onclick="showSettings()">⚙️ Set</button>${privateBtn}</div></div><div id="adminArea"><div id="profileArea"></div></div>`; }
+function admin() {
+    let currentUser = localStorage.getItem('st_user');
+    let privateBtn = (currentUser === 'Tanmoy') ? `<button id="tab-private" class="nav-tab" onclick="showPrivateVault()">🔒 Private</button>` : '';
+    return `
+    <div class="card" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%); color:white; border:none; padding:22px 24px; border-radius:18px; box-shadow:0 10px 25px -5px rgba(15, 23, 42, 0.35);">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:14px;">
+                <div style="width:44px; height:44px; border-radius:12px; background:rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center; font-size:22px; border:1px solid rgba(255,255,255,0.15); box-shadow:var(--shadow-xs);">💼</div>
+                <div>
+                    <h2 style="margin:0; font-size:19px; font-weight:800; color:#ffffff; letter-spacing:-0.4px;">Service Tracker — Admin Portal</h2>
+                    <p style="margin:2px 0 0 0; opacity:0.85; font-size:12.5px; color:#cbd5e1;">Tanmoy & Tapabrata Business Management</p>
+                </div>
+            </div>
+            <div style="display:none;">${generateMonthDropdown()}</div>
+        </div>
+        <div class="nav-tab-container" style="margin-top:16px; display:flex; flex-wrap:wrap; gap:8px; padding:2px 0;">
+            <button id="tab-overview" class="nav-tab" onclick="showAdminOverview()">📊 Overview</button>
+            <button id="tab-po" class="nav-tab" onclick="showPOTracker()">📄 PO Track</button>
+            <button id="tab-sub-bills" class="nav-tab" onclick="showSubmittedBills()">📋 Bill Track</button>
+            <button id="tab-invoice" class="nav-tab" onclick="showInvoice()">🧾 Petty Cash</button>
+            <button id="tab-vehicles" class="nav-tab" onclick="showVehicles()">🚗 Vehicles</button>
+            <button id="tab-tanmoy" class="nav-tab" onclick="partnerProfile('Tanmoy')">👨‍💼 Tanmoy</button>
+            <button id="tab-tapabrata" class="nav-tab" onclick="partnerProfile('Tapabrata')">👨‍💼 Tapabrata</button>
+            <button id="tab-carry" class="nav-tab" onclick="showCarryForward()">🔄 CF Bal</button>
+            <button id="tab-tech" class="nav-tab" onclick="showTechDashboard()">👷 Tech</button>
+            <button id="tab-settings" class="nav-tab" onclick="showSettings()">⚙️ Settings</button>
+            ${privateBtn}
+        </div>
+    </div>
+    <div id="adminArea"><div id="profileArea"></div></div>`;
+}
 
-function setActiveAdminTab(activeId) { currentActiveTab = activeId; let tabs = ['tab-overview', 'tab-invoice', 'tab-sub-bills', 'tab-po', 'tab-vehicles', 'tab-tanmoy', 'tab-tapabrata', 'tab-carry', 'tab-tech', 'tab-settings', 'tab-private']; tabs.forEach(id => { let btn = document.getElementById(id); if(btn) { let defaultBg = '#5b4be0'; if(id === 'tab-invoice') defaultBg = '#f39c12'; else if(id === 'tab-settings') defaultBg = '#2980b9'; else if(id === 'tab-sub-bills') defaultBg = '#8e44ad'; else if(id === 'tab-po') defaultBg = '#16a085'; else if(id === 'tab-vehicles') defaultBg = '#e67e22'; else if(id === 'tab-private') defaultBg = '#34495e'; btn.style.background = (id === activeId) ? "white" : defaultBg; btn.style.color = (id === activeId) ? (id === 'tab-private' ? '#34495e' : "#07865b") : "white"; } }); }
+function setActiveAdminTab(activeId) {
+    currentActiveTab = activeId;
+    let tabs = ['tab-overview', 'tab-invoice', 'tab-sub-bills', 'tab-po', 'tab-vehicles', 'tab-tanmoy', 'tab-tapabrata', 'tab-carry', 'tab-tech', 'tab-settings', 'tab-private'];
+    tabs.forEach(id => {
+        let btn = document.getElementById(id);
+        if(btn) {
+            if (id === activeId) {
+                btn.style.background = '#ffffff';
+                btn.style.color = '#0f172a';
+                btn.style.boxShadow = '0 4px 12px rgba(0,0,0,0.18)';
+                btn.style.fontWeight = '700';
+            } else {
+                btn.style.background = 'rgba(255,255,255,0.12)';
+                btn.style.color = '#f8fafc';
+                btn.style.boxShadow = 'none';
+                btn.style.fontWeight = '600';
+            }
+        }
+    });
+}
 
 // ====== PRIVATE VAULT (RESTORED) ======
 function showPrivateVault() {
@@ -164,16 +767,129 @@ function showAdminOverview() {
     let poList = getArray(appData.poRecords); let ongoingPOs = poList.filter(p => !p.isCompleted);
     let ongoingPOsHTML = `<div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse; font-size:13px;"><tr style="background:#d4e6f1; color:#2980b9; text-align:left;"><th style="padding:8px; border-bottom:1px solid #ddd;">Issue Date</th><th style="padding:8px; border-bottom:1px solid #ddd;">Authority</th><th style="padding:8px; border-bottom:1px solid #ddd;">PO No.</th><th style="padding:8px; border-bottom:1px solid #ddd;">Amount</th></tr>`; if(ongoingPOs.length > 0) { ongoingPOsHTML += ongoingPOs.map(p => `<tr><td style="padding:8px; border-bottom:1px solid #eee;">${formatDate(p.date)}</td><td style="padding:8px; border-bottom:1px solid #eee;"><strong>${p.authority}</strong></td><td style="padding:8px; border-bottom:1px solid #eee;">${p.poNo}</td><td style="padding:8px; border-bottom:1px solid #eee; font-weight:bold; color:#e67e22;">₹${p.amount}</td></tr>`).join(''); } else ongoingPOsHTML += `<tr><td colspan="4" style="text-align:center; padding:15px; color:#888;">No ongoing POs! 🎉</td></tr>`; ongoingPOsHTML += `</table></div>`;
     document.getElementById('profileArea').innerHTML = `
-    <div class="card"><h2>📊 Partner Overview</h2><div class="grid">
-        <div class="stat"><div style="display:flex; justify-content:space-between; align-items:center;"><span>Tanmoy's Balance</span>${generateMiniMonthDropdown(selectedMonthText)}</div><b class="${tanBalToDisplay >= 0 ? 'positive' : 'negative'}">₹${tanBalToDisplay.toLocaleString('en-IN')}</b><div style="font-size:12px; color:#8e44ad; margin-top:8px; display:flex; justify-content:space-between; border-top:1px solid #cce3d8; padding-top:6px;"><span>🟣 Profit Booked:</span><b>₹${tanDataMonth.prof.toLocaleString('en-IN')}</b></div></div>
-        <div class="stat"><div style="display:flex; justify-content:space-between; align-items:center;"><span>Tapabrata's Balance</span>${generateMiniMonthDropdown(selectedMonthText)}</div><b class="${tapBalToDisplay >= 0 ? 'positive' : 'negative'}">₹${tapBalToDisplay.toLocaleString('en-IN')}</b><div style="font-size:12px; color:#8e44ad; margin-top:8px; display:flex; justify-content:space-between; border-top:1px solid #cce3d8; padding-top:6px;"><span>🟣 Profit Booked:</span><b>₹${tapDataMonth.prof.toLocaleString('en-IN')}</b></div></div>
-        <div class="stat">Tanmoy Carry Fwd <span style="font-size:11px; font-weight:normal; display:block; color:#555;">(${tanData.month} End)</span><b class="${tanData.bal >= 0 ? 'positive' : 'negative'}">${carryTextTanmoy}</b></div><div class="stat">Tapabrata Carry Fwd <span style="font-size:11px; font-weight:normal; display:block; color:#555;">(${tapData.month} End)</span><b class="${tapData.bal >= 0 ? 'positive' : 'negative'}">${carryTextTapabrata}</b></div>
-    </div></div>
-    <div class="card"><h2>📈 Detailed Business Tracker</h2><div style="display:flex; flex-direction:column; gap:15px;">
-        <div style="background:#f9ebf9; padding:16px; border-radius:12px;"><strong style="font-size:18px; color:#8e44ad; border-bottom:1px solid #bdc3c7; padding-bottom:5px; margin-bottom:10px; display:block;">📋 Bill Track</strong><div style="display:flex; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap;"><span style="font-size:14px;">Total Bills: <strong style="font-size:16px;">${billList.length}</strong></span><span style="font-size:14px; color:#e21d4f;">⏳ Pending: <strong style="font-size:16px;">${pendingBillsArr.length}</strong> <br><span style="font-size:11px;">(₹${pendingBillAmt.toLocaleString('en-IN')})</span></span><span style="font-size:14px; color:#07865b;">✅ Paid: <strong style="font-size:16px;">${billList.length - pendingBillsArr.length}</strong></span></div><div class="scroll-list" style="padding:0;">${pendingBillsHTML}</div></div>
-        <div style="background:#fef5e7; padding:16px; border-radius:12px;"><strong style="font-size:18px; color:#f39c12; border-bottom:1px solid #bdc3c7; padding-bottom:5px; margin-bottom:10px; display:block;">🧾 Petty Cash</strong><div style="display:flex; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap;"><span style="font-size:14px;">Total Petty Cash: <strong style="font-size:16px;">${invRecords.length}</strong></span><span style="font-size:14px; color:#e21d4f;">⏳ Pending: <strong style="font-size:16px;">${pendingInvArr.length}</strong> <br><span style="font-size:11px;">(₹${pendingInvAmt.toLocaleString('en-IN')})</span></span><span style="font-size:14px; color:#07865b;">✅ Paid: <strong style="font-size:16px;">${invRecords.length - pendingInvArr.length}</strong></span></div><div class="scroll-list" style="padding:0;">${pendingInvHTML}</div></div>
-        <div style="background:#e8f4f8; padding:16px; border-radius:12px;"><strong style="font-size:18px; color:#2980b9; border-bottom:1px solid #bdc3c7; padding-bottom:5px; margin-bottom:10px; display:block;">📄 PO Track</strong><div style="display:flex; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap;"><span style="font-size:14px;">Total POs: <strong style="font-size:16px;">${poList.length}</strong></span><span style="font-size:14px; color:#e67e22;">⏳ Ongoing: <strong style="font-size:16px;">${ongoingPOs.length}</strong></span><span style="font-size:14px; color:#07865b;">✅ Completed: <strong style="font-size:16px;">${poList.length - ongoingPOs.length}</strong></span></div><div class="scroll-list" style="padding:0;">${ongoingPOsHTML}</div></div>
-    </div></div>`;
+    <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+            <h2 style="margin:0;">📊 Partner Financial Overview</h2>
+            <div>${generateMiniMonthDropdown(selectedMonthText)}</div>
+        </div>
+        <div class="grid">
+            <div class="stat" style="border-top:3px solid #2563eb; background:#ffffff;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:13px; color:#475569; font-weight:700;">Tanmoy's Balance</span>
+                    <span style="font-size:11px; background:#eff6ff; color:#2563eb; padding:2px 8px; border-radius:999px; font-weight:700;">Active</span>
+                </div>
+                <b class="${tanBalToDisplay >= 0 ? 'positive' : 'negative'}">₹${tanBalToDisplay.toLocaleString('en-IN')}</b>
+                <div style="font-size:12px; color:#7c3aed; margin-top:10px; display:flex; justify-content:space-between; align-items:center; border-top:1px solid #f1f5f9; padding-top:8px;">
+                    <span>🟣 Profit Booked:</span>
+                    <b style="font-size:13px; color:#7c3aed; margin:0;">₹${tanDataMonth.prof.toLocaleString('en-IN')}</b>
+                </div>
+            </div>
+            <div class="stat" style="border-top:3px solid #059669; background:#ffffff;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:13px; color:#475569; font-weight:700;">Tapabrata's Balance</span>
+                    <span style="font-size:11px; background:#ecfdf5; color:#059669; padding:2px 8px; border-radius:999px; font-weight:700;">Active</span>
+                </div>
+                <b class="${tapBalToDisplay >= 0 ? 'positive' : 'negative'}">₹${tapBalToDisplay.toLocaleString('en-IN')}</b>
+                <div style="font-size:12px; color:#7c3aed; margin-top:10px; display:flex; justify-content:space-between; align-items:center; border-top:1px solid #f1f5f9; padding-top:8px;">
+                    <span>🟣 Profit Booked:</span>
+                    <b style="font-size:13px; color:#7c3aed; margin:0;">₹${tapDataMonth.prof.toLocaleString('en-IN')}</b>
+                </div>
+            </div>
+            <div class="stat" style="border-top:3px solid #f59e0b; background:#ffffff;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:13px; color:#475569; font-weight:700;">Tanmoy Carry Fwd</span>
+                    <span style="font-size:11px; color:#64748b; font-weight:600;">(${tanData.month} End)</span>
+                </div>
+                <b class="${tanData.bal >= 0 ? 'positive' : 'negative'}">${carryTextTanmoy}</b>
+            </div>
+            <div class="stat" style="border-top:3px solid #f59e0b; background:#ffffff;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:13px; color:#475569; font-weight:700;">Tapabrata Carry Fwd</span>
+                    <span style="font-size:11px; color:#64748b; font-weight:600;">(${tapData.month} End)</span>
+                </div>
+                <b class="${tapData.bal >= 0 ? 'positive' : 'negative'}">${carryTextTapabrata}</b>
+            </div>
+        </div>
+    </div>
+    <div class="card">
+        <h2>📈 Detailed Business Operations</h2>
+        <div style="display:flex; flex-direction:column; gap:16px;">
+            <div style="background:#ffffff; padding:18px; border-radius:14px; border:1.5px solid #f3e8ff; box-shadow:var(--shadow-xs);">
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f5f3ff; padding-bottom:10px; margin-bottom:12px;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="font-size:20px;">📋</span>
+                        <strong style="font-size:16px; color:#7c3aed; font-weight:700;">Submitted Bills Track</strong>
+                    </div>
+                    <button onclick="showSubmittedBills()" style="padding:5px 12px; font-size:12px; background:#f5f3ff; color:#7c3aed; border:1px solid #ddd6fe; border-radius:8px; box-shadow:none;">Open Tracker →</button>
+                </div>
+                <div style="display:flex; justify-content:space-between; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
+                    <div style="background:#f8fafc; padding:10px 14px; border-radius:10px; border:1px solid #e2e8f0; flex:1; min-width:90px;">
+                        <span style="font-size:11px; color:#64748b; font-weight:700; text-transform:uppercase;">Total Bills</span>
+                        <strong style="font-size:18px; color:#0f172a; display:block; margin-top:2px;">${billList.length}</strong>
+                    </div>
+                    <div style="background:#fff1f2; padding:10px 14px; border-radius:10px; border:1px solid #fecdd3; flex:1; min-width:120px;">
+                        <span style="font-size:11px; color:#e11d48; font-weight:700; text-transform:uppercase;">⏳ Pending</span>
+                        <strong style="font-size:18px; color:#e11d48; display:block; margin-top:2px;">${pendingBillsArr.length} <span style="font-size:12px; font-weight:600;">(₹${pendingBillAmt.toLocaleString('en-IN')})</span></strong>
+                    </div>
+                    <div style="background:#ecfdf5; padding:10px 14px; border-radius:10px; border:1px solid #a7f3d0; flex:1; min-width:90px;">
+                        <span style="font-size:11px; color:#059669; font-weight:700; text-transform:uppercase;">✅ Paid</span>
+                        <strong style="font-size:18px; color:#059669; display:block; margin-top:2px;">${billList.length - pendingBillsArr.length}</strong>
+                    </div>
+                </div>
+                <div class="scroll-list" style="margin-top:0;">${pendingBillsHTML}</div>
+            </div>
+
+            <div style="background:#ffffff; padding:18px; border-radius:14px; border:1.5px solid #fef3c7; box-shadow:var(--shadow-xs);">
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #fffbeb; padding-bottom:10px; margin-bottom:12px;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="font-size:20px;">🧾</span>
+                        <strong style="font-size:16px; color:#d97706; font-weight:700;">Petty Cash / Invoices</strong>
+                    </div>
+                    <button onclick="showInvoice()" style="padding:5px 12px; font-size:12px; background:#fffbeb; color:#b45309; border:1px solid #fde68a; border-radius:8px; box-shadow:none;">Open Petty Cash →</button>
+                </div>
+                <div style="display:flex; justify-content:space-between; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
+                    <div style="background:#f8fafc; padding:10px 14px; border-radius:10px; border:1px solid #e2e8f0; flex:1; min-width:90px;">
+                        <span style="font-size:11px; color:#64748b; font-weight:700; text-transform:uppercase;">Total Invoices</span>
+                        <strong style="font-size:18px; color:#0f172a; display:block; margin-top:2px;">${invRecords.length}</strong>
+                    </div>
+                    <div style="background:#fff1f2; padding:10px 14px; border-radius:10px; border:1px solid #fecdd3; flex:1; min-width:120px;">
+                        <span style="font-size:11px; color:#e11d48; font-weight:700; text-transform:uppercase;">⏳ Pending</span>
+                        <strong style="font-size:18px; color:#e11d48; display:block; margin-top:2px;">${pendingInvArr.length} <span style="font-size:12px; font-weight:600;">(₹${pendingInvAmt.toLocaleString('en-IN')})</span></strong>
+                    </div>
+                    <div style="background:#ecfdf5; padding:10px 14px; border-radius:10px; border:1px solid #a7f3d0; flex:1; min-width:90px;">
+                        <span style="font-size:11px; color:#059669; font-weight:700; text-transform:uppercase;">✅ Paid</span>
+                        <strong style="font-size:18px; color:#059669; display:block; margin-top:2px;">${invRecords.length - pendingInvArr.length}</strong>
+                    </div>
+                </div>
+                <div class="scroll-list" style="margin-top:0;">${pendingInvHTML}</div>
+            </div>
+
+            <div style="background:#ffffff; padding:18px; border-radius:14px; border:1.5px solid #e0f2fe; box-shadow:var(--shadow-xs);">
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f0f9ff; padding-bottom:10px; margin-bottom:12px;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="font-size:20px;">📄</span>
+                        <strong style="font-size:16px; color:#0284c7; font-weight:700;">Purchase Orders (PO)</strong>
+                    </div>
+                    <button onclick="showPOTracker()" style="padding:5px 12px; font-size:12px; background:#f0f9ff; color:#0369a1; border:1px solid #bae6fd; border-radius:8px; box-shadow:none;">Open PO Tracker →</button>
+                </div>
+                <div style="display:flex; justify-content:space-between; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
+                    <div style="background:#f8fafc; padding:10px 14px; border-radius:10px; border:1px solid #e2e8f0; flex:1; min-width:90px;">
+                        <span style="font-size:11px; color:#64748b; font-weight:700; text-transform:uppercase;">Total POs</span>
+                        <strong style="font-size:18px; color:#0f172a; display:block; margin-top:2px;">${poList.length}</strong>
+                    </div>
+                    <div style="background:#fffbeb; padding:10px 14px; border-radius:10px; border:1px solid #fde68a; flex:1; min-width:120px;">
+                        <span style="font-size:11px; color:#d97706; font-weight:700; text-transform:uppercase;">⏳ Ongoing</span>
+                        <strong style="font-size:18px; color:#d97706; display:block; margin-top:2px;">${ongoingPOs.length}</strong>
+                    </div>
+                    <div style="background:#ecfdf5; padding:10px 14px; border-radius:10px; border:1px solid #a7f3d0; flex:1; min-width:90px;">
+                        <span style="font-size:11px; color:#059669; font-weight:700; text-transform:uppercase;">✅ Completed</span>
+                        <strong style="font-size:18px; color:#059669; display:block; margin-top:2px;">${poList.length - ongoingPOs.length}</strong>
+                    </div>
+                </div>
+                <div class="scroll-list" style="margin-top:0;">${ongoingPOsHTML}</div>
+            </div>
+        </div>
+    </div>`;
 }
 
 // ====== PARTNER PROFILE ======
@@ -223,7 +939,7 @@ function renderPartnerData(name) {
 
     let incs = recs.filter(r=>r.type==='income').map(r=> makeRow(r, 'income')).join(''); let exps = recs.filter(r=>r.type==='expense').map(r=> makeRow(r, 'expense')).join(''); let profs = recs.filter(r=>r.type==='profit').map(r=> makeRow(r, 'profit')).join('');
     
-    document.getElementById('incTable').innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #07865b; margin-bottom:8px; padding-bottom:4px;"><div style="display:flex; align-items:center;"><h3 style="color:#07865b; margin:0;">🟢 Income</h3><span id="incGroupTotalBadge" style="display:none; background:#d4efdf; color:#07865b; padding:4px 8px; border-radius:10px; font-size:13px; margin-left:10px; font-weight:bold;">Matched: ₹0</span></div><b style="color:#07865b;">Total: ₹${totalInc.toLocaleString('en-IN')}</b></div><div style="overflow-x:auto;"><table><tr><th style="width:30px; text-align:center;"><button onclick="toggleAllRows('inc', '${name}')" style="background:#eee; border:1px solid #ccc; border-radius:4px; cursor:pointer; font-size:11px; padding:3px 5px; color:#333;">All</button></th><th>Date</th><th>Details</th><th style="text-align:center;">Proof</th><th>Amt</th><th>Action</th></tr>${incs||'<tr><td colspan="6" style="text-align:center;">No records</td></tr>'}</table></div>`;
+    document.getElementById('incTable').innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #07865b; margin-bottom:8px; padding-bottom:4px;"><div style="display:flex; align-items:center;"><h3 style="color:#07865b; margin:0;">🟢 Income</h3><span id="incGroupTotalBadge" style="display:none; background:#d4efdf; color:#07865b; padding:4px 8px; border-radius:10px; font-size:13px; margin-left:10px; font-weight:bold;">Matched: ₹0</span></div><b style="color:#07865b;">Total: ₹${totalInc.toLocaleString('en-IN')}</b></div><div style="overflow-x:auto;"><table><tr><th style="width:30px; text-align:center;"><button onclick="toggleAllRows('inc', '${name}')" style="background:#eee; border:1px solid #ccc; border-radius:4px; cursor:font-size:11px; padding:3px 5px; color:#333;">All</button></th><th>Date</th><th>Details</th><th style="text-align:center;">Proof</th><th>Amt</th><th>Action</th></tr>${incs||'<tr><td colspan="6" style="text-align:center;">No records</td></tr>'}</table></div>`;
     document.getElementById('expTable').innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #e21d4f; margin-bottom:8px; padding-bottom:4px;"><div style="display:flex; align-items:center;"><h3 style="color:#e21d4f; margin:0;">🔴 Expense</h3><span id="expGroupTotalBadge" style="display:none; background:#fadbd8; color:#e21d4f; padding:4px 8px; border-radius:10px; font-size:13px; margin-left:10px; font-weight:bold;">Matched: ₹0</span></div><b style="color:#e21d4f;">Total: ₹${totalExp.toLocaleString('en-IN')}</b></div><div style="overflow-x:auto;"><table><tr><th style="width:30px; text-align:center;"><button onclick="toggleAllRows('exp', '${name}')" style="background:#eee; border:1px solid #ccc; border-radius:4px; cursor:pointer; font-size:11px; padding:3px 5px; color:#333;">All</button></th><th>Date</th><th>Details</th><th style="text-align:center;">Proof</th><th>Amt</th><th>Action</th></tr>${exps||'<tr><td colspan="6" style="text-align:center;">No records</td></tr>'}</table></div>`;
     document.getElementById('profTable').innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #8e44ad; margin-bottom:8px; padding-bottom:4px;"><div style="display:flex; align-items:center;"><h3 style="color:#8e44ad; margin:0;">🟣 Profit Booked</h3><span id="profGroupTotalBadge" style="display:none; background:#ebdef0; color:#8e44ad; padding:4px 8px; border-radius:10px; font-size:13px; margin-left:10px; font-weight:bold;">Matched: ₹0</span></div><b style="color:#8e44ad;">Total: ₹${totalProf.toLocaleString('en-IN')}</b></div><div style="overflow-x:auto;"><table><tr><th style="width:30px; text-align:center;"><button onclick="toggleAllRows('prof', '${name}')" style="background:#eee; border:1px solid #ccc; border-radius:4px; cursor:pointer; font-size:11px; padding:3px 5px; color:#333;">All</button></th><th>Date</th><th>Details</th><th style="text-align:center;">Proof</th><th>Amt</th><th>Action</th></tr>${profs||'<tr><td colspan="6" style="text-align:center;">No records</td></tr>'}</table></div>`;
 
@@ -513,7 +1229,576 @@ function generateInvoiceHTML(inv) {
     let myGST = inv.includeMyGST ? `GSTIN- 19CEEPD8412F1ZP<br>PAN- CEEPD8412F1ZP<br><br><br>` : `<br><br><br><br><br>`;
     let upiStr = `upi://pay?pa=7583972716@ybl&pn=TANMOY%20DUTTA&am=${inv.gTotal}&cu=INR`; let qrUrl = `https://chart.googleapis.com/chart?chs=150x150&cht=qr&chl=${encodeURIComponent(upiStr)}`;
     let w = window.open('','_blank'); if(!w) return alert("Popup Blocked!");
-    w.document.write(`<html><head><title>Inv-${inv.invNo}</title><style>@page { size: A4; margin: 15mm; } body { font-family: 'Arial', sans-serif; font-size: 14px; padding: 20px; } .invoice-box { width: 100%; max-width: 210mm; margin: auto; } table { width: 100%; border-collapse: collapse; margin-bottom: 20px; } th, td { border: 1px solid #333; padding: 8px 10px; text-align: left; } .no-border, .no-border th, .no-border td { border: none !important; } .text-center { text-align: center; } .text-right { text-align: right; } h2 { text-align: center; font-size: 24px; border-bottom: 2px solid #000; padding-bottom: 10px; } </style></head><body><div class="invoice-box"><h2>Invoice</h2><table class="no-border"><tr class="no-border"><td class="no-border" style="width:40%; padding:0 10px 10px 0; vertical-align:top;"><b>TANMOY DUTTA</b><br>DUBRAJPUR ROAD, SURI<br>BIRBHUM, WEST BENGAL<br>PH No.: 7583972716</td><td class="no-border" style="width:30%; padding:0 10px 10px 0; vertical-align:top;">${myGST}<b>Buyer GST:</b> ${inv.bGST || 'N/A'}</td><td class="no-border" style="width:30%; padding:0 0 10px 0; vertical-align:top;"><b>Date:</b> ${inv.date}<br><b>Inv No:</b> ${inv.invNo}<br><b>Buyer:</b> ${inv.bName}<br>${inv.bAdd}</td></tr></table><table><tr><th style="width:5%;" class="text-center">SL</th><th style="width:45%;">Description</th><th style="width:10%;" class="text-center">Qty</th><th style="width:15%;" class="text-right">Rate</th><th style="width:10%;" class="text-center">Per</th><th style="width:15%;" class="text-right">Amount</th></tr>${rowsHTML}<tr><td colspan="5" class="text-right"><b>Total</b></td><td class="text-right"><b>₹${inv.gTotal}</b></td></tr></table><p style="border:1px solid #333; padding:10px; font-weight:bold;">Amount in words: ${inv.amountWords}</p><table class="no-border" style="margin-top:40px;"><tr class="no-border"><td class="no-border" style="width:60%; vertical-align:top;"><b>Bank Details:</b><br>TANMOY DUTTA<br>Canara Bank, A/C: 3715101001134<br>IFSC: CNRB0003715</td><td class="no-border text-center" style="width:40%; vertical-align:top;"><img src="${qrUrl}" width="100" style="display:block; margin:auto;"><br><span style="font-size:12px;">Scan to Pay</span></td></tr></table></div><script>var imgs = document.images, len = imgs.length, counter = 0; if(len === 0) { setTimeout(window.print, 800); } else { for(var i=0; i<len; i++) { if(imgs[i].complete) counter++; else { imgs[i].onload = ()=>counter++; imgs[i].onerror = ()=>counter++; } } } setInterval(()=>{if(counter>=len) {setTimeout(window.print, 800); counter=-999;}}, 200);<\/script></body></html>`); w.document.close();
+    w.document.write(`<html><head><title>Inv-${inv.invNo}</title><style>
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-light: #eff6ff;
+  --primary-border: #bfdbfe;
+  
+  --emerald: #059669;
+  --emerald-hover: #047857;
+  --emerald-light: #ecfdf5;
+  --emerald-border: #a7f3d0;
+  
+  --rose: #e11d48;
+  --rose-hover: #be123c;
+  --rose-light: #fff1f2;
+  --rose-border: #fecdd3;
+  
+  --purple: #7c3aed;
+  --purple-hover: #6d28d9;
+  --purple-light: #f5f3ff;
+  --purple-border: #ddd6fe;
+
+  --amber: #d97706;
+  --amber-hover: #b45309;
+  --amber-light: #fffbeb;
+  --amber-border: #fde68a;
+
+  --slate-50: #f8fafc;
+  --slate-100: #f1f5f9;
+  --slate-200: #e2e8f0;
+  --slate-300: #cbd5e1;
+  --slate-400: #94a3b8;
+  --slate-500: #64748b;
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1e293b;
+  --slate-900: #0f172a;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.07), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.03);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+}
+
+* { box-sizing: border-box; }
+
+
+body {
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  margin: 0;
+  background-color: #0f172a; /* Deep dark/slate base for rich contrast */
+  background-color: #f8fafc;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.10) 0px, transparent 50%),
+    radial-gradient(at 50% 50%, rgba(244, 63, 94, 0.05) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(14, 165, 233, 0.10) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.12) 0px, transparent 50%),
+    radial-gradient(rgba(148, 163, 184, 0.18) 1.2px, transparent 1.2px);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 24px 24px;
+  background-attachment: fixed;
+  color: var(--slate-800);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+  position: relative;
+  min-height: 100vh;
+}
+
+/* DECORATIVE AMBIENT BACKGROUND GLOW ORBS */
+.bg-decorations {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.bg-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.65;
+  animation: floatOrb 20s ease-in-out infinite alternate;
+}
+
+.bg-orb-1 {
+  width: 550px;
+  height: 550px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.35), rgba(79, 70, 229, 0.05));
+  top: -150px;
+  left: -100px;
+}
+
+.bg-orb-2 {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.30), rgba(5, 150, 105, 0.05));
+  top: 100px;
+  right: -120px;
+  animation-duration: 25s;
+  animation-direction: alternate-reverse;
+}
+
+.bg-orb-3 {
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(236, 72, 153, 0.22), rgba(217, 70, 239, 0.05));
+  bottom: -180px;
+  left: 25%;
+  animation-duration: 22s;
+}
+
+@keyframes floatOrb {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(30px, 40px) scale(1.08); }
+  100% { transform: translate(-20px, 20px) scale(0.95); }
+}
+
+/* GLASSMORPHISM CARD STYLING */
+.card {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 24px;
+  border-radius: var(--radius-lg);
+  margin: 18px 0;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05), 0 8px 10px -6px rgba(15, 23, 42, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 16px 30px -6px rgba(15, 23, 42, 0.08), 0 10px 12px -6px rgba(15, 23, 42, 0.04);
+}
+
+.app {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 24px 20px;
+}
+
+/* CARDS */
+.card {
+  background: #ffffff;
+  padding: 24px;
+  border-radius: var(--radius-lg);
+  margin: 18px 0;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--slate-200);
+  transition: box-shadow 0.2s ease;
+}
+
+.card h1 {
+  margin: 0 0 8px 0;
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--slate-900);
+  letter-spacing: -0.5px;
+}
+
+.card h2 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--slate-900);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: -0.3px;
+}
+
+.card h3 {
+  margin: 0 0 12px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--slate-700);
+}
+
+/* GRIDS */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.dual-records-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.tri-records-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+}
+
+/* STATS */
+.stat {
+  background: #ffffff;
+  border: 1px solid var(--slate-200);
+  padding: 18px 20px;
+  border-radius: var(--radius-md);
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-xs);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.stat:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.stat span {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--slate-500);
+  display: block;
+}
+
+.stat b {
+  display: block;
+  font-size: 26px;
+  font-weight: 800;
+  margin-top: 8px;
+  letter-spacing: -0.5px;
+  color: var(--slate-900);
+}
+
+.positive { color: var(--emerald) !important; font-weight: 800; }
+.negative { color: var(--rose) !important; font-weight: 800; }
+
+/* BUTTONS */
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--emerald);
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-xs);
+}
+
+button:hover {
+  background: var(--emerald-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+button.alt {
+  background: var(--slate-100);
+  color: var(--slate-700);
+  box-shadow: none;
+  border: 1px solid var(--slate-200);
+}
+
+button.alt:hover {
+  background: var(--slate-200);
+  color: var(--slate-900);
+}
+
+button:disabled {
+  background: var(--slate-300) !important;
+  color: var(--slate-500) !important;
+  cursor: not-allowed;
+  opacity: 0.7;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* FORMS & INPUTS */
+label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--slate-600);
+  margin-bottom: 6px;
+  display: block;
+}
+
+input, select {
+  width: 100%;
+  padding: 10px 14px;
+  margin: 4px 0 14px;
+  border: 1.5px solid var(--slate-200);
+  border-radius: var(--radius-sm);
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--slate-800);
+  background-color: #ffffff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  outline: none;
+}
+
+input:focus, select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+input::placeholder {
+  color: var(--slate-400);
+}
+
+input[type="file"] {
+  padding: 8px 12px;
+  background: var(--slate-50);
+  border: 1.5px dashed var(--slate-300);
+  cursor: pointer;
+}
+
+input[type="file"]::-webkit-file-upload-button {
+  background: var(--slate-200);
+  color: var(--slate-700);
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  margin-right: 10px;
+  transition: background 0.15s;
+}
+
+input[type="file"]::-webkit-file-upload-button:hover {
+  background: var(--slate-300);
+}
+
+/* TABLES */
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+th {
+  background: var(--slate-50);
+  color: var(--slate-500);
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 12px 14px;
+  border-bottom: 1.5px solid var(--slate-200);
+  text-align: left;
+}
+
+td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--slate-100);
+  font-size: 13.5px;
+  vertical-align: middle;
+  color: var(--slate-700);
+}
+
+tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+/* SCROLL LIST & CONTAINERS */
+.scroll-list {
+  max-height: 280px;
+  overflow-y: auto;
+  overflow-x: auto;
+  background: #ffffff;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--slate-200);
+  margin-top: 12px;
+  box-shadow: var(--shadow-xs);
+}
+
+.part-row-box {
+  background: var(--slate-50);
+  padding: 16px;
+  border: 1.5px solid var(--slate-200);
+  border-radius: var(--radius-md);
+  margin-bottom: 14px;
+}
+
+.b-qty, .b-rate, .b-desc {
+  margin: 0 !important;
+  padding: 8px 10px !important;
+}
+
+.bill-table th {
+  background: var(--slate-50);
+  color: var(--slate-700);
+}
+
+.hidden { display: none !important; }
+
+/* TOP HEADER */
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #ffffff;
+  border-radius: var(--radius-lg);
+  padding: 18px 24px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--slate-200);
+}
+
+/* LOGIN SCREEN */
+.login-card {
+  max-width: 600px;
+  margin: 40px auto;
+  padding: 36px 32px;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--slate-200);
+  background: #ffffff;
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.login-header .logo-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: white;
+  font-size: 28px;
+  margin-bottom: 14px;
+  box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.35);
+}
+
+.login-header h1 {
+  font-size: 26px;
+  margin: 0 0 6px 0;
+  font-weight: 800;
+  color: var(--slate-900);
+  letter-spacing: -0.5px;
+}
+
+.login-header p {
+  font-size: 14px;
+  color: var(--slate-500);
+  margin: 0;
+}
+
+.partner-group {
+  border: 1.5px solid var(--slate-200);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  background: var(--slate-50);
+  transition: all 0.2s ease;
+}
+
+.partner-group:hover {
+  border-color: var(--primary);
+  background: #ffffff;
+  box-shadow: var(--shadow-md);
+}
+
+.partner-group h3 {
+  margin: 0 0 14px 0;
+  color: var(--slate-900);
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.role {
+  padding: 20px;
+  border: 1.5px solid var(--slate-200);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  background: var(--slate-50);
+  transition: all 0.2s ease;
+}
+
+.role:hover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+
+/* NAV TABS - WRAP NATURALLY WITHOUT SCROLLBAR */
+.nav-tab-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 4px 0 0 0;
+  margin-top: 16px;
+  overflow: visible;
+}
+
+.nav-tab {
+  flex: 1 1 auto;
+  min-width: 95px;
+  text-align: center;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+/* CUSTOM MODERN SUBTLE SCROLLBARS GLOBALLY */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* RESPONSIVENESS */
+@media (max-width: 768px) {
+  .app { padding: 12px; }
+  .card { padding: 16px; margin: 12px 0; border-radius: var(--radius-md); }
+  .tri-records-grid, .dual-records-grid { grid-template-columns: 1fr; gap: 14px; }
+  td, th { padding: 8px 6px; font-size: 12px; }
+  table button { padding: 5px 8px !important; font-size: 11px !important; margin: 2px; }
+  td:nth-child(2) { font-size: 12px; }
+  .recon-cell { padding: 4px !important; font-size: 15px !important; }
+  .stat b { font-size: 20px; }
+  .login-card { margin: 20px auto; padding: 24px 18px; }
+}
+
+</style></head><body>
+<div class="bg-decorations"><div class="bg-orb bg-orb-1"></div><div class="bg-orb bg-orb-2"></div><div class="bg-orb bg-orb-3"></div></div><div class="invoice-box"><h2>Invoice</h2><table class="no-border"><tr class="no-border"><td class="no-border" style="width:40%; padding:0 10px 10px 0; vertical-align:top;"><b>TANMOY DUTTA</b><br>DUBRAJPUR ROAD, SURI<br>BIRBHUM, WEST BENGAL<br>PH No.: 7583972716</td><td class="no-border" style="width:30%; padding:0 10px 10px 0; vertical-align:top;">${myGST}<b>Buyer GST:</b> ${inv.bGST || 'N/A'}</td><td class="no-border" style="width:30%; padding:0 0 10px 0; vertical-align:top;"><b>Date:</b> ${inv.date}<br><b>Inv No:</b> ${inv.invNo}<br><b>Buyer:</b> ${inv.bName}<br>${inv.bAdd}</td></tr></table><table><tr><th style="width:5%;" class="text-center">SL</th><th style="width:45%;">Description</th><th style="width:10%;" class="text-center">Qty</th><th style="width:15%;" class="text-right">Rate</th><th style="width:10%;" class="text-center">Per</th><th style="width:15%;" class="text-right">Amount</th></tr>${rowsHTML}<tr><td colspan="5" class="text-right"><b>Total</b></td><td class="text-right"><b>₹${inv.gTotal}</b></td></tr></table><p style="border:1px solid #333; padding:10px; font-weight:bold;">Amount in words: ${inv.amountWords}</p><table class="no-border" style="margin-top:40px;"><tr class="no-border"><td class="no-border" style="width:60%; vertical-align:top;"><b>Bank Details:</b><br>TANMOY DUTTA<br>Canara Bank, A/C: 3715101001134<br>IFSC: CNRB0003715</td><td class="no-border text-center" style="width:40%; vertical-align:top;"><img src="${qrUrl}" width="100" style="display:block; margin:auto;"><br><span style="font-size:12px;">Scan to Pay</span></td></tr></table></div><script>var imgs = document.images, len = imgs.length, counter = 0; if(len === 0) { setTimeout(window.print, 800); } else { for(var i=0; i<len; i++) { if(imgs[i].complete) counter++; else { imgs[i].onload = ()=>counter++; imgs[i].onerror = ()=>counter++; } } } setInterval(()=>{if(counter>=len) {setTimeout(window.print, 800); counter=-999;}}, 200);<\/script></body></html>`); w.document.close();
 }
 
 // ====== CF BAL ======
@@ -549,6 +1834,43 @@ function restoreData(e) { let f=e.target.files[0]; if(!f) return; let r=new File
 async function updatePartnerPassword() { let u = document.getElementById('sP').value; let o = document.getElementById('oP').value.trim(); let n = document.getElementById('nP').value.trim(); let st = appData.passwords[u] || defaultData.passwords[u]; let enteredOldHash = await hashPassword(o); let match = (st.length === 64) ? (enteredOldHash === st) : (o === st); if(match && n.length >= 4) { appData.passwords[u] = await hashPassword(n); saveDataToLocal().then(() => alert("Password Updated!")); } else alert("Incorrect password or new too short!"); }
 
 // ====== TECH ======
+
+function user() {
+    let todayDate = new Date().toISOString().split('T')[0];
+    return `
+    <div class="card" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color:white; border:none; padding:24px; border-radius:18px; box-shadow:0 10px 25px -5px rgba(15, 23, 42, 0.4);">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <div style="display:flex; align-items:center; gap:14px;">
+                <div style="width:46px; height:46px; border-radius:12px; background:rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center; font-size:24px; border:1px solid rgba(255,255,255,0.15);">👷</div>
+                <div>
+                    <h2 style="margin:0; font-size:20px; font-weight:800; color:#ffffff; letter-spacing:-0.4px;">Technician Workspace</h2>
+                    <p style="margin:3px 0 0 0; opacity:0.8; font-size:13px; color:#cbd5e1;">Service Job Management & Maintenance Logs</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card">
+        <h2>🛠️ Select Service Domain</h2>
+        <div class="grid" style="grid-template-columns: 1fr 1fr; gap:16px;">
+            <div class="role" onclick="tech('computer')" style="display:flex; align-items:center; gap:16px; padding:20px;">
+                <span style="font-size:32px;">💻</span>
+                <div>
+                    <b style="font-size:16px; color:var(--slate-900); display:block;">Computer & IT Service</b>
+                    <span style="font-size:13px; color:var(--slate-500);">Log parts replaced, serial numbers and repair jobs</span>
+                </div>
+            </div>
+            <div class="role" onclick="tech('water')" style="display:flex; align-items:center; gap:16px; padding:20px;">
+                <span style="font-size:32px;">💧</span>
+                <div>
+                    <b style="font-size:16px; color:var(--slate-900); display:block;">Water Purifier Service</b>
+                    <span style="font-size:13px; color:var(--slate-500);">Log customer details, model and filter replacements</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="techArea"></div>`;
+}
+
 function showTechDashboard() { setActiveAdminTab('tab-tech'); document.getElementById('profileArea').innerHTML = `<div class="card"><h2>👤 Select Technician Profile</h2><div class="grid"><div class="role" onclick="tech('computer')">💻 <b>Computer</b></div><div class="role" onclick="tech('water')">💧 <b>Water Purifier</b></div></div></div><div id="techArea"></div>`; }
 function tech(type){
     currentTechEditId = null; currentTechEditPhoto = ''; let todayDate = new Date().toISOString().split('T')[0];
@@ -560,6 +1882,21 @@ function tech(type){
         document.getElementById('techArea').innerHTML = `<div class="card"><h2>💧 Water Purifier Service</h2><label>Customer</label><input id="wCust"><label>Mobile</label><input id="wMob"><label>Model</label><input id="wModel"><label>Part Replaced</label><input id="wPart"><label>Photo</label><input id="wPhoto" type="file" accept="image/*"><label>Date</label><input type="date" id="wDate" value="${todayDate}"><button id="wSaveBtn" onclick="saveWaterJob()" style="width:100%;">Save Job</button></div><div class="card"><div style="overflow-x:auto;"><table><tr><th>Customer</th><th>Mobile</th><th>Model</th><th>Part</th><th>Date</th><th style="text-align:center;">Proof</th><th>Action</th></tr>${rows||'<tr><td colspan="7" style="text-align:center;">No jobs</td></tr>'}</table></div></div>`;
     }
 }
+
+async function handlePartImage(input, rowId) {
+    if(input.files && input.files[0]) {
+        try {
+            let b64 = await compressImage(input.files[0]);
+            let box = document.getElementById(rowId);
+            if(box) {
+                box.querySelector('.p-hidden-b64').value = b64;
+            }
+        } catch(e) {
+            console.error("Error compressing part image", e);
+        }
+    }
+}
+
 function addPartRow(part='', serial='', photoB64='') { let container = document.getElementById('partsContainer'); let rowId = 'part-row-' + Date.now(); let div = document.createElement('div'); div.id = rowId; div.className = 'part-row-box'; div.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;"><b style="font-size:14px;">📦 Part</b><button type="button" onclick="document.getElementById('${rowId}').remove()" style="background:#e21d4f; color:white; border:none; border-radius:6px; padding:4px 8px; font-size:11px;">✖</button></div><label>Part Name</label><input class="p-name" value="${part}"><label>Serial</label><input class="p-serial" value="${serial}"><label>Photo</label><input type="hidden" class="p-hidden-b64" value="${photoB64}"><input type="file" class="p-photo" accept="image/*" onchange="handlePartImage(this, '${rowId}')">${photoB64?'<div style="font-size:11px;color:#07865b;">✓ Old Photo</div>':''}`; container.appendChild(div); }
 async function saveComputerJob() { let loc = document.getElementById('cLoc').value.trim(), shop = document.getElementById('cShop').value.trim(), d = document.getElementById('cDate').value, rem = document.getElementById('cRemarks').value.trim(); if(!loc) return alert("Location is required!"); let btn = document.getElementById('cSaveBtn'); let orig=btn.innerText; btn.innerText="⏳ Saving..."; btn.disabled=true; appData.computerJobs = getArray(appData.computerJobs); let partsList = []; let boxes = document.querySelectorAll('.part-row-box'); for(let i=0; i<boxes.length; i++) { let n = boxes[i].querySelector('.p-name').value.trim(), s = boxes[i].querySelector('.p-serial').value.trim(), h = boxes[i].querySelector('.p-hidden-b64').value; let u = h; if(h.startsWith('data:image')) u = await uploadToImgBB(h); if(n) partsList.push({part:n, serial:s, photo:u}); } if(!partsList.length) { btn.innerText=orig; btn.disabled=false; return alert("Add 1 part!"); } let j = { id: currentTechEditId||Date.now(), location:loc, shop, date:d, remarks:rem, parts:partsList }; if(currentTechEditId) { let idx=appData.computerJobs.findIndex(x=>String(x.id)===String(currentTechEditId)); appData.computerJobs[idx]=j; currentTechEditId=null; } else appData.computerJobs.unshift(j); await saveDataToLocal(); tech('computer'); }
 async function saveWaterJob() { let c = document.getElementById('wCust').value.trim(), m = document.getElementById('wMob').value.trim(), mod = document.getElementById('wModel').value.trim(), p = document.getElementById('wPart').value.trim(), d = document.getElementById('wDate').value, file = document.getElementById('wPhoto').files[0]; if(!c || !m) return alert("Customer and Mobile required!"); if(file && !file.type.startsWith('image/')) return alert("Upload Image only!"); let btn = document.getElementById('wSaveBtn'); let orig=btn.innerText; btn.innerText="⏳ Saving..."; btn.disabled=true; appData.waterJobs = getArray(appData.waterJobs); let url = currentTechEditId && appData.waterJobs.find(x=>String(x.id)===String(currentTechEditId))?.photo ? appData.waterJobs.find(x=>String(x.id)===String(currentTechEditId)).photo : ''; if(file){ let b64 = await compressImage(file); url = await uploadToImgBB(b64); } let j = { id: currentTechEditId||Date.now(), customer:c, mobile:m, model:mod, part:p, date:d, photo:url }; if(currentTechEditId) { let idx=appData.waterJobs.findIndex(x=>String(x.id)===String(currentTechEditId)); appData.waterJobs[idx]=j; currentTechEditId=null; currentTechEditPhoto=''; } else appData.waterJobs.unshift(j); await saveDataToLocal(); tech('water'); }
