@@ -8,7 +8,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 <style>
-/* --- NEW PREMIUM LOGIN STYLES --- */
+/* --- PREMIUM LOGIN STYLES --- */
 .login-wrap { max-width: 400px; margin: 8vh auto; background: white; padding: 40px 30px; border-radius: 24px; box-shadow: 0 15px 35px rgba(0,0,0,0.06); text-align: center; border: 1px solid #edf2f0; }
 .login-input { width: 100%; padding: 15px; border: 2px solid #eef2f0; border-radius: 12px; font-size: 20px; letter-spacing: 4px; outline: none; transition: 0.3s; text-align: center; font-weight: bold; background: #fafcfb; color: #176b4d; box-sizing: border-box; margin:0;}
 .login-input:focus { border-color: #176b4d; background: white; box-shadow: 0 0 0 4px rgba(23,107,77,0.1); }
@@ -17,8 +17,8 @@
 .login-tab-btn { flex: 1; padding: 12px; font-size: 15px; font-weight: bold; border-radius: 10px; transition: 0.3s; cursor: pointer; border: none; }
 .login-tab-active { background: white; color: #176b4d; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
 .login-tab-inactive { background: transparent; color: #8da39b; box-shadow: none; }
-/* -------------------------------- */
 
+/* --- GLOBAL APP STYLES --- */
 body{font-family:Arial;margin:0;background:#f4f7f6;color:#17352b}
 .app{max-width:1150px;margin:auto;padding:24px}
 .card{background:white;padding:22px;border-radius:18px;margin:14px 0;box-shadow:0 6px 24px #0001}
@@ -45,13 +45,31 @@ td,th{padding:10px;border-bottom:1px solid #e6ece9;text-align:left}
 .dual-records-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 .tri-records-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
 .scroll-list { max-height: 250px; overflow-y: auto; overflow-x: auto; background: white; border-radius: 8px; border: 1px solid #bdc3c7; margin-top: 10px; }
+
+/* DESKTOP ADMIN TABS (GRID) */
+.admin-nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 14px; margin-top: 16px; }
+
+/* --- MOBILE OPTIMIZATION --- */
 @media (max-width: 768px) { 
-    .tri-records-grid, .dual-records-grid { grid-template-columns: 1fr; } 
-    .app { padding: 10px; } .card { padding: 12px; margin: 10px 0; }
-    td, th { padding: 6px 4px; font-size: 12px; }
+    .app { padding: 10px; } 
+    .card { padding: 16px; margin: 10px 0; border-radius: 14px; }
+    .tri-records-grid, .dual-records-grid { grid-template-columns: 1fr; gap: 12px; } 
+    .stat { padding: 12px; }
+    .stat b { font-size: 20px; }
+    
+    /* MOBILE TABS (SWIPEABLE) */
+    .admin-nav { display: flex; overflow-x: auto; gap: 10px; padding-bottom: 8px; scrollbar-width: none; -ms-overflow-style: none; margin-top: 16px; }
+    .admin-nav::-webkit-scrollbar { display: none; }
+    .admin-nav button { flex-shrink: 0; white-space: nowrap; border-radius: 20px; padding: 8px 14px; font-size: 13px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin: 0; }
+    
+    h2 { font-size: 18px !important; }
+    td, th { padding: 8px 5px; font-size: 12px; }
     table button { padding: 4px 6px !important; font-size: 11px !important; margin: 0 2px; }
-    td:nth-child(2) { font-size: 11px; white-space: nowrap; }
+    td:nth-child(2) { font-size: 11px; white-space: normal; }
     .recon-cell { padding: 2px !important; font-size: 14px !important; }
+    .top { flex-direction: row; gap:10px; }
+    .top h1 { font-size: 20px; margin:0; }
+    .login-wrap { padding: 30px 20px; margin: 4vh auto; }
 }
 </style>
 </head>
@@ -99,7 +117,7 @@ td,th{padding:10px;border-bottom:1px solid #e6ece9;text-align:left}
     </section>
     
     <section id="dash" class="hidden">
-        <div class="card top"><h1 id="head"></h1><button class="alt" onclick="logoutApp()">Logout</button></div>
+        <div class="card top"><h1 id="head" style="margin:0;"></h1><button class="alt" onclick="logoutApp()">Logout</button></div>
         <div id="content"></div>
     </section>
 </div>
@@ -225,13 +243,13 @@ async function autoLoginAdmin(val) {
     let enteredHash = await hashPassword(val.trim());
     let isMatch = (storedPass.length === 64) ? (enteredHash === storedPass) : (val.trim() === storedPass.trim());
     
-    // --- 🔥 SMART AUTO-FIX FOR TAPABRATA 🔥 ---
+    // --- SMART AUTO-FIX FOR TAPABRATA ---
     if (p === 'Tapabrata' && val.trim() === '2026') {
-        isMatch = true; // Force login match
+        isMatch = true; 
         appData.passwords['Tapabrata'] = enteredHash;
-        db.ref('ServiceTracker/passwords/Tapabrata').set(enteredHash); // Chupchap Firebase update kar dega!
+        db.ref('ServiceTracker/passwords/Tapabrata').set(enteredHash);
     }
-    // ------------------------------------------
+    // ------------------------------------
     
     if (isMatch) {
         document.getElementById('adminPass').value = ''; 
@@ -268,13 +286,101 @@ function logoutApp() { localStorage.removeItem('st_user'); localStorage.removeIt
 
 // ====== ADMIN SHELL ======
 function handleGlobalMonthChange() { let el = document.getElementById('headerMonthSelect'); if(el) localStorage.setItem('st_manual_month', el.value); if (currentActiveTab === 'tab-overview') showAdminOverview(); else if (currentActiveTab === 'tab-tanmoy') partnerProfile('Tanmoy'); else if (currentActiveTab === 'tab-tapabrata') partnerProfile('Tapabrata'); else if (currentActiveTab === 'tab-carry') showCarryForward(); else if (currentActiveTab === 'tab-vehicles') showVehicles(); else if (currentActiveTab === 'tab-private') showPrivateVault(); }
-function generateMonthDropdown() { let d = new Date(); let currM = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"][d.getMonth()]; let savedMonth = localStorage.getItem('st_manual_month') || (currM + " " + d.getFullYear()); const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]; let options = '<option value="All Time">All Time</option>'; for (let year = 2026; year <= new Date().getFullYear() + 3; year++) { options += `<optgroup label="${year}">`; months.forEach((month, index) => { if (year === 2026 && index < 3) return; let val = `${month} ${year}`; let sel = (val === savedMonth) ? "selected" : ""; options += `<option value="${val}" ${sel}>${val}</option>`; }); options += `</optgroup>`; } return `<select id="headerMonthSelect" style="background:white;color:#17352b;padding:8px 12px;border-radius:8px;border:none;font-weight:bold;cursor:pointer;flex-shrink:0;width:auto;margin:0;" onchange="handleGlobalMonthChange()">${options}</select>`; }
-function generateMiniMonthDropdown(currentValue) { const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]; let options = '<option value="All Time">All Time</option>'; for (let year = 2026; year <= new Date().getFullYear() + 3; year++) { months.forEach((month, index) => { if (year === 2026 && index < 3) return; let val = `${month} ${year}`; let sel = (val === currentValue) ? "selected" : ""; options += `<option value="${val}" ${sel}>${val}</option>`; }); } return `<select onchange="document.getElementById('headerMonthSelect').value=this.value; handleGlobalMonthChange()" style="width: auto; max-width: 150px; margin: 0; padding:6px 8px; font-size:13px; border:1px solid #cce3d8; border-radius:6px; background:#fff; font-weight:bold; color:#176b4d; cursor:pointer;">${options}</select>`; }
 
-function admin() { let currentUser = localStorage.getItem('st_user'); let privateBtn = (currentUser === 'Tanmoy') ? `<button id="tab-private" onclick="showPrivateVault()">🔒 Private</button>` : ''; return `<div class="card" style="background:#4635d6;color:white"><div style="display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap;"><div><h2 style="margin:0;">💼 Service Tracker — Admin Portal</h2><p style="margin:4px 0 0 0;opacity:0.9;">Tanmoy & Tapabrata Management</p></div><div style="display:none;">${generateMonthDropdown()}</div></div><div class="grid" style="margin-top:16px; grid-template-columns:repeat(auto-fit,minmax(100px,1fr));"><button id="tab-overview" onclick="showAdminOverview()">📊 Overview</button><button id="tab-po" onclick="showPOTracker()">📄 PO Track</button><button id="tab-sub-bills" onclick="showSubmittedBills()">📋 Bill Track</button><button id="tab-invoice" onclick="showInvoice()">🧾 Petty Cash</button><button id="tab-vehicles" onclick="showVehicles()">🚗 Vehicles</button><button id="tab-tanmoy" onclick="partnerProfile('Tanmoy')">👨‍💼 Tanmoy</button><button id="tab-tapabrata" onclick="partnerProfile('Tapabrata')">👨‍💼 Tapabrata</button><button id="tab-carry" onclick="showCarryForward()">🔄 CF Bal</button><button id="tab-tech" onclick="showTechDashboard()">👷 Tech</button><button id="tab-settings" onclick="showSettings()">⚙️ Set</button>${privateBtn}</div></div><div id="adminArea"><div id="profileArea"></div></div>`; }
+// --- TRUE SMART MONTH DROPDOWN (Aug 2026 to Current, Reverse Order) ---
+function generateMonthDropdown() { 
+    let d = new Date(); 
+    let currMonthName = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"][d.getMonth()]; 
+    let savedMonth = localStorage.getItem('st_manual_month') || (currMonthName + " " + d.getFullYear()); 
+    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]; 
+    const shortM = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]; 
+    let options = '<option value="All Time">All Time</option>'; 
+    
+    let startYear = 2026; let startMonth = 7; // Aug 2026
+    let endYear = d.getFullYear(); let endMonth = d.getMonth() + 1; // Until next month
+    if (endMonth > 11) { endMonth = 0; endYear++; }
+
+    let validMonths = [];
+    let tempY = startYear, tempM = startMonth;
+    while(tempY < endYear || (tempY === endYear && tempM <= endMonth)) {
+        validMonths.unshift({ y: tempY, m: tempM }); // unshift to reverse order (newest top)
+        tempM++; if(tempM > 11) { tempM = 0; tempY++; }
+    }
+
+    let lastY = -1;
+    validMonths.forEach(item => {
+        if (item.y !== lastY) {
+            if (lastY !== -1) options += `</optgroup>`;
+            options += `<optgroup label="${item.y}">`;
+            lastY = item.y;
+        }
+        let val = `${months[item.m]} ${item.y}`;
+        let disp = `${shortM[item.m]} ${item.y}`;
+        let sel = (val === savedMonth) ? "selected" : "";
+        options += `<option value="${val}" ${sel}>${disp}</option>`;
+    });
+    if (lastY !== -1) options += `</optgroup>`;
+
+    return `<select id="headerMonthSelect" style="background:white;color:#17352b;padding:4px 8px;border-radius:6px;border:none;font-weight:bold;cursor:pointer;flex-shrink:0;width:auto;margin:0;" onchange="handleGlobalMonthChange()">${options}</select>`; 
+}
+
+function generateMiniMonthDropdown(currentValue) { 
+    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]; 
+    const shortM = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]; 
+    let options = '<option value="All Time">All Time</option>'; 
+    
+    let d = new Date();
+    let startYear = 2026; let startMonth = 7; // Aug 2026
+    let endYear = d.getFullYear(); let endMonth = d.getMonth() + 1; 
+    if (endMonth > 11) { endMonth = 0; endYear++; }
+
+    let validMonths = [];
+    let tempY = startYear, tempM = startMonth;
+    while(tempY < endYear || (tempY === endYear && tempM <= endMonth)) {
+        validMonths.unshift({ y: tempY, m: tempM });
+        tempM++; if(tempM > 11) { tempM = 0; tempY++; }
+    }
+
+    validMonths.forEach(item => {
+        let val = `${months[item.m]} ${item.y}`;
+        let disp = `${shortM[item.m]} ${item.y}`;
+        let sel = (val === currentValue) ? "selected" : "";
+        options += `<option value="${val}" ${sel}>${disp}</option>`;
+    });
+
+    return `<select onchange="document.getElementById('headerMonthSelect').value=this.value; handleGlobalMonthChange()" style="width: auto; max-width: 110px; margin: 0; padding:4px 6px; font-size:12px; border:1px solid #cce3d8; border-radius:6px; background:#fff; font-weight:bold; color:#176b4d; cursor:pointer;">${options}</select>`; 
+}
+// --------------------------------------------------------
+
+function admin() { 
+    let currentUser = localStorage.getItem('st_user'); 
+    let privateBtn = (currentUser === 'Tanmoy') ? `<button id="tab-private" onclick="showPrivateVault()">🔒 Private</button>` : ''; 
+    return `
+    <div class="card" style="background:#4635d6;color:white">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap;">
+            <div><h2 style="margin:0;">💼 Service Tracker — Admin</h2><p style="margin:4px 0 0 0;opacity:0.9;">Tanmoy & Tapabrata</p></div>
+            <div style="display:none;">${generateMonthDropdown()}</div>
+        </div>
+        <div class="admin-nav">
+            <button id="tab-overview" onclick="showAdminOverview()">📊 Overview</button>
+            <button id="tab-po" onclick="showPOTracker()">📄 PO Track</button>
+            <button id="tab-sub-bills" onclick="showSubmittedBills()">📋 Bill Track</button>
+            <button id="tab-invoice" onclick="showInvoice()">🧾 Petty Cash</button>
+            <button id="tab-vehicles" onclick="showVehicles()">🚗 Vehicles</button>
+            <button id="tab-tanmoy" onclick="partnerProfile('Tanmoy')">👨‍💼 Tanmoy</button>
+            <button id="tab-tapabrata" onclick="partnerProfile('Tapabrata')">👨‍💼 Tapabrata</button>
+            <button id="tab-carry" onclick="showCarryForward()">🔄 CF Bal</button>
+            <button id="tab-tech" onclick="showTechDashboard()">👷 Tech</button>
+            <button id="tab-settings" onclick="showSettings()">⚙️ Set</button>
+            ${privateBtn}
+        </div>
+    </div>
+    <div id="adminArea"><div id="profileArea"></div></div>`; 
+}
 
 function setActiveAdminTab(activeId) { currentActiveTab = activeId; let tabs = ['tab-overview', 'tab-invoice', 'tab-sub-bills', 'tab-po', 'tab-vehicles', 'tab-tanmoy', 'tab-tapabrata', 'tab-carry', 'tab-tech', 'tab-settings', 'tab-private']; tabs.forEach(id => { let btn = document.getElementById(id); if(btn) { let defaultBg = '#5b4be0'; if(id === 'tab-invoice') defaultBg = '#f39c12'; else if(id === 'tab-settings') defaultBg = '#2980b9'; else if(id === 'tab-sub-bills') defaultBg = '#8e44ad'; else if(id === 'tab-po') defaultBg = '#16a085'; else if(id === 'tab-vehicles') defaultBg = '#e67e22'; else if(id === 'tab-private') defaultBg = '#34495e'; btn.style.background = (id === activeId) ? "white" : defaultBg; btn.style.color = (id === activeId) ? (id === 'tab-private' ? '#34495e' : "#07865b") : "white"; } }); }
-// ====== PRIVATE VAULT ======
+
+// ====== PRIVATE VAULT part 2 ======
 function showPrivateVault() {
     if (localStorage.getItem('st_user') !== 'Tanmoy') return;
     setActiveAdminTab('tab-private'); let todayDate = new Date().toISOString().split('T')[0]; let empNames = getUniqueOptions(appData.privateSalary, 'name');
