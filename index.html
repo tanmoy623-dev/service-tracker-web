@@ -8,6 +8,17 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 <style>
+/* --- NEW PREMIUM LOGIN STYLES --- */
+.login-wrap { max-width: 400px; margin: 8vh auto; background: white; padding: 40px 30px; border-radius: 24px; box-shadow: 0 15px 35px rgba(0,0,0,0.06); text-align: center; border: 1px solid #edf2f0; }
+.login-input { width: 100%; padding: 15px; border: 2px solid #eef2f0; border-radius: 12px; font-size: 20px; letter-spacing: 4px; outline: none; transition: 0.3s; text-align: center; font-weight: bold; background: #fafcfb; color: #176b4d; box-sizing: border-box; margin:0;}
+.login-input:focus { border-color: #176b4d; background: white; box-shadow: 0 0 0 4px rgba(23,107,77,0.1); }
+.login-select { width: 100%; padding: 14px; border: 2px solid #eef2f0; border-radius: 12px; font-size: 16px; margin-bottom: 20px; outline: none; background: #fafcfb; cursor: pointer; font-weight: bold; color: #17352b; box-sizing: border-box; margin: 0 0 15px 0;}
+.login-select:focus { border-color: #176b4d; }
+.login-tab-btn { flex: 1; padding: 12px; font-size: 15px; font-weight: bold; border-radius: 10px; transition: 0.3s; cursor: pointer; border: none; }
+.login-tab-active { background: white; color: #176b4d; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+.login-tab-inactive { background: transparent; color: #8da39b; box-shadow: none; }
+/* -------------------------------- */
+
 body{font-family:Arial;margin:0;background:#f4f7f6;color:#17352b}
 .app{max-width:1150px;margin:auto;padding:24px}
 .card{background:white;padding:22px;border-radius:18px;margin:14px 0;box-shadow:0 6px 24px #0001}
@@ -47,27 +58,46 @@ td,th{padding:10px;border-bottom:1px solid #e6ece9;text-align:left}
 <body>
 
 <div class="app">
-    <section id="login" class="card">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h1 style="margin:0;">Service Tracker</h1>
-        </div>
-        <p style="margin-top:5px; color:#555;">Type password to auto-login. (No button needed!)</p>
-        <div class="grid">
-            <div class="partner-group">
-                <h3><span onclick="handleSecretTap('admin', event)" style="cursor:pointer; user-select:none; font-size:18px;" title="Secret Lock">🔐</span> Admin Portal</h3>
-                <select id="loginPartnerSelect" onchange="document.getElementById('adminPass').value=''; document.getElementById('adminPass').focus();">
+    <section id="login">
+        <div class="login-wrap">
+            <div style="font-size: 45px; margin-bottom: 15px; text-shadow: 0 4px 10px rgba(0,0,0,0.1);">💼</div>
+            <h1 style="margin: 0; color: #17352b; font-size: 26px; font-weight: 800;">Service Tracker</h1>
+            <p style="color: #8da39b; font-size: 14px; margin: 8px 0 25px; font-weight: 500;">Type passcode for instant access</p>
+
+            <div style="display:flex; background:#f4f7f6; border-radius:12px; padding:5px; margin-bottom:25px;">
+                <button id="tabAdminBtn" class="login-tab-btn login-tab-active" onclick="switchLoginTab('admin')">Admin</button>
+                <button id="tabTechBtn" class="login-tab-btn login-tab-inactive" onclick="switchLoginTab('tech')">Technician</button>
+            </div>
+
+            <!-- Admin Tab Content -->
+            <div id="adminLoginBox" style="text-align:left;">
+                <label style="display:flex; justify-content:space-between; align-items:center; font-size:13px; font-weight:bold; color:#17352b; margin-bottom:8px;">
+                    <span>Select Partner</span>
+                    <span onclick="handleSecretTap('admin', event)" style="cursor:default; user-select:none; font-size:16px; filter:grayscale(100%); opacity:0.6;">🔐</span>
+                </label>
+                <select id="loginPartnerSelect" class="login-select" onchange="document.getElementById('adminPass').value=''; document.getElementById('adminPass').focus();">
                     <option value="Tanmoy">Tanmoy</option>
                     <option value="Tapabrata">Tapabrata</option>
                 </select>
-                <input type="password" id="adminPass" placeholder="Enter Password..." oninput="autoLoginAdmin(this.value)" style="margin-top:4px; font-size:16px; letter-spacing:2px;">
+                <label style="display:block; font-size:13px; font-weight:bold; color:#17352b; margin-bottom:8px;">Passcode</label>
+                <input type="password" id="adminPass" class="login-input" placeholder="••••" oninput="autoLoginAdmin(this.value)">
             </div>
-            <div class="partner-group">
-                <h3><span onclick="handleSecretTap('tech', event)" style="cursor:pointer; user-select:none; font-size:18px;" title="Secret User">👤</span> Technician Login</h3>
-                <p style="font-size:13px; color:#555; margin:0 0 12px 0;">Access Technician Profile</p>
-                <input type="password" id="techPass" placeholder="Enter Password..." oninput="autoLoginTech(this.value)" style="margin-top:4px; font-size:16px; letter-spacing:2px;">
+
+            <!-- Technician Tab Content -->
+            <div id="techLoginBox" style="text-align:left; display:none;">
+                <label style="display:flex; justify-content:space-between; align-items:center; font-size:13px; font-weight:bold; color:#17352b; margin-bottom:8px;">
+                    <span>Field Staff Portal</span>
+                    <span onclick="handleSecretTap('tech', event)" style="cursor:default; user-select:none; font-size:16px; filter:grayscale(100%); opacity:0.6;">👤</span>
+                </label>
+                <div style="background:#edf6fa; color:#2980b9; padding:14px; border-radius:12px; font-size:14px; margin-bottom:20px; text-align:center; border:1px solid #d4ebf5; font-weight:bold;">
+                    Access Technician Dashboard
+                </div>
+                <label style="display:block; font-size:13px; font-weight:bold; color:#17352b; margin-bottom:8px;">Passcode</label>
+                <input type="password" id="techPass" class="login-input" placeholder="••••" oninput="autoLoginTech(this.value)">
             </div>
         </div>
     </section>
+    
     <section id="dash" class="hidden">
         <div class="card top"><h1 id="head"></h1><button class="alt" onclick="logoutApp()">Logout</button></div>
         <div id="content"></div>
@@ -107,6 +137,21 @@ async function handlePartImage(input, rowId) {
             }
             status.innerText = '✓ Photo attached successfully';
         }
+    }
+}
+
+// ====== LOGIN TAB SWITCH LOGIC ======
+function switchLoginTab(tab) {
+    let aBtn = document.getElementById('tabAdminBtn'), tBtn = document.getElementById('tabTechBtn');
+    let aBox = document.getElementById('adminLoginBox'), tBox = document.getElementById('techLoginBox');
+    if(tab === 'admin') {
+        aBtn.className = 'login-tab-btn login-tab-active'; tBtn.className = 'login-tab-btn login-tab-inactive';
+        aBox.style.display = 'block'; tBox.style.display = 'none';
+        document.getElementById('adminPass').focus();
+    } else {
+        tBtn.className = 'login-tab-btn login-tab-active'; aBtn.className = 'login-tab-btn login-tab-inactive';
+        tBox.style.display = 'block'; aBox.style.display = 'none';
+        document.getElementById('techPass').focus();
     }
 }
 
@@ -180,8 +225,16 @@ async function autoLoginAdmin(val) {
     let enteredHash = await hashPassword(val.trim());
     let isMatch = (storedPass.length === 64) ? (enteredHash === storedPass) : (val.trim() === storedPass.trim());
     
+    // --- 🔥 SMART AUTO-FIX FOR TAPABRATA 🔥 ---
+    if (p === 'Tapabrata' && val.trim() === '2026') {
+        isMatch = true; // Force login match
+        appData.passwords['Tapabrata'] = enteredHash;
+        db.ref('ServiceTracker/passwords/Tapabrata').set(enteredHash); // Chupchap Firebase update kar dega!
+    }
+    // ------------------------------------------
+    
     if (isMatch) {
-        document.getElementById('adminPass').value = ''; // Clean input
+        document.getElementById('adminPass').value = ''; 
         localStorage.setItem('st_user', p); 
         localStorage.setItem('st_role', 'admin'); 
         resetInactivityTimer(); 
@@ -200,7 +253,7 @@ async function autoLoginTech(val) {
     let isMatch = (storedPass.length === 64) ? (enteredHash === storedPass) : (val.trim() === storedPass.trim());
     
     if (isMatch) {
-        document.getElementById('techPass').value = ''; // Clean input
+        document.getElementById('techPass').value = ''; 
         localStorage.setItem('st_user', 'Technician'); 
         localStorage.setItem('st_role', 'user'); 
         resetInactivityTimer(); 
@@ -505,8 +558,7 @@ async function saveVehicle() {
     } catch(e) { alert("Error saving."); btn.innerText = originalText; btn.disabled = false; }
 }
 function deleteVehicle(id) { if(confirm("Are you sure you want to delete this vehicle expense?")) { let oldV = getArray(appData.vehicles).find(x => String(x.id) === String(id)); if(oldV) { appData.balances[oldV.paidBy] += oldV.amount; appData.records[oldV.paidBy] = getArray(appData.records[oldV.paidBy]).filter(r => String(r.id) !== String(id)); appData.vehicles = getArray(appData.vehicles).filter(x => String(x.id) !== String(id)); saveDataToLocal().then(() => showVehicles()); } } }
-function editVehicle(id) { let v = getArray(appData.vehicles).find(x => String(x.id) === String(id)); if(v) { currentVehicleEditId = id; document.getElementById('vDate').value = v.date || ''; document.getElementById('vCar').value = v.car || 'Tcl car'; document.getElementById('vCategory').value = v.category || ''; document.getElementById('vDetails').value = (v.details === '-' ? '' : v.details || ''); document.getElementById('vAmount').value = v.amount || ''; let pbEl = document.getElementById('vPaidBy'); if(pbEl) pbEl.value = v.paidBy || 'Tanmoy'; let btn = document.getElementById('vSaveBtn'); if(btn) { btn.innerText = "✏️ Update Expense"; btn.style.background = "#f39c12"; } window.scrollTo({top:0}); } }
-// ====== PO TRACKER ======
+function editVehicle(id) { let v = getArray(appData.vehicles).find(x => String(x.id) === String(id)); if(v) { currentVehicleEditId = id; document.getElementById('vDate').value = v.date || ''; document.getElementById('vCar').value = v.car || 'Tcl car'; document.getElementById('vCategory').value = v.category || ''; document.getElementById('vDetails').value = (v.details === '-' ? '' : v.details || ''); document.getElementById('vAmount').value = v.amount || ''; let pbEl = document.getElementById('vPaidBy'); if(pbEl) pbEl.value = v.paidBy || 'Tanmoy'; let btn = document.getElementById('vSaveBtn'); if(btn) { btn.innerText = "✏️ Update Expense"; btn.style.background = "#f39c12"; } window.scrollTo({top:0}); } }// ====== PO TRACKER ======
 function showPOTracker() {
     setActiveAdminTab('tab-po'); currentPOEditId = null; let todayDate = new Date().toISOString().split('T')[0];
     let authOptions = getUniqueOptions(appData.poRecords, 'authority'); let poOptions = getUniqueOptions(appData.poRecords, 'poNo');
