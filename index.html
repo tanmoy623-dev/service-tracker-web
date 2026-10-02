@@ -48,16 +48,23 @@ td,th{padding:10px;border-bottom:1px solid #e6ece9;text-align:left}
 
 <div class="app">
     <section id="login" class="card">
-        <h1>Service Tracker</h1>
-        <p>Select account type to continue.</p>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h1 style="margin:0;">Service Tracker</h1>
+        </div>
+        <p style="margin-top:5px; color:#555;">Type password to auto-login. (No button needed!)</p>
         <div class="grid">
             <div class="partner-group">
-                <h3>🔐 Admin Portal</h3>
-                <select id="loginPartnerSelect"><option value="Tanmoy">Tanmoy</option><option value="Tapabrata">Tapabrata</option></select>
-                <button onclick="dropdownPartnerLogin()" style="width:100%; margin-top:4px;">Login</button>
+                <h3><span onclick="handleSecretTap('admin', event)" style="cursor:pointer; user-select:none; font-size:18px;" title="Secret Lock">🔐</span> Admin Portal</h3>
+                <select id="loginPartnerSelect" onchange="document.getElementById('adminPass').value=''; document.getElementById('adminPass').focus();">
+                    <option value="Tanmoy">Tanmoy</option>
+                    <option value="Tapabrata">Tapabrata</option>
+                </select>
+                <input type="password" id="adminPass" placeholder="Enter Password..." oninput="autoLoginAdmin(this.value)" style="margin-top:4px; font-size:16px; letter-spacing:2px;">
             </div>
-            <div class="role" onclick="techLoginPrompt()" style="display:flex; flex-direction:column; justify-content:center;">
-                <div>👤 <b>Technician Login</b><br><span style="font-size:13px; color:#555;">Access Technician Profile</span></div>
+            <div class="partner-group">
+                <h3><span onclick="handleSecretTap('tech', event)" style="cursor:pointer; user-select:none; font-size:18px;" title="Secret User">👤</span> Technician Login</h3>
+                <p style="font-size:13px; color:#555; margin:0 0 12px 0;">Access Technician Profile</p>
+                <input type="password" id="techPass" placeholder="Enter Password..." oninput="autoLoginTech(this.value)" style="margin-top:4px; font-size:16px; letter-spacing:2px;">
             </div>
         </div>
     </section>
@@ -72,7 +79,7 @@ td,th{padding:10px;border-bottom:1px solid #e6ece9;text-align:left}
 const firebaseConfig = { apiKey: "AIzaSyCAhAQcsnGqPTiScGJVbNR57Mbnn9jdfdU", authDomain: "servicetracker-e4887.firebaseapp.com", databaseURL: "https://servicetracker-e4887-default-rtdb.firebaseio.com/", projectId: "servicetracker-e4887", storageBucket: "servicetracker-e4887.firebasestorage.app", messagingSenderId: "64365607107", appId: "1:64365607107:web:12e4da7d9c918ad6f38a76" };
 firebase.initializeApp(firebaseConfig); const db = firebase.database(); const IMGBB_API_KEY = "2291e363544930c9291f5bf04d9e9432"; 
 
-let defaultData = { records: { 'Tanmoy': [], 'Tapabrata': [] }, balances: { 'Tanmoy': 0, 'Tapabrata': 0 }, passwords: { 'Tanmoy': '2196', 'Tapabrata': 'tapabrata329', 'Technician': 'tech329' }, computerJobs: [], waterJobs: [], invoiceCount: 314, invoices: [], submittedBills: [], poRecords: [], vehicles: [], signature: '', privateVault: [], privateSalary: [], config: { cfStartMonth: '2026-08', enablePastCF: false } };
+let defaultData = { records: { 'Tanmoy': [], 'Tapabrata': [] }, balances: { 'Tanmoy': 0, 'Tapabrata': 0 }, passwords: { 'Tanmoy': '2196', 'Tapabrata': '2026', 'Technician': 'tech329' }, computerJobs: [], waterJobs: [], invoiceCount: 314, invoices: [], submittedBills: [], poRecords: [], vehicles: [], signature: '', privateVault: [], privateSalary: [], config: { cfStartMonth: '2026-08', enablePastCF: false } };
 let appData = JSON.parse(JSON.stringify(defaultData)); let isFirstLoad = true, currentEditId = null, currentEntryType = 'income'; let currentInvoiceEditId = null, currentTechEditId = null, currentTechEditPhoto = ''; let currentSubmittedBillEditId = null, currentPOEditId = null, currentVehicleEditId = null, currentSalaryEditId = null, currentActiveTab = 'tab-overview'; 
 
 function getArray(data) { if (!data) return []; if (Array.isArray(data)) return data; return Object.values(data); }
@@ -103,6 +110,43 @@ async function handlePartImage(input, rowId) {
     }
 }
 
+// ====== SECRET 8-TAP RESET LOGIC ======
+let tapCounts = { admin: 0, tech: 0 };
+let tapTimers = { admin: null, tech: null };
+
+function handleSecretTap(type, event) {
+    if(event) event.stopPropagation();
+    
+    tapCounts[type]++;
+    
+    if(tapTimers[type]) clearTimeout(tapTimers[type]);
+    
+    tapTimers[type] = setTimeout(() => { tapCounts[type] = 0; }, 2000);
+    
+    if(tapCounts[type] === 8) {
+        tapCounts[type] = 0;
+        
+        let targetUser = type === 'admin' ? document.getElementById('loginPartnerSelect').value : 'Technician';
+        
+        let mKey = prompt(`🚨 SECRET RESET 🚨\n\nEnter Master Key to reset password for ${targetUser}:`);
+        
+        if (mKey === "tanmoy2026") {
+            let nPass = prompt(`🔑 Enter NEW PASSWORD for ${targetUser}:`);
+            if (nPass && nPass.trim().length >= 4) {
+                hashPassword(nPass.trim()).then(h => {
+                    appData.passwords[targetUser] = h;
+                    saveDataToLocal().then(() => alert(`✅ Password for ${targetUser} changed successfully!`));
+                });
+            } else if(nPass !== null) {
+                alert("❌ Password must be at least 4 characters.");
+            }
+        } else if (mKey !== null) {
+            alert("❌ Wrong Master Key!");
+        }
+    }
+}
+// ======================================
+
 const INACTIVITY_TIMEOUT = 20 * 60 * 1000; let inactivityTimer = null;
 function resetInactivityTimer() { if (!localStorage.getItem('st_user')) return; localStorage.setItem('st_last_active', Date.now().toString()); if (inactivityTimer) clearTimeout(inactivityTimer); inactivityTimer = setTimeout(() => { alert("⏰ Auto logout."); logoutApp(); }, INACTIVITY_TIMEOUT); }
 ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'].forEach(evt => window.addEventListener(evt, resetInactivityTimer, { passive: true }));
@@ -112,7 +156,7 @@ db.ref('ServiceTracker').on('value', (snapshot) => {
     if (data && data.records && data.balances) {
         appData = data; appData.poRecords = getArray(appData.poRecords); appData.submittedBills = getArray(appData.submittedBills); appData.invoices = getArray(appData.invoices); appData.computerJobs = getArray(appData.computerJobs); appData.waterJobs = getArray(appData.waterJobs); appData.vehicles = getArray(appData.vehicles); appData.privateVault = getArray(appData.privateVault); appData.privateSalary = getArray(appData.privateSalary);
         for(let p in appData.records) appData.records[p] = getArray(appData.records[p]);
-        if(!appData.passwords) appData.passwords = { 'Tanmoy': '2196', 'Tapabrata': 'tapabrata329', 'Technician': 'tech329' };
+        if(!appData.passwords) appData.passwords = { 'Tanmoy': '2196', 'Tapabrata': '2026', 'Technician': 'tech329' };
         if(!appData.passwords['Technician']) appData.passwords['Technician'] = 'tech329'; 
         if(!appData.invoiceCount) appData.invoiceCount = 314; if(!appData.signature) appData.signature = ''; if(!appData.config) appData.config = { cfStartMonth: '2026-08', enablePastCF: false };
     } else db.ref('ServiceTracker').set(defaultData);
@@ -128,8 +172,45 @@ db.ref('ServiceTracker').on('value', (snapshot) => {
 async function saveDataToLocal() { await db.ref('ServiceTracker').set(appData); }
 async function hashPassword(password) { const encoder = new TextEncoder(); const data = encoder.encode(password); const hash = await crypto.subtle.digest('SHA-256', data); return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join(''); }
 
-async function dropdownPartnerLogin() { let p = document.getElementById('loginPartnerSelect').value; let storedPass = appData.passwords[p] || (p === 'Tanmoy' ? '2196' : 'tapabrata329'); let pass = prompt(`🔐 Enter password for ${p}:`); if(!pass) return; let enteredHash = await hashPassword(pass.trim()); let isMatch = (storedPass.length === 64) ? (enteredHash === storedPass) : (pass.trim() === storedPass.trim()); if (!isMatch) return alert("❌ Incorrect Password!"); localStorage.setItem('st_user', p); localStorage.setItem('st_role', 'admin'); resetInactivityTimer(); document.getElementById('login').classList.add('hidden'); document.getElementById('dash').classList.remove('hidden'); document.getElementById('head').textContent = p + ' Dashboard'; document.getElementById('content').innerHTML = admin(); showAdminOverview(); }
-async function techLoginPrompt() { let storedPass = appData.passwords['Technician'] || 'tech329'; let pass = prompt(`🔐 Enter password for Technician:`); if(!pass) return; let enteredHash = await hashPassword(pass.trim()); let isMatch = (storedPass.length === 64) ? (enteredHash === storedPass) : (pass.trim() === storedPass.trim()); if (!isMatch) return alert("❌ Incorrect Password!"); localStorage.setItem('st_user', 'Technician'); localStorage.setItem('st_role', 'user'); resetInactivityTimer(); document.getElementById('login').classList.add('hidden'); document.getElementById('dash').classList.remove('hidden'); document.getElementById('head').textContent = 'Technician Dashboard'; document.getElementById('content').innerHTML = user(); }
+// === AUTO LOGIN LOGIC ===
+async function autoLoginAdmin(val) {
+    if(!val) return;
+    let p = document.getElementById('loginPartnerSelect').value;
+    let storedPass = appData.passwords[p] || (p === 'Tanmoy' ? '2196' : '2026');
+    let enteredHash = await hashPassword(val.trim());
+    let isMatch = (storedPass.length === 64) ? (enteredHash === storedPass) : (val.trim() === storedPass.trim());
+    
+    if (isMatch) {
+        document.getElementById('adminPass').value = ''; // Clean input
+        localStorage.setItem('st_user', p); 
+        localStorage.setItem('st_role', 'admin'); 
+        resetInactivityTimer(); 
+        document.getElementById('login').classList.add('hidden'); 
+        document.getElementById('dash').classList.remove('hidden'); 
+        document.getElementById('head').textContent = p + ' Dashboard'; 
+        document.getElementById('content').innerHTML = admin(); 
+        showAdminOverview();
+    }
+}
+
+async function autoLoginTech(val) {
+    if(!val) return;
+    let storedPass = appData.passwords['Technician'] || 'tech329';
+    let enteredHash = await hashPassword(val.trim());
+    let isMatch = (storedPass.length === 64) ? (enteredHash === storedPass) : (val.trim() === storedPass.trim());
+    
+    if (isMatch) {
+        document.getElementById('techPass').value = ''; // Clean input
+        localStorage.setItem('st_user', 'Technician'); 
+        localStorage.setItem('st_role', 'user'); 
+        resetInactivityTimer(); 
+        document.getElementById('login').classList.add('hidden'); 
+        document.getElementById('dash').classList.remove('hidden'); 
+        document.getElementById('head').textContent = 'Technician Dashboard'; 
+        document.getElementById('content').innerHTML = user();
+    }
+}
+
 function logoutApp() { localStorage.removeItem('st_user'); localStorage.removeItem('st_role'); location.reload(); }
 
 // ====== ADMIN SHELL ======
@@ -424,7 +505,8 @@ async function saveVehicle() {
     } catch(e) { alert("Error saving."); btn.innerText = originalText; btn.disabled = false; }
 }
 function deleteVehicle(id) { if(confirm("Are you sure you want to delete this vehicle expense?")) { let oldV = getArray(appData.vehicles).find(x => String(x.id) === String(id)); if(oldV) { appData.balances[oldV.paidBy] += oldV.amount; appData.records[oldV.paidBy] = getArray(appData.records[oldV.paidBy]).filter(r => String(r.id) !== String(id)); appData.vehicles = getArray(appData.vehicles).filter(x => String(x.id) !== String(id)); saveDataToLocal().then(() => showVehicles()); } } }
-function editVehicle(id) { let v = getArray(appData.vehicles).find(x => String(x.id) === String(id)); if(v) { currentVehicleEditId = id; document.getElementById('vDate').value = v.date || ''; document.getElementById('vCar').value = v.car || 'Tcl car'; document.getElementById('vCategory').value = v.category || ''; document.getElementById('vDetails').value = (v.details === '-' ? '' : v.details || ''); document.getElementById('vAmount').value = v.amount || ''; let pbEl = document.getElementById('vPaidBy'); if(pbEl) pbEl.value = v.paidBy || 'Tanmoy'; let btn = document.getElementById('vSaveBtn'); if(btn) { btn.innerText = "✏️ Update Expense"; btn.style.background = "#f39c12"; } window.scrollTo({top:0}); } }// ====== PO TRACKER ======
+function editVehicle(id) { let v = getArray(appData.vehicles).find(x => String(x.id) === String(id)); if(v) { currentVehicleEditId = id; document.getElementById('vDate').value = v.date || ''; document.getElementById('vCar').value = v.car || 'Tcl car'; document.getElementById('vCategory').value = v.category || ''; document.getElementById('vDetails').value = (v.details === '-' ? '' : v.details || ''); document.getElementById('vAmount').value = v.amount || ''; let pbEl = document.getElementById('vPaidBy'); if(pbEl) pbEl.value = v.paidBy || 'Tanmoy'; let btn = document.getElementById('vSaveBtn'); if(btn) { btn.innerText = "✏️ Update Expense"; btn.style.background = "#f39c12"; } window.scrollTo({top:0}); } }
+// ====== PO TRACKER ======
 function showPOTracker() {
     setActiveAdminTab('tab-po'); currentPOEditId = null; let todayDate = new Date().toISOString().split('T')[0];
     let authOptions = getUniqueOptions(appData.poRecords, 'authority'); let poOptions = getUniqueOptions(appData.poRecords, 'poNo');
