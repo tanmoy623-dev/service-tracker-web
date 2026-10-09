@@ -9,14 +9,9 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 <style>
 /* --- PREMIUM LOGIN STYLES --- */
-.login-wrap { max-width: 400px; margin: 8vh auto; background: white; padding: 40px 30px; border-radius: 24px; box-shadow: 0 15px 35px rgba(0,0,0,0.06); text-align: center; border: 1px solid #edf2f0; }
-.login-input { width: 100%; padding: 15px; border: 2px solid #eef2f0; border-radius: 12px; font-size: 20px; letter-spacing: 4px; outline: none; transition: 0.3s; text-align: center; font-weight: bold; background: #fafcfb; color: #176b4d; box-sizing: border-box; margin:0;}
+.login-wrap { max-width: 400px; margin: 12vh auto; background: white; padding: 50px 30px; border-radius: 24px; box-shadow: 0 15px 35px rgba(0,0,0,0.06); text-align: center; border: 1px solid #edf2f0; }
+.login-input { width: 100%; padding: 18px; border: 2px solid #eef2f0; border-radius: 14px; font-size: 24px; letter-spacing: 8px; outline: none; transition: 0.3s; text-align: center; font-weight: bold; background: #fafcfb; color: #176b4d; box-sizing: border-box; margin:0;}
 .login-input:focus { border-color: #176b4d; background: white; box-shadow: 0 0 0 4px rgba(23,107,77,0.1); }
-.login-select { width: 100%; padding: 14px; border: 2px solid #eef2f0; border-radius: 12px; font-size: 16px; margin-bottom: 20px; outline: none; background: #fafcfb; cursor: pointer; font-weight: bold; color: #17352b; box-sizing: border-box; margin: 0 0 15px 0;}
-.login-select:focus { border-color: #176b4d; }
-.login-tab-btn { flex: 1; padding: 12px; font-size: 15px; font-weight: bold; border-radius: 10px; transition: 0.3s; cursor: pointer; border: none; }
-.login-tab-active { background: white; color: #176b4d; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
-.login-tab-inactive { background: transparent; color: #8da39b; box-shadow: none; }
 
 /* --- GLOBAL APP STYLES --- */
 body{font-family:Arial;margin:0;background:#f4f7f6;color:#17352b}
@@ -69,7 +64,7 @@ td,th{padding:10px;border-bottom:1px solid #e6ece9;text-align:left}
     .recon-cell { padding: 2px !important; font-size: 14px !important; }
     .top { flex-direction: row; gap:10px; }
     .top h1 { font-size: 20px; margin:0; }
-    .login-wrap { padding: 30px 20px; margin: 4vh auto; }
+    .login-wrap { padding: 40px 20px; margin: 8vh auto; }
 }
 </style>
 </head>
@@ -78,41 +73,19 @@ td,th{padding:10px;border-bottom:1px solid #e6ece9;text-align:left}
 <div class="app">
     <section id="login">
         <div class="login-wrap">
-            <div style="font-size: 45px; margin-bottom: 15px; text-shadow: 0 4px 10px rgba(0,0,0,0.1);">💼</div>
-            <h1 style="margin: 0; color: #17352b; font-size: 26px; font-weight: 800;">Service Tracker</h1>
-            <p style="color: #8da39b; font-size: 14px; margin: 8px 0 25px; font-weight: 500;">Type passcode for instant access</p>
+            <div style="font-size: 50px; margin-bottom: 10px; text-shadow: 0 4px 10px rgba(0,0,0,0.1);">💼</div>
+            <h1 style="margin: 0; color: #17352b; font-size: 28px; font-weight: 800;">Service Tracker</h1>
+            <p style="color: #8da39b; font-size: 15px; margin: 8px 0 35px; font-weight: 500;">Secure Unified Portal</p>
 
-            <div style="display:flex; background:#f4f7f6; border-radius:12px; padding:5px; margin-bottom:25px;">
-                <button id="tabAdminBtn" class="login-tab-btn login-tab-active" onclick="switchLoginTab('admin')">Admin</button>
-                <button id="tabTechBtn" class="login-tab-btn login-tab-inactive" onclick="switchLoginTab('tech')">Technician</button>
-            </div>
-
-            <!-- Admin Tab Content -->
-            <div id="adminLoginBox" style="text-align:left;">
-                <label style="display:flex; justify-content:space-between; align-items:center; font-size:13px; font-weight:bold; color:#17352b; margin-bottom:8px;">
-                    <span>Select Partner</span>
-                    <span onclick="handleSecretTap('admin', event)" style="cursor:default; user-select:none; font-size:16px; filter:grayscale(100%); opacity:0.6;">🔐</span>
+            <div style="text-align:left;">
+                <label style="display:flex; justify-content:space-between; align-items:center; font-size:14px; font-weight:bold; color:#17352b; margin-bottom:10px;">
+                    <span>Enter Passcode</span>
+                    <span onclick="handleSecretTap(event)" style="cursor:default; user-select:none; font-size:18px; filter:grayscale(100%); opacity:0.6;">🔐</span>
                 </label>
-                <select id="loginPartnerSelect" class="login-select" onchange="document.getElementById('adminPass').value=''; document.getElementById('adminPass').focus();">
-                    <option value="Tanmoy">Tanmoy</option>
-                    <option value="Tapabrata">Tapabrata</option>
-                </select>
-                <label style="display:block; font-size:13px; font-weight:bold; color:#17352b; margin-bottom:8px;">Passcode</label>
-                <input type="password" id="adminPass" class="login-input" placeholder="••••" oninput="autoLoginAdmin(this.value)">
+                <input type="password" id="unifiedPass" class="login-input" placeholder="••••" oninput="autoLoginUnified(this.value)">
             </div>
-
-            <!-- Technician Tab Content -->
-            <div id="techLoginBox" style="text-align:left; display:none;">
-                <label style="display:flex; justify-content:space-between; align-items:center; font-size:13px; font-weight:bold; color:#17352b; margin-bottom:8px;">
-                    <span>Field Staff Portal</span>
-                    <span onclick="handleSecretTap('tech', event)" style="cursor:default; user-select:none; font-size:16px; filter:grayscale(100%); opacity:0.6;">👤</span>
-                </label>
-                <div style="background:#edf6fa; color:#2980b9; padding:14px; border-radius:12px; font-size:14px; margin-bottom:20px; text-align:center; border:1px solid #d4ebf5; font-weight:bold;">
-                    Access Technician Dashboard
-                </div>
-                <label style="display:block; font-size:13px; font-weight:bold; color:#17352b; margin-bottom:8px;">Passcode</label>
-                <input type="password" id="techPass" class="login-input" placeholder="••••" oninput="autoLoginTech(this.value)">
-            </div>
+            
+            <p style="font-size:12px; color:#bdc3c7; margin-top:20px;">System will automatically detect your role.</p>
         </div>
     </section>
     
@@ -158,57 +131,46 @@ async function handlePartImage(input, rowId) {
     }
 }
 
-// ====== LOGIN TAB SWITCH LOGIC ======
-function switchLoginTab(tab) {
-    let aBtn = document.getElementById('tabAdminBtn'), tBtn = document.getElementById('tabTechBtn');
-    let aBox = document.getElementById('adminLoginBox'), tBox = document.getElementById('techLoginBox');
-    if(tab === 'admin') {
-        aBtn.className = 'login-tab-btn login-tab-active'; tBtn.className = 'login-tab-btn login-tab-inactive';
-        aBox.style.display = 'block'; tBox.style.display = 'none';
-        document.getElementById('adminPass').focus();
-    } else {
-        tBtn.className = 'login-tab-btn login-tab-active'; aBtn.className = 'login-tab-btn login-tab-inactive';
-        tBox.style.display = 'block'; aBox.style.display = 'none';
-        document.getElementById('techPass').focus();
-    }
-}
+// ====== UNIFIED SECRET 8-TAP RESET LOGIC ======
+let tapCount = 0;
+let tapTimer = null;
 
-// ====== SECRET 8-TAP RESET LOGIC ======
-let tapCounts = { admin: 0, tech: 0 };
-let tapTimers = { admin: null, tech: null };
-
-function handleSecretTap(type, event) {
+function handleSecretTap(event) {
     if(event) event.stopPropagation();
     
-    tapCounts[type]++;
+    tapCount++;
     
-    if(tapTimers[type]) clearTimeout(tapTimers[type]);
+    if(tapTimer) clearTimeout(tapTimer);
     
-    tapTimers[type] = setTimeout(() => { tapCounts[type] = 0; }, 2000);
+    tapTimer = setTimeout(() => { tapCount = 0; }, 2000);
     
-    if(tapCounts[type] === 8) {
-        tapCounts[type] = 0;
+    if(tapCount === 8) {
+        tapCount = 0;
         
-        let targetUser = type === 'admin' ? document.getElementById('loginPartnerSelect').value : 'Technician';
-        
-        let mKey = prompt(`🚨 SECRET RESET 🚨\n\nEnter Master Key to reset password for ${targetUser}:`);
+        let mKey = prompt(`🚨 SECRET RESET 🚨\n\nEnter Master Key:`);
         
         if (mKey === "tanmoy2026") {
-            let nPass = prompt(`🔑 Enter NEW PASSWORD for ${targetUser}:`);
-            if (nPass && nPass.trim().length >= 4) {
-                hashPassword(nPass.trim()).then(h => {
-                    appData.passwords[targetUser] = h;
-                    saveDataToLocal().then(() => alert(`✅ Password for ${targetUser} changed successfully!`));
-                });
-            } else if(nPass !== null) {
-                alert("❌ Password must be at least 4 characters.");
+            let targetUser = prompt(`🔑 Which partner's password to reset?\n\nType exactly:\nTanmoy\nTapabrata\nTechnician`);
+            
+            if(targetUser === 'Tanmoy' || targetUser === 'Tapabrata' || targetUser === 'Technician') {
+                let nPass = prompt(`Enter NEW PASSWORD for ${targetUser}:`);
+                if (nPass && nPass.trim().length >= 4) {
+                    hashPassword(nPass.trim()).then(h => {
+                        appData.passwords[targetUser] = h;
+                        saveDataToLocal().then(() => alert(`✅ Password for ${targetUser} changed successfully!`));
+                    });
+                } else if(nPass !== null) {
+                    alert("❌ Password must be at least 4 characters.");
+                }
+            } else if (targetUser !== null) {
+                alert("❌ Invalid user name! Case sensitive.");
             }
         } else if (mKey !== null) {
             alert("❌ Wrong Master Key!");
         }
     }
 }
-// ======================================
+// ===============================================
 
 const INACTIVITY_TIMEOUT = 20 * 60 * 1000; let inactivityTimer = null;
 function resetInactivityTimer() { if (!localStorage.getItem('st_user')) return; localStorage.setItem('st_last_active', Date.now().toString()); if (inactivityTimer) clearTimeout(inactivityTimer); inactivityTimer = setTimeout(() => { alert("⏰ Auto logout."); logoutApp(); }, INACTIVITY_TIMEOUT); }
@@ -235,59 +197,78 @@ db.ref('ServiceTracker').on('value', (snapshot) => {
 async function saveDataToLocal() { await db.ref('ServiceTracker').set(appData); }
 async function hashPassword(password) { const encoder = new TextEncoder(); const data = encoder.encode(password); const hash = await crypto.subtle.digest('SHA-256', data); return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join(''); }
 
-// === AUTO LOGIN LOGIC ===
-async function autoLoginAdmin(val) {
+// === MAGIC UNIFIED AUTO LOGIN LOGIC ===
+async function autoLoginUnified(val) {
     if(!val) return;
-    let p = document.getElementById('loginPartnerSelect').value;
-    let storedPass = appData.passwords[p] || (p === 'Tanmoy' ? '2196' : '2026');
     let enteredHash = await hashPassword(val.trim());
-    let isMatch = (storedPass.length === 64) ? (enteredHash === storedPass) : (val.trim() === storedPass.trim());
-    
+    let users = ['Tanmoy', 'Tapabrata', 'Technician'];
+    let matchedUser = null;
+    let matchedRole = null;
+
     // --- SMART AUTO-FIX FOR TAPABRATA ---
-    if (p === 'Tapabrata' && val.trim() === '2026') {
-        isMatch = true; 
+    if (val.trim() === '2026') {
         appData.passwords['Tapabrata'] = enteredHash;
         db.ref('ServiceTracker/passwords/Tapabrata').set(enteredHash);
+        matchedUser = 'Tapabrata';
+        matchedRole = 'admin';
+    } else {
+        // Checking all other users
+        for (let u of users) {
+            let storedPass = appData.passwords[u] || (u === 'Tanmoy' ? '2196' : (u === 'Tapabrata' ? '2026' : 'tech329'));
+            let isMatch = (storedPass.length === 64) ? (enteredHash === storedPass) : (val.trim() === storedPass.trim());
+            
+            if (isMatch) {
+                matchedUser = u;
+                matchedRole = (u === 'Technician') ? 'user' : 'admin';
+                break;
+            }
+        }
     }
-    // ------------------------------------
-    
-    if (isMatch) {
-        document.getElementById('adminPass').value = ''; 
-        localStorage.setItem('st_user', p); 
-        localStorage.setItem('st_role', 'admin'); 
-        resetInactivityTimer(); 
-        document.getElementById('login').classList.add('hidden'); 
-        document.getElementById('dash').classList.remove('hidden'); 
-        document.getElementById('head').textContent = p + ' Dashboard'; 
-        document.getElementById('content').innerHTML = admin(); 
-        showAdminOverview();
-    }
-}
 
-async function autoLoginTech(val) {
-    if(!val) return;
-    let storedPass = appData.passwords['Technician'] || 'tech329';
-    let enteredHash = await hashPassword(val.trim());
-    let isMatch = (storedPass.length === 64) ? (enteredHash === storedPass) : (val.trim() === storedPass.trim());
-    
-    if (isMatch) {
-        document.getElementById('techPass').value = ''; 
-        localStorage.setItem('st_user', 'Technician'); 
-        localStorage.setItem('st_role', 'user'); 
+    if (matchedUser) {
+        document.getElementById('unifiedPass').value = ''; 
+        localStorage.setItem('st_user', matchedUser); 
+        localStorage.setItem('st_role', matchedRole); 
         resetInactivityTimer(); 
+        
         document.getElementById('login').classList.add('hidden'); 
         document.getElementById('dash').classList.remove('hidden'); 
-        document.getElementById('head').textContent = 'Technician Dashboard'; 
-        document.getElementById('content').innerHTML = user();
+        
+        if(matchedRole === 'admin') {
+            document.getElementById('head').textContent = matchedUser + ' Dashboard'; 
+            document.getElementById('content').innerHTML = admin(); 
+            showAdminOverview();
+        } else {
+            document.getElementById('head').textContent = 'Technician Dashboard'; 
+            document.getElementById('content').innerHTML = user();
+        }
     }
 }
+// =======================================
 
 function logoutApp() { localStorage.removeItem('st_user'); localStorage.removeItem('st_role'); location.reload(); }
 
-// ====== ADMIN SHELL ======
+// ====== ADMIN SHELL & SMART MONTH PILL ======
 function handleGlobalMonthChange() { let el = document.getElementById('headerMonthSelect'); if(el) localStorage.setItem('st_manual_month', el.value); if (currentActiveTab === 'tab-overview') showAdminOverview(); else if (currentActiveTab === 'tab-tanmoy') partnerProfile('Tanmoy'); else if (currentActiveTab === 'tab-tapabrata') partnerProfile('Tapabrata'); else if (currentActiveTab === 'tab-carry') showCarryForward(); else if (currentActiveTab === 'tab-vehicles') showVehicles(); else if (currentActiveTab === 'tab-private') showPrivateVault(); }
 
-// --- TRUE SMART MONTH DROPDOWN (Aug 2026 to Current, Reverse Order) ---
+window.changeMonthBy = function(step) {
+    let targetSelect = document.getElementById('headerMonthSelect');
+    if(!targetSelect || targetSelect.value === 'All Time') return;
+    let parts = targetSelect.value.split(' ');
+    let mIdx = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].indexOf(parts[0]);
+    let y = parseInt(parts[1]);
+    let nd = new Date(y, mIdx + step, 1);
+    let newVal = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"][nd.getMonth()] + ' ' + nd.getFullYear();
+    
+    let exists = Array.from(targetSelect.options).some(opt => opt.value === newVal);
+    if(!exists) {
+        let shortM = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][nd.getMonth()];
+        targetSelect.add(new Option(shortM + ' ' + nd.getFullYear(), newVal));
+    }
+    targetSelect.value = newVal;
+    handleGlobalMonthChange();
+};
+
 function generateMonthDropdown() { 
     let d = new Date(); 
     let currMonthName = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"][d.getMonth()]; 
@@ -296,41 +277,7 @@ function generateMonthDropdown() {
     const shortM = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]; 
     let options = '<option value="All Time">All Time</option>'; 
     
-    let startYear = 2026; let startMonth = 7; // Aug 2026
-    let endYear = d.getFullYear(); let endMonth = d.getMonth() + 1; // Until next month
-    if (endMonth > 11) { endMonth = 0; endYear++; }
-
-    let validMonths = [];
-    let tempY = startYear, tempM = startMonth;
-    while(tempY < endYear || (tempY === endYear && tempM <= endMonth)) {
-        validMonths.unshift({ y: tempY, m: tempM }); // unshift to reverse order (newest top)
-        tempM++; if(tempM > 11) { tempM = 0; tempY++; }
-    }
-
-    let lastY = -1;
-    validMonths.forEach(item => {
-        if (item.y !== lastY) {
-            if (lastY !== -1) options += `</optgroup>`;
-            options += `<optgroup label="${item.y}">`;
-            lastY = item.y;
-        }
-        let val = `${months[item.m]} ${item.y}`;
-        let disp = `${shortM[item.m]} ${item.y}`;
-        let sel = (val === savedMonth) ? "selected" : "";
-        options += `<option value="${val}" ${sel}>${disp}</option>`;
-    });
-    if (lastY !== -1) options += `</optgroup>`;
-
-    return `<select id="headerMonthSelect" style="background:white;color:#17352b;padding:4px 8px;border-radius:6px;border:none;font-weight:bold;cursor:pointer;flex-shrink:0;width:auto;margin:0;" onchange="handleGlobalMonthChange()">${options}</select>`; 
-}
-
-function generateMiniMonthDropdown(currentValue) { 
-    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]; 
-    const shortM = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]; 
-    let options = '<option value="All Time">All Time</option>'; 
-    
-    let d = new Date();
-    let startYear = 2026; let startMonth = 7; // Aug 2026
+    let startYear = 2026; let startMonth = 7; 
     let endYear = d.getFullYear(); let endMonth = d.getMonth() + 1; 
     if (endMonth > 11) { endMonth = 0; endYear++; }
 
@@ -341,16 +288,64 @@ function generateMiniMonthDropdown(currentValue) {
         tempM++; if(tempM > 11) { tempM = 0; tempY++; }
     }
 
+    let lastY = -1; let hasSaved = (savedMonth === "All Time");
+    validMonths.forEach(item => {
+        if (item.y !== lastY) {
+            if (lastY !== -1) options += `</optgroup>`;
+            options += `<optgroup label="${item.y}">`;
+            lastY = item.y;
+        }
+        let val = `${months[item.m]} ${item.y}`;
+        let disp = `${shortM[item.m]} ${item.y}`;
+        let sel = (val === savedMonth) ? "selected" : "";
+        if(sel) hasSaved = true;
+        options += `<option value="${val}" ${sel}>${disp}</option>`;
+    });
+    if (lastY !== -1) options += `</optgroup>`;
+    
+    if (!hasSaved && savedMonth && savedMonth !== "All Time") { 
+        let p = savedMonth.split(' '); 
+        let sIdx = months.indexOf(p[0]); 
+        if(sIdx > -1) options += `<option value="${savedMonth}" selected>${shortM[sIdx]} ${p[1]}</option>`; 
+    } 
+
+    return `<div style="display:inline-flex; align-items:stretch; background:#fff; border:1px solid #cce3d8; border-radius:6px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.05);"><button onclick="changeMonthBy(-1)" style="flex-shrink:0; width:28px; background:#f4f7f6; border:none; border-right:1px solid #cce3d8; font-weight:bold; color:#176b4d; cursor:pointer;" title="Previous Month">&lt;</button><select id="headerMonthSelect" style="background:white;color:#17352b;padding:4px 4px;border:none;font-weight:bold;cursor:pointer;flex-grow:1;width:auto;margin:0;outline:none;" onchange="handleGlobalMonthChange()">${options}</select><button onclick="changeMonthBy(1)" style="flex-shrink:0; width:28px; background:#f4f7f6; border:none; border-left:1px solid #cce3d8; font-weight:bold; color:#176b4d; cursor:pointer;" title="Next Month">&gt;</button></div>`; 
+}
+
+function generateMiniMonthDropdown(currentValue) { 
+    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]; 
+    const shortM = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]; 
+    let options = '<option value="All Time">All Time</option>'; 
+    
+    let d = new Date();
+    let startYear = 2026; let startMonth = 7; 
+    let endYear = d.getFullYear(); let endMonth = d.getMonth() + 1; 
+    if (endMonth > 11) { endMonth = 0; endYear++; }
+
+    let validMonths = [];
+    let tempY = startYear, tempM = startMonth;
+    while(tempY < endYear || (tempY === endYear && tempM <= endMonth)) {
+        validMonths.unshift({ y: tempY, m: tempM });
+        tempM++; if(tempM > 11) { tempM = 0; tempY++; }
+    }
+
+    let hasCurrent = (currentValue === "All Time");
     validMonths.forEach(item => {
         let val = `${months[item.m]} ${item.y}`;
         let disp = `${shortM[item.m]} ${item.y}`;
         let sel = (val === currentValue) ? "selected" : "";
+        if(sel) hasCurrent = true;
         options += `<option value="${val}" ${sel}>${disp}</option>`;
     });
 
-    return `<select onchange="document.getElementById('headerMonthSelect').value=this.value; handleGlobalMonthChange()" style="width: auto; max-width: 110px; margin: 0; padding:4px 6px; font-size:12px; border:1px solid #cce3d8; border-radius:6px; background:#fff; font-weight:bold; color:#176b4d; cursor:pointer;">${options}</select>`; 
+    if (!hasCurrent && currentValue && currentValue !== "All Time") { 
+        let p = currentValue.split(' '); 
+        let sIdx = months.indexOf(p[0]); 
+        if(sIdx > -1) options += `<option value="${currentValue}" selected>${shortM[sIdx]} ${p[1]}</option>`; 
+    } 
+
+    return `<div style="display:inline-flex; align-items:stretch; background:#fff; border:1px solid #cce3d8; border-radius:6px; overflow:hidden; box-shadow:0 1px 2px rgba(0,0,0,0.05); max-width:145px; box-sizing:border-box;"><button onclick="changeMonthBy(-1)" style="flex-shrink:0; width:22px; background:#f4f7f6; border:none; border-right:1px solid #cce3d8; font-weight:bold; font-size:11px; color:#176b4d; cursor:pointer;" title="Previous Month">&lt;</button><select onchange="document.getElementById('headerMonthSelect').value=this.value; handleGlobalMonthChange()" style="flex-grow:1; width:auto; min-width:65px; margin:0; padding:4px 2px; font-size:11px; border:none; background:#fff; font-weight:bold; color:#176b4d; cursor:pointer; outline:none;">${options}</select><button onclick="changeMonthBy(1)" style="flex-shrink:0; width:22px; background:#f4f7f6; border:none; border-left:1px solid #cce3d8; font-weight:bold; font-size:11px; color:#176b4d; cursor:pointer;" title="Next Month">&gt;</button></div>`; 
 }
-// --------------------------------------------------------
 
 function admin() { 
     let currentUser = localStorage.getItem('st_user'); 
@@ -378,9 +373,7 @@ function admin() {
     <div id="adminArea"><div id="profileArea"></div></div>`; 
 }
 
-function setActiveAdminTab(activeId) { currentActiveTab = activeId; let tabs = ['tab-overview', 'tab-invoice', 'tab-sub-bills', 'tab-po', 'tab-vehicles', 'tab-tanmoy', 'tab-tapabrata', 'tab-carry', 'tab-tech', 'tab-settings', 'tab-private']; tabs.forEach(id => { let btn = document.getElementById(id); if(btn) { let defaultBg = '#5b4be0'; if(id === 'tab-invoice') defaultBg = '#f39c12'; else if(id === 'tab-settings') defaultBg = '#2980b9'; else if(id === 'tab-sub-bills') defaultBg = '#8e44ad'; else if(id === 'tab-po') defaultBg = '#16a085'; else if(id === 'tab-vehicles') defaultBg = '#e67e22'; else if(id === 'tab-private') defaultBg = '#34495e'; btn.style.background = (id === activeId) ? "white" : defaultBg; btn.style.color = (id === activeId) ? (id === 'tab-private' ? '#34495e' : "#07865b") : "white"; } }); }
-
-// ====== PRIVATE VAULT part 2 ======
+function setActiveAdminTab(activeId) { currentActiveTab = activeId; let tabs = ['tab-overview', 'tab-invoice', 'tab-sub-bills', 'tab-po', 'tab-vehicles', 'tab-tanmoy', 'tab-tapabrata', 'tab-carry', 'tab-tech', 'tab-settings', 'tab-private']; tabs.forEach(id => { let btn = document.getElementById(id); if(btn) { let defaultBg = '#5b4be0'; if(id === 'tab-invoice') defaultBg = '#f39c12'; else if(id === 'tab-settings') defaultBg = '#2980b9'; else if(id === 'tab-sub-bills') defaultBg = '#8e44ad'; else if(id === 'tab-po') defaultBg = '#16a085'; else if(id === 'tab-vehicles') defaultBg = '#e67e22'; else if(id === 'tab-private') defaultBg = '#34495e'; btn.style.background = (id === activeId) ? "white" : defaultBg; btn.style.color = (id === activeId) ? (id === 'tab-private' ? '#34495e' : "#07865b") : "white"; } }); }// ====== PRIVATE VAULT ======
 function showPrivateVault() {
     if (localStorage.getItem('st_user') !== 'Tanmoy') return;
     setActiveAdminTab('tab-private'); let todayDate = new Date().toISOString().split('T')[0]; let empNames = getUniqueOptions(appData.privateSalary, 'name');
