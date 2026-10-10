@@ -441,7 +441,8 @@ function clearPartnerDateFilter(name) {
 function partnerProfile(name){
     currentPartnerDateFilter = '';
     setActiveAdminTab(name === 'Tanmoy' ? 'tab-tanmoy' : 'tab-tapabrata');
-    currentEditId = null; currentEntryType = 'income'; let todayDate = new Date().toISOString().split('T')[0];
+    currentEditId = null; 
+    let todayDate = window.lastSelectedDate || new Date().toISOString().split('T')[0];
     let allDetails = []; getArray(appData.records['Tanmoy']).forEach(r => { if(r.details && !r.isAuto) allDetails.push(r.details); }); getArray(appData.records['Tapabrata']).forEach(r => { if(r.details && !r.isAuto) allDetails.push(r.details); });
     let detailsSuggest = [...new Set(allDetails)].sort().map(v => `<option value="${v}">`).join('');
     let pendingBills = getArray(appData.submittedBills).filter(b => !b.isPaid).map(b => `<option value="${b.billNo}">`).join('');
@@ -455,14 +456,14 @@ function partnerProfile(name){
         <div id="transferCheckboxDiv" style="margin:12px 0; background:#eff7f3; border:1px solid #cce3d8; padding:12px; border-radius:8px; display:none;"><label style="font-weight:bold; color:#176b4d; display:flex; align-items:center; cursor:pointer; margin:0;"><input type="checkbox" id="transferCheckbox" style="width:auto; margin:0 10px 0 0; transform:scale(1.2);"> 🔄 Transfer to ${name === 'Tanmoy' ? 'Tapabrata' : 'Tanmoy'}</label></div>
         <div id="quickVehicleDiv" style="margin:12px 0; background:#fdf2e9; border:1px solid #f5cba7; padding:12px; border-radius:8px; display:none;"><label style="font-weight:bold; color:#d35400; display:flex; align-items:center; cursor:pointer; margin:0;"><input type="checkbox" id="isVehicleExpense" style="width:auto; margin:0 10px 0 0; transform:scale(1.2);" onchange="document.getElementById('vehicleOptions').style.display = this.checked ? 'flex' : 'none'"> 🚗 Add as Vehicle Expense?</label><div id="vehicleOptions" style="display:none; gap:10px; flex-wrap:wrap; margin-top:10px;"><div style="flex:1; min-width:120px;"><label style="font-size:12px; margin-bottom:4px; display:block;">Select Car</label><select id="qvCar" style="margin:0;"><option value="Tcl car">Tcl car</option><option value="Dcl car">Dcl car</option></select></div><div style="flex:1; min-width:120px;"><label style="font-size:12px; margin-bottom:4px; display:block;">Category</label><select id="qvCategory" style="margin:0;"><option value="Fuel">⛽ Fuel</option><option value="Maintenance">🛠️ Maintenance</option><option value="Toll/Parking">🎫 Toll/Parking</option><option value="Other">📝 Other</option></select></div></div></div>
         <div id="billNoDiv" style="margin:6px 0 12px; display:block;"><label style="display:block; margin-bottom:4px;">Bill No. <span style="font-size:11px; font-weight:normal; color:#555;">(Optional)</span></label><input id="entryBillNo" list="dlPendingBills" placeholder="Optional Bill No..." style="margin:0;"></div>
-        <label>Date</label><input type="date" id="entryDate" value="${todayDate}">
+        <label>Date</label><input type="date" id="entryDate" value="${todayDate}" onchange="window.lastSelectedDate=this.value">
         <label>Amount (₹)</label><input type="number" id="entryAmount">
         <label>Details</label><input id="entryDetails" list="dlPartnerDetails">
         <label>Photo</label><input type="file" id="entryPhoto" accept="image/*">
         <button onclick="savePartnerEntry('${name}')" style="width:100%;margin-top:8px;" id="entrySaveBtn">Save Entry</button>
     </div>
     <div class="card"><div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;"><h2 style="margin:0;">📋 Monthly Records</h2><div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;"><button onclick="downloadPartnerCSV('${name}')" style="background:#16a085; color:white; padding:8px 12px; margin:0; border-radius:8px;">📥 Export Excel</button><input type="text" id="partnerSearchInput" placeholder="🔍 Search Details, Bill..." oninput="renderPartnerData('${name}')" style="max-width:260px; margin:0; padding:8px 12px;"></div></div><div id="recordsGrid" class="dual-records-grid"><div id="incTable"></div><div id="expTable"></div><div id="profTable" style="display:none;"></div></div></div>`;
-    renderPartnerData(name); setEntryType('income');
+    renderPartnerData(name); setEntryType(currentEntryType);
 }
 
 function renderPartnerData(name) {
@@ -530,9 +531,21 @@ async function savePartnerEntry(name) {
     let isTransfer = document.getElementById('transferCheckbox') && document.getElementById('transferCheckbox').checked && currentEntryType !== 'profit'; let isVehicle = document.getElementById('isVehicleExpense') && document.getElementById('isVehicleExpense').checked && currentEntryType === 'expense'; let otherName = name === 'Tanmoy' ? 'Tapabrata' : 'Tanmoy';
     if(isNaN(amt) || amt <= 0) return alert("Valid Amount required!"); if(!isVehicle && !det) return alert("Details required!"); if(file && !file.type.startsWith('image/')) return alert("Upload Image only!");
     
-    if(currentEditId !== null && (isTransfer || isVehicle)) { let oldR = getArray(appData.records[name]).find(r => String(r.id) === String(currentEditId)); if (oldR) { appData.balances[name] -= (oldR.type === 'income' ? oldR.amount : -oldR.amount); appData.records[name] = getArray(appData.records[name]).filter(r => String(r.id) !== String(currentEditId)); } currentEditId = null; }
-    if (!isVehicle) { let isDuplicate = getArray(appData.records[name]).some(r => String(r.id) !== String(currentEditId) && r.date === date && r.amount === amt && (r.details||'').toLowerCase() === det.toLowerCase() && r.type === currentEntryType); if(isDuplicate) return alert("❌ DUPLICATE ENTRY!"); }
+    let qvCar = isVehicle ? document.getElementById('qvCar').value : '';
+    let qvCat = isVehicle ? document.getElementById('qvCategory').value : '';
+    let partnerDesc = '';
+    if (isVehicle) {
+        partnerDesc = det ? `🚗 ${qvCar} - ${qvCat} (${det})` : `🚗 ${qvCar} - ${qvCat}`;
+    } else {
+        partnerDesc = isTransfer ? `${det} (To ${otherName})` : det;
+    }
+
+    let isDuplicate = getArray(appData.records[name]).some(r => String(r.id) !== String(currentEditId) && r.date === date && r.amount === amt && (r.details||'').toLowerCase() === partnerDesc.toLowerCase() && r.type === currentEntryType);
+    if(isDuplicate) return alert("❌ DUPLICATE ENTRY! Yeh entry is date par pehle se maujood hai. Agar doosri entry add karni hai, toh Details mein thoda change karein (e.g. 'Toll 2').");
+
     if(currentEntryType === 'income' && billNo) { let allRecs = [ ...getArray(appData.records['Tanmoy']), ...getArray(appData.records['Tapabrata']) ]; let isBillUsed = allRecs.some(r => String(r.id) !== String(currentEditId) && r.billNo && r.billNo.toLowerCase() === billNo.toLowerCase()); if(isBillUsed) return alert(`❌ DUPLICATE BILL!`); }
+
+    if(currentEditId !== null && (isTransfer || isVehicle)) { let oldR = getArray(appData.records[name]).find(r => String(r.id) === String(currentEditId)); if (oldR) { appData.balances[name] -= (oldR.type === 'income' ? oldR.amount : -oldR.amount); appData.records[name] = getArray(appData.records[name]).filter(r => String(r.id) !== String(currentEditId)); } currentEditId = null; }
 
     let btn = document.getElementById('entrySaveBtn'); let origText = btn.innerText; btn.innerText = "⏳ Saving..."; btn.disabled = true;
     try {
@@ -543,20 +556,22 @@ async function savePartnerEntry(name) {
         if(currentEditId !== null) {
             let idx = appData.records[name].findIndex(r => String(r.id) === String(currentEditId)); let oldR = appData.records[name][idx];
             appData.balances[name] -= (oldR.type==='income' ? oldR.amount : -oldR.amount); appData.balances[name] += (currentEntryType==='income' ? amt : -amt);
-            appData.records[name][idx] = { id: currentEditId, date, details: det, amount: amt, type: currentEntryType, photo: photoUrl || '', link: oldLink || '', isAuto: oldR.isAuto || false, linkedId: oldR.linkedId || null, billNo, reconState: oldReconState };
+            appData.records[name][idx] = { id: currentEditId, date, details: partnerDesc, amount: amt, type: currentEntryType, photo: photoUrl || '', link: oldLink || '', isAuto: oldR.isAuto || false, linkedId: oldR.linkedId || null, billNo, reconState: oldReconState };
         } else {
             if (isVehicle) {
-                let qvCar = document.getElementById('qvCar').value, qvCat = document.getElementById('qvCategory').value, finalDetails = det || '-'; let partnerDesc = det ? `🚗 ${qvCar} - ${qvCat} (${det})` : `🚗 ${qvCar} - ${qvCat}`;
+                let finalDetails = det || '-';
                 appData.vehicles = getArray(appData.vehicles); appData.vehicles.unshift({ id: newEntryId, date, car: qvCar, category: qvCat, details: finalDetails, amount: amt, photo: photoUrl || '', paidBy: name });
                 appData.records[name].unshift({ id: newEntryId, date, details: partnerDesc, amount: amt, type: 'expense', photo: photoUrl || '', link: oldLink || '', isAuto: true, reconState: 0 }); appData.balances[name] -= amt;
             } else {
-                let mainDesc = isTransfer ? `${det} (To ${otherName})` : det; appData.records[name].unshift({ id: newEntryId, date, details: mainDesc, amount: amt, type: currentEntryType, photo: photoUrl || '', link: oldLink || '', isAuto: false, linkedId: isTransfer ? linkedEntryId : null, billNo, reconState: 0 }); appData.balances[name] += (currentEntryType==='income' ? amt : -amt);
+                appData.records[name].unshift({ id: newEntryId, date, details: partnerDesc, amount: amt, type: currentEntryType, photo: photoUrl || '', link: oldLink || '', isAuto: false, linkedId: isTransfer ? linkedEntryId : null, billNo, reconState: 0 }); appData.balances[name] += (currentEntryType==='income' ? amt : -amt);
                 if (isTransfer) {
                     let otherType = currentEntryType === 'expense' ? 'income' : 'expense', otherDesc = `${det} (From ${name})`; appData.records[otherName] = getArray(appData.records[otherName]); appData.records[otherName].unshift({ id: linkedEntryId, date, details: otherDesc, amount: amt, type: otherType, photo: photoUrl || '', link: '', isAuto: true, linkedId: newEntryId, reconState: 0 }); if(!appData.balances[otherName]) appData.balances[otherName] = 0; appData.balances[otherName] += (otherType === 'income' ? amt : -amt);
                 }
             }
         }
         if(currentEntryType === 'income' && billNo) { let bIdx = getArray(appData.submittedBills).findIndex(b => b.billNo && b.billNo.toLowerCase() === billNo.toLowerCase() && !b.isPaid); if(bIdx !== -1) appData.submittedBills[bIdx].isPaid = true; }
+        
+        window.lastSelectedDate = date; 
         await saveDataToLocal(); partnerProfile(name);
     } catch(e) { alert("Error saving."); btn.innerText = origText; btn.disabled = false; }
 }
@@ -602,61 +617,7 @@ function downloadPartnerCSV(name) {
     if (query) recs = recs.filter(r => (r.details && r.details.toLowerCase().includes(query)) || (r.amount && r.amount.toString().includes(query)) || (r.date && r.date.includes(query)) || (r.billNo && r.billNo.toLowerCase().includes(query)));
     let csv = "Date,Details,Type,Amount (Rs),Bill No\n"; recs.forEach(r => { let det = r.details ? r.details.replace(/,/g, ' ') : ''; let bNo = r.billNo ? r.billNo : ''; let type = r.type === 'income' ? 'Income' : (r.type === 'expense' ? 'Expense' : 'Profit Booked'); csv += `${formatDate(r.date)},${det},${type},${r.amount},${bNo}\n`; });
     let a = document.createElement('a'); let fileSuffix = (globalMonth && globalMonth !== 'All Time') ? globalMonth.replace(' ', '_') : 'All_Time'; a.href = encodeURI("data:text/csv;charset=utf-8," + csv); a.download = `${name}_Records_${fileSuffix}.csv`; a.click();
-}
-
-// ====== VEHICLES ======
-function showVehicles() {
-    setActiveAdminTab('tab-vehicles'); currentVehicleEditId = null; let todayDate = new Date().toISOString().split('T')[0];
-    let hm = document.getElementById('headerMonthSelect'); let globalMonth = hm ? hm.value : ''; let monthQuery = ''; let displayMonthText = globalMonth && globalMonth !== 'All Time' ? `(${globalMonth})` : '(All Time)';
-    if (globalMonth && globalMonth !== 'All Time') { let parts = globalMonth.split(' '); let mIdx = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].indexOf(parts[0]) + 1; let mStr = mIdx < 10 ? '0' + mIdx : mIdx.toString(); monthQuery = parts[1] + '-' + mStr; }
-    let tclCarTotal = 0, dclCarTotal = 0; getArray(appData.vehicles).forEach(v => { if (!monthQuery || (v.date && v.date.startsWith(monthQuery))) { let amt = parseFloat(v.amount) || 0; if(v.car === 'Tcl car' || v.car === 'Car 1') tclCarTotal += amt; if(v.car === 'Dcl car' || v.car === 'Car 2') dclCarTotal += amt; } });
-    let detailsSuggest = getUniqueOptions(appData.vehicles, 'details');
-    document.getElementById('profileArea').innerHTML = `
-    <datalist id="dlVDet">${detailsSuggest}</datalist>
-    <div class="card"><div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;"><h2 style="margin:0;">🚗 Vehicle Expense Tracker <span style="font-size:16px; color:#555; font-weight:normal;">${displayMonthText}</span></h2>${generateMiniMonthDropdown(globalMonth)}</div>
-    <div class="grid" style="margin-bottom:20px;"><div class="stat" style="background:#fdf2e9;">Tcl car Expense<b class="negative">₹${tclCarTotal.toLocaleString('en-IN')}</b></div><div class="stat" style="background:#fdf2e9;">Dcl car Expense<b class="negative">₹${dclCarTotal.toLocaleString('en-IN')}</b></div><div class="stat"><div style="display:flex; justify-content:space-between; align-items:center;"><span>Fuel <span style="font-size:11px;color:#555;">${displayMonthText}</span></span><select id="fuelCarFilter" onchange="calcMonthlyFuel()" style="padding:2px; font-size:12px; border:1px solid #ccd8d4; border-radius:4px; margin:0; width:auto; background:#fff;"><option value="All">All Cars</option><option value="Tcl car">Tcl car</option><option value="Dcl car">Dcl car</option></select></div><b class="negative" id="fuelMonthDisplay">₹0</b></div></div>
-    <div style="background:#fafcfb; padding:15px; border-radius:10px; border:1px solid #ccd8d4;"><div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;"><div style="flex:1; min-width:150px;"><label>Date</label><input type="date" id="vDate" value="${todayDate}"></div><div style="flex:1; min-width:150px;"><label>Select Car</label><select id="vCar"><option value="Tcl car">Tcl car</option><option value="Dcl car">Dcl car</option></select></div><div style="flex:1; min-width:150px;"><label>Category</label><select id="vCategory"><option value="Fuel">⛽ Fuel</option><option value="Maintenance">🛠️ Maintenance</option><option value="Toll/Parking">🎫 Toll/Parking</option><option value="Other">📝 Other</option></select></div><div style="flex:1; min-width:150px;"><label>Paid By</label><select id="vPaidBy"><option value="Tanmoy">Tanmoy</option><option value="Tapabrata">Tapabrata</option></select></div></div><div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;"><div style="flex:1; min-width:150px;"><label>Amount (₹)</label><input type="number" id="vAmount" placeholder="0.00"></div><div style="flex:2; min-width:200px;"><label>Details (Optional)</label><input id="vDetails" list="dlVDet" placeholder="Description..."></div></div><label>Bill Photo</label><input type="file" id="vPhoto" accept="image/*" style="border:none; padding:0; margin-bottom:15px;"><button id="vSaveBtn" onclick="saveVehicle()" style="width:100%; background:#e67e22; font-size:16px; padding:12px;">💾 Save Vehicle Expense</button></div></div>
-    <div class="card"><div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;"><h2 style="margin:0;">📋 Vehicle History <span style="font-size:14px; color:#555; font-weight:normal;">${displayMonthText}</span></h2><input type="text" id="vehSearchInput" placeholder="🔍 Search..." oninput="renderVehicleTable()" style="max-width:250px; margin:0; padding:8px 12px; border-radius:8px; border:1px solid #ccd8d4;"></div><div style="overflow-x:auto;"><table style="min-width:700px;"><thead><tr><th>Date</th><th>Car</th><th>Category</th><th>Details</th><th>Paid By</th><th style="text-align:center;">Proof</th><th>Amount</th><th style="text-align:center;">Action</th></tr></thead><tbody id="vTableBody"></tbody></table></div></div>`;
-    renderVehicleTable(); calcMonthlyFuel(); 
-}
-
-function calcMonthlyFuel() {
-    let el = document.getElementById('fuelCarFilter'); if(!el) return; let filter = el.value; let fuelTotal = 0; let hm = document.getElementById('headerMonthSelect'); let globalMonth = hm ? hm.value : ''; let monthQuery = '';
-    if (globalMonth && globalMonth !== 'All Time') { let parts = globalMonth.split(' '); let mIdx = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].indexOf(parts[0]) + 1; let mStr = mIdx < 10 ? '0' + mIdx : mIdx.toString(); monthQuery = parts[1] + '-' + mStr; }
-    getArray(appData.vehicles).forEach(v => { if (!monthQuery || (v.date && v.date.startsWith(monthQuery))) { let amt = parseFloat(v.amount) || 0; if(v.category === 'Fuel') { if (filter === 'All' || v.car === filter || (filter === 'Tcl car' && v.car === 'Car 1') || (filter === 'Dcl car' && v.car === 'Car 2')) { fuelTotal += amt; } } } });
-    let display = document.getElementById('fuelMonthDisplay'); if(display) display.innerText = '₹' + fuelTotal.toLocaleString('en-IN');
-}
-
-function renderVehicleTable() {
-    let tbody = document.getElementById('vTableBody'); if(!tbody) return; let hm = document.getElementById('headerMonthSelect'); let globalMonth = hm ? hm.value : ''; let monthQuery = '';
-    if (globalMonth && globalMonth !== 'All Time') { let parts = globalMonth.split(' '); let mIdx = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].indexOf(parts[0]) + 1; let mStr = mIdx < 10 ? '0' + mIdx : mIdx.toString(); monthQuery = parts[1] + '-' + mStr; }
-    let searchEl = document.getElementById('vehSearchInput'); let query = searchEl ? searchEl.value.toLowerCase() : ''; let vList = [...getArray(appData.vehicles)];
-    if (monthQuery) vList = vList.filter(v => v.date && v.date.startsWith(monthQuery));
-    if (query) vList = vList.filter(v => (v.car && v.car.toLowerCase().includes(query)) || (v.category && v.category.toLowerCase().includes(query)) || (v.details && v.details.toLowerCase().includes(query)) || (v.amount && v.amount.toString().includes(query)));
-    vList.sort((a,b) => new Date(b.date) - new Date(a.date));
-    let rows = vList.map(v => {
-        let proofHTML = '-'; if (v.photo && v.photo.length > 5) proofHTML = `<a href="${v.photo}" target="_blank" style="color:#2980b9; font-weight:bold; text-decoration:none; font-size:16px;">📷</a>`;
-        return `<tr><td>${formatDate(v.date)}</td><td><b>${v.car}</b></td><td>${v.category}</td><td>${v.details}</td><td>👤 ${v.paidBy || 'Tanmoy'}</td><td style="text-align:center;">${proofHTML}</td><td style="font-weight:bold; color:#e21d4f;">₹${v.amount}</td><td style="white-space:nowrap;"><button onclick="editVehicle('${v.id}')" style="background:#f39c12; padding:4px 6px; border-radius:4px; font-size:12px; color:white; border:none; cursor:pointer;">✏️</button><button onclick="deleteVehicle('${v.id}')" style="background:#444; padding:4px 6px; border-radius:4px; font-size:12px; color:white; border:none; cursor:pointer; margin-left:4px;">🗑️</button></td></tr>`;
-    }).join(''); tbody.innerHTML = rows || `<tr><td colspan="8" style="text-align:center;">No vehicle expenses found!</td></tr>`;
-}
-
-async function saveVehicle() {
-    let date = document.getElementById('vDate').value, car = document.getElementById('vCar').value, category = document.getElementById('vCategory').value, details = document.getElementById('vDetails').value.trim(), amount = parseFloat(document.getElementById('vAmount').value), paidBy = document.getElementById('vPaidBy').value; let photoInput = document.getElementById('vPhoto'); let file = photoInput.files[0];
-    if(isNaN(amount) || amount <= 0) return alert("Valid Amount is required!"); if(file && !file.type.startsWith('image/')) return alert("⚠️ ERROR: Only image files are allowed!");
-    let btn = document.getElementById('vSaveBtn'); let originalText = btn.innerText; btn.innerText = "⏳ Saving..."; btn.disabled = true;
-    try {
-        appData.vehicles = getArray(appData.vehicles); appData.records[paidBy] = getArray(appData.records[paidBy]);
-        let existingVeh = currentVehicleEditId ? appData.vehicles.find(v => String(v.id) === String(currentVehicleEditId)) : null; let photoUrl = existingVeh && existingVeh.photo ? existingVeh.photo : ''; if(file) { let b64 = await compressImage(file); photoUrl = await uploadToImgBB(b64); } let finalDetails = details || '-';
-        let isDuplicateVeh = appData.vehicles.some(v => String(v.id) !== String(currentVehicleEditId) && v.date === date && v.amount === amount && v.car === car && v.category === category && (v.details || '-') === finalDetails);
-        if(isDuplicateVeh) { btn.innerText = originalText; btn.disabled = false; return alert("❌ DUPLICATE ENTRY!"); }
-        let newEntry = { id: currentVehicleEditId || Date.now(), date: date, car: car, category: category, details: finalDetails, amount: amount, photo: photoUrl || '', paidBy: paidBy }; let partnerDesc = details ? `🚗 ${car} - ${category} (${details})` : `🚗 ${car} - ${category}`;
-        if(currentVehicleEditId) { let oldV = appData.vehicles.find(v => String(v.id) === String(currentVehicleEditId)); if(oldV) { appData.balances[oldV.paidBy] += oldV.amount; appData.records[oldV.paidBy] = getArray(appData.records[oldV.paidBy]).filter(r => String(r.id) !== String(currentVehicleEditId)); } let idx = appData.vehicles.findIndex(v => String(v.id) === String(currentVehicleEditId)); appData.vehicles[idx] = newEntry; currentVehicleEditId = null; } else { appData.vehicles.unshift(newEntry); }
-        if(!appData.balances[paidBy]) appData.balances[paidBy] = 0; appData.balances[paidBy] -= amount; appData.records[paidBy].unshift({ id: newEntry.id, date: date, details: partnerDesc, amount: amount, type: 'expense', photo: photoUrl || '', link: '', isAuto: true, reconState: 0 });
-        await saveDataToLocal(); showVehicles();
-    } catch(e) { alert("Error saving."); btn.innerText = originalText; btn.disabled = false; }
-}
-function deleteVehicle(id) { if(confirm("Are you sure you want to delete this vehicle expense?")) { let oldV = getArray(appData.vehicles).find(x => String(x.id) === String(id)); if(oldV) { appData.balances[oldV.paidBy] += oldV.amount; appData.records[oldV.paidBy] = getArray(appData.records[oldV.paidBy]).filter(r => String(r.id) !== String(id)); appData.vehicles = getArray(appData.vehicles).filter(x => String(x.id) !== String(id)); saveDataToLocal().then(() => showVehicles()); } } }
-function editVehicle(id) { let v = getArray(appData.vehicles).find(x => String(x.id) === String(id)); if(v) { currentVehicleEditId = id; document.getElementById('vDate').value = v.date || ''; document.getElementById('vCar').value = v.car || 'Tcl car'; document.getElementById('vCategory').value = v.category || ''; document.getElementById('vDetails').value = (v.details === '-' ? '' : v.details || ''); document.getElementById('vAmount').value = v.amount || ''; let pbEl = document.getElementById('vPaidBy'); if(pbEl) pbEl.value = v.paidBy || 'Tanmoy'; let btn = document.getElementById('vSaveBtn'); if(btn) { btn.innerText = "✏️ Update Expense"; btn.style.background = "#f39c12"; } window.scrollTo({top:0}); } }// ====== PO TRACKER ======
+}// ====== PO TRACKER ======
 function showPOTracker() {
     setActiveAdminTab('tab-po'); currentPOEditId = null; let todayDate = new Date().toISOString().split('T')[0];
     let authOptions = getUniqueOptions(appData.poRecords, 'authority'); let poOptions = getUniqueOptions(appData.poRecords, 'poNo');
