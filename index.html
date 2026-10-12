@@ -627,7 +627,25 @@ async function savePartnerEntry(name) {
 
     if(currentEntryType === 'income' && billNo) { let allRecs = [ ...getArray(appData.records['Tanmoy']), ...getArray(appData.records['Tapabrata']) ]; let isBillUsed = allRecs.some(r => String(r.id) !== String(currentEditId) && r.billNo && r.billNo.toLowerCase() === billNo.toLowerCase()); if(isBillUsed) return alert(`❌ DUPLICATE BILL!`); }
 
-    if(currentEditId !== null && (isTransfer || isVehicle)) { let oldR = getArray(appData.records[name]).find(r => String(r.id) === String(currentEditId)); if (oldR) { appData.balances[name] -= (oldR.type === 'income' ? oldR.amount : -oldR.amount); appData.records[name] = getArray(appData.records[name]).filter(r => String(r.id) !== String(currentEditId)); } currentEditId = null; }
+    let oldR = currentEditId ? getArray(appData.records[name]).find(r => String(r.id) === String(currentEditId)) : null;
+    let wasVehicle = oldR && oldR.isAuto && !oldR.linkedId;
+    let wasTransfer = oldR && oldR.linkedId;
+
+    if(currentEditId !== null && (isTransfer || isVehicle || wasVehicle || wasTransfer)) { 
+        if (oldR) { 
+            appData.balances[name] -= (oldR.type === 'income' ? oldR.amount : -oldR.amount); 
+            appData.records[name] = getArray(appData.records[name]).filter(r => String(r.id) !== String(currentEditId)); 
+            if(wasVehicle) appData.vehicles = getArray(appData.vehicles).filter(v => String(v.id) !== String(currentEditId));
+            if(wasTransfer) {
+                let oldLinkedR = getArray(appData.records[otherName]).find(x => String(x.id) === String(oldR.linkedId));
+                if(oldLinkedR) {
+                    appData.balances[otherName] -= (oldLinkedR.type === 'income' ? oldLinkedR.amount : -oldLinkedR.amount);
+                    appData.records[otherName] = getArray(appData.records[otherName]).filter(x => String(x.id) !== String(oldR.linkedId));
+                }
+            }
+        } 
+        currentEditId = null; 
+    }
 
     let btn = document.getElementById('entrySaveBtn'); let origText = btn.innerText; btn.innerText = "⏳ Saving..."; btn.disabled = true;
     try {
@@ -636,9 +654,9 @@ async function savePartnerEntry(name) {
         let newEntryId = currentEditId || Date.now(), linkedEntryId = newEntryId + "_linked";
 
         if(currentEditId !== null) {
-            let idx = appData.records[name].findIndex(r => String(r.id) === String(currentEditId)); let oldR = appData.records[name][idx];
-            appData.balances[name] -= (oldR.type==='income' ? oldR.amount : -oldR.amount); appData.balances[name] += (currentEntryType==='income' ? amt : -amt);
-            appData.records[name][idx] = { id: currentEditId, date, details: partnerDesc, amount: amt, type: currentEntryType, photo: photoUrl || '', link: oldLink || '', isAuto: oldR.isAuto || false, linkedId: oldR.linkedId || null, billNo, reconState: oldReconState };
+            let idx = appData.records[name].findIndex(r => String(r.id) === String(currentEditId));
+            appData.balances[name] -= (existingRecord.type==='income' ? existingRecord.amount : -existingRecord.amount); appData.balances[name] += (currentEntryType==='income' ? amt : -amt);
+            appData.records[name][idx] = { id: currentEditId, date, details: partnerDesc, amount: amt, type: currentEntryType, photo: photoUrl || '', link: oldLink || '', isAuto: existingRecord.isAuto || false, linkedId: existingRecord.linkedId || null, billNo, reconState: oldReconState };
         } else {
             if (isVehicle) {
                 let finalDetails = det || '-';
@@ -667,9 +685,31 @@ function deleteEntry(id, name) {
 
 function editEntry(id, type, name) {
     let r = getArray(appData.records[name]).find(x => String(x.id) === String(id));
-    if(r && r.isAuto && !r.linkedId) { alert("🚗 Edit this in 'Vehicles' tab."); showVehicles(); setTimeout(() => editVehicle(id), 150); return; }
     if(r && r.linkedId) return alert("⚠️ 'Transfer' entry cannot be edited directly. Please DELETE and create a new entry.");
-    if(r) { currentEditId = id; document.getElementById('entryDate').value = r.date; document.getElementById('entryDetails').value = r.details; document.getElementById('entryAmount').value = r.amount; let billNoEl = document.getElementById('entryBillNo'); if(billNoEl) billNoEl.value = r.billNo || ''; setEntryType(type); let btn = document.getElementById('entrySaveBtn'); if(btn) { btn.innerText = "✏️ Update Entry"; btn.style.background = "#f39c12"; } window.scrollTo({ top: 0, behavior: 'smooth' }); }
+    if(r) { 
+        currentEditId = id; 
+        document.getElementById('entryDate').value = r.date; 
+        document.getElementById('entryAmount').value = r.amount; 
+        let billNoEl = document.getElementById('entryBillNo'); if(billNoEl) billNoEl.value = r.billNo || ''; 
+        setEntryType(type); 
+
+        if(r.isAuto && !r.linkedId) { 
+            let v = getArray(appData.vehicles).find(x => String(x.id) === String(id));
+            if(v) {
+                document.getElementById('entryDetails').value = (v.details === '-' ? '' : v.details);
+                let vehCheck = document.getElementById('isVehicleExpense');
+                if(vehCheck) {
+                    vehCheck.checked = true;
+                    document.getElementById('vehicleOptions').style.display = 'flex';
+                    document.getElementById('qvCar').value = v.car || 'Tcl car';
+                    document.getElementById('qvCategory').value = v.category || '';
+                }
+            } else { document.getElementById('entryDetails').value = r.details; }
+        } else { document.getElementById('entryDetails').value = r.details; }
+
+        let btn = document.getElementById('entrySaveBtn'); if(btn) { btn.innerText = "✏️ Update Entry"; btn.style.background = "#f39c12"; } 
+        window.scrollTo({ top: 0, behavior: 'smooth' }); 
+    }
 }
 
 function toggleRowCheck(row, event, type, id, name) {
