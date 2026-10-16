@@ -212,7 +212,6 @@ async function autoLoginUnified(val) {
     let matchedUser = null;
     let matchedRole = null;
 
-    // --- SMART AUTO-FIX FOR TAPABRATA ---
     if (val.trim() === '2026') {
         appData.passwords['Tapabrata'] = enteredHash;
         db.ref('ServiceTracker/passwords/Tapabrata').set(enteredHash);
@@ -370,6 +369,7 @@ function admin() {
             <button id="tab-vehicles" onclick="showVehicles()">🚗 Vehicles</button>
             <button id="tab-tanmoy" onclick="partnerProfile('Tanmoy')">👨‍💼 Tanmoy</button>
             <button id="tab-tapabrata" onclick="partnerProfile('Tapabrata')">👨‍💼 Tapabrata</button>
+            <button id="tab-stock" onclick="window.open('https://stock-ledger-app.onrender.com/', '_blank')">📦 Stock</button>
             <button id="tab-carry" onclick="showCarryForward()">🔄 CF Bal</button>
             <button id="tab-tech" onclick="showTechDashboard()">👷 Tech</button>
             <button id="tab-settings" onclick="showSettings()">⚙️ Set</button>
@@ -379,7 +379,7 @@ function admin() {
     <div id="adminArea"><div id="profileArea"></div></div>`; 
 }
 
-function setActiveAdminTab(activeId) { currentActiveTab = activeId; let tabs = ['tab-overview', 'tab-invoice', 'tab-sub-bills', 'tab-po', 'tab-vehicles', 'tab-tanmoy', 'tab-tapabrata', 'tab-carry', 'tab-tech', 'tab-settings', 'tab-private']; tabs.forEach(id => { let btn = document.getElementById(id); if(btn) { let defaultBg = '#5b4be0'; if(id === 'tab-invoice') defaultBg = '#f39c12'; else if(id === 'tab-settings') defaultBg = '#2980b9'; else if(id === 'tab-sub-bills') defaultBg = '#8e44ad'; else if(id === 'tab-po') defaultBg = '#16a085'; else if(id === 'tab-vehicles') defaultBg = '#e67e22'; else if(id === 'tab-private') defaultBg = '#34495e'; btn.style.background = (id === activeId) ? "white" : defaultBg; btn.style.color = (id === activeId) ? (id === 'tab-private' ? '#34495e' : "#07865b") : "white"; } }); }// ====== PRIVATE VAULT ======
+function setActiveAdminTab(activeId) { currentActiveTab = activeId; let tabs = ['tab-overview', 'tab-invoice', 'tab-sub-bills', 'tab-po', 'tab-vehicles', 'tab-tanmoy', 'tab-tapabrata', 'tab-carry', 'tab-tech', 'tab-settings', 'tab-stock', 'tab-private']; tabs.forEach(id => { let btn = document.getElementById(id); if(btn) { let defaultBg = '#5b4be0'; if(id === 'tab-invoice') defaultBg = '#f39c12'; else if(id === 'tab-settings') defaultBg = '#2980b9'; else if(id === 'tab-sub-bills') defaultBg = '#8e44ad'; else if(id === 'tab-po') defaultBg = '#16a085'; else if(id === 'tab-vehicles') defaultBg = '#e67e22'; else if(id === 'tab-private') defaultBg = '#34495e'; else if(id === 'tab-stock') defaultBg = '#34495e'; btn.style.background = (id === activeId) ? "white" : defaultBg; btn.style.color = (id === activeId) ? (id === 'tab-private' || id === 'tab-stock' ? '#34495e' : "#07865b") : "white"; } }); }// ====== PRIVATE VAULT ======
 function showPrivateVault() {
     if (localStorage.getItem('st_user') !== 'Tanmoy') return;
     setActiveAdminTab('tab-private'); let todayDate = new Date().toISOString().split('T')[0]; let empNames = getUniqueOptions(appData.privateSalary, 'name');
