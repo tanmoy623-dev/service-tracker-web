@@ -4,75 +4,284 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Service Tracker</title>
+<!-- Modern Google Font -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 <style>
+/* --- MODERN GLOBAL & FINTECH THEME --- */
+:root {
+    --bg-main: #f1f5f9;
+    --card-bg: #ffffff;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --brand-primary: #059669;
+    --brand-dark: #065f46;
+    --danger: #e11d48;
+    --border-soft: #e2e8f0;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    margin: 0;
+    background: var(--bg-main);
+    background-image: radial-gradient(at 0% 0%, rgba(79, 70, 229, 0.05) 0px, transparent 50%), radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.06) 0px, transparent 50%);
+    color: var(--text-main);
+    -webkit-font-smoothing: antialiased;
+}
+
+.app { max-width: 1220px; margin: auto; padding: 24px; }
+
 /* --- PREMIUM LOGIN STYLES --- */
-.login-wrap { max-width: 400px; margin: 12vh auto; background: white; padding: 50px 30px; border-radius: 24px; box-shadow: 0 15px 35px rgba(0,0,0,0.06); text-align: center; border: 1px solid #edf2f0; }
-.login-input { width: 100%; padding: 18px; border: 2px solid #eef2f0; border-radius: 14px; font-size: 24px; letter-spacing: 8px; outline: none; transition: 0.3s; text-align: center; font-weight: bold; background: #fafcfb; color: #176b4d; box-sizing: border-box; margin:0;}
-.login-input:focus { border-color: #176b4d; background: white; box-shadow: 0 0 0 4px rgba(23,107,77,0.1); }
+.login-wrap {
+    max-width: 410px;
+    margin: 12vh auto;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    padding: 48px 32px;
+    border-radius: 28px;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08), 0 4px 12px rgba(15, 23, 42, 0.03);
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+}
+.login-input {
+    width: 100%;
+    padding: 18px;
+    border: 2px solid var(--border-soft);
+    border-radius: 16px;
+    font-size: 26px;
+    letter-spacing: 10px;
+    outline: none;
+    transition: all 0.25s ease;
+    text-align: center;
+    font-weight: 800;
+    background: #f8fafc;
+    color: var(--brand-dark);
+    margin: 0;
+}
+.login-input:focus {
+    border-color: var(--brand-primary);
+    background: #ffffff;
+    box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.12);
+    transform: translateY(-1px);
+}
 
-/* --- GLOBAL APP STYLES --- */
-body{font-family:Arial;margin:0;background:#f4f7f6;color:#17352b}
-.app{max-width:1200px;margin:auto;padding:24px}
-.card{background:white;padding:24px;border-radius:18px;margin:16px 0;box-shadow:0 6px 24px #0001}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
-.role{padding:18px;border:2px solid #dfe9e5;border-radius:14px;cursor:pointer;background:#fafcfb;}
-.role:hover{border-color:#176b4d}
-.partner-group {border:2px solid #dfe9e5;border-radius:14px;padding:18px;background:#fafcfb;}
-.partner-group h3 {margin:0 0 12px 0;color:#17352b;font-size:16px;display:flex;align-items:center;gap:6px;}
+/* --- CARDS & CONTAINERS --- */
+.card {
+    background: var(--card-bg);
+    padding: 26px;
+    border-radius: 22px;
+    margin: 18px 0;
+    box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.05), 0 4px 12px -2px rgba(15, 23, 42, 0.03);
+    border: 1px solid rgba(226, 232, 240, 0.85);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card h2 {
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #0f172a;
+    margin-top: 0;
+}
 
-/* Form Spacing Improvements */
-label { display: block; font-weight: bold; color: #17352b; font-size: 14px; margin-bottom: 6px; }
-input, select { width: 100%; padding: 12px; margin: 0 0 16px 0; border: 1px solid #ccd8d4; border-radius: 9px; box-sizing: border-box; font-size: 15px; }
+/* --- ADMIN HERO BANNER --- */
+.admin-hero {
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 55%, #4338ca 100%) !important;
+    color: white !important;
+    border: none !important;
+    box-shadow: 0 16px 36px -6px rgba(49, 46, 129, 0.35) !important;
+    position: relative;
+    overflow: hidden;
+}
+.admin-hero h2 { color: #ffffff !important; }
 
-button{padding:12px 16px;border:0;border-radius:10px;background:#176b4d;color:white;font-weight:bold;cursor:pointer;transition:all 0.2s}
-button.alt{background:#e7f0ed;color:#176b4d}
-button:disabled {background:#999; cursor:not-allowed; opacity:0.7;}
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
 
-.hidden{display:none}
-.stat{background:#eff7f3;padding:16px;border-radius:12px}
-.stat b{display:block;font-size:24px;margin-top:6px}
-.negative{color:#e21d4f !important; font-weight:bold;}
-.positive{color:#07865b !important; font-weight:bold;}
+.role {
+    padding: 20px;
+    border: 2px solid var(--border-soft);
+    border-radius: 16px;
+    cursor: pointer;
+    background: #f8fafc;
+    transition: all 0.2s ease;
+}
+.role:hover {
+    border-color: var(--brand-primary);
+    background: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(5, 150, 105, 0.08);
+}
 
-table{width:100%;border-collapse:collapse}
-td,th{padding:10px;border-bottom:1px solid #e6ece9;text-align:left}
-.top{display:flex;justify-content:space-between;align-items:center}
-.part-row-box {background:#f8faf9; padding:12px; border:1px solid #dfe9e5; border-radius:10px; margin-bottom:12px;}
-.b-qty, .b-rate, .b-desc { margin:0; padding:8px; border-radius:6px; }
-.bill-table th { background:#eff7f3; color:#176b4d; font-size:14px; }
+/* --- FORM INPUTS & BUTTONS --- */
+label {
+    display: block;
+    font-weight: 700;
+    color: #334155;
+    font-size: 13.5px;
+    margin-bottom: 6px;
+    letter-spacing: 0.01em;
+}
+input, select {
+    width: 100%;
+    padding: 12px 14px;
+    margin: 0 0 16px 0;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 12px;
+    box-sizing: border-box;
+    font-size: 14.5px;
+    font-family: inherit;
+    background: #f8fafc;
+    color: #0f172a;
+    transition: all 0.2s ease;
+}
+input:focus, select:focus {
+    outline: none;
+    border-color: var(--brand-primary);
+    background: #ffffff;
+    box-shadow: 0 0 0 3.5px rgba(5, 150, 105, 0.12);
+}
+
+button {
+    padding: 12px 18px;
+    border: 0;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    color: white;
+    font-weight: 700;
+    font-family: inherit;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);
+}
+button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    filter: brightness(1.05);
+}
+button:active:not(:disabled) {
+    transform: translateY(0);
+}
+button.alt {
+    background: #f1f5f9;
+    color: #334155;
+    box-shadow: none;
+    border: 1px solid #e2e8f0;
+}
+button.alt:hover { background: #e2e8f0; }
+button:disabled { background: #94a3b8; cursor: not-allowed; opacity: 0.7; box-shadow: none; }
+
+.hidden { display: none; }
+
+/* --- MODERN STAT CARDS --- */
+.stat {
+    background: linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%);
+    padding: 20px;
+    border-radius: 18px;
+    border: 1px solid #bbf7d0;
+    box-shadow: 0 6px 18px rgba(5, 150, 105, 0.05);
+    position: relative;
+}
+.stat b {
+    display: block;
+    font-size: 26px;
+    font-weight: 800;
+    margin-top: 8px;
+    letter-spacing: -0.02em;
+}
+.negative { color: var(--danger) !important; font-weight: 800; }
+.positive { color: var(--brand-primary) !important; font-weight: 800; }
+
+/* --- MODERN TABLES --- */
+table { width: 100%; border-collapse: separate; border-spacing: 0; }
+th {
+    padding: 12px 10px;
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 700;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 2px solid #e2e8f0;
+    text-align: left;
+}
+td {
+    padding: 12px 10px;
+    border-bottom: 1px solid #f1f5f9;
+    text-align: left;
+    font-size: 14px;
+    color: #1e293b;
+}
+tr:hover td { background-color: #f8fafc; }
+
+.top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px !important;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+}
+.part-row-box { background: #f8fafc; padding: 14px; border: 1px solid #e2e8f0; border-radius: 14px; margin-bottom: 12px; }
+.b-qty, .b-rate, .b-desc { margin: 0; padding: 8px 10px; border-radius: 8px; }
+.bill-table th { background: #ecfdf5; color: #065f46; font-size: 13px; }
 
 /* SMART TABLE RESPONSIVENESS */
 .dual-records-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 24px; }
 .tri-records-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 24px; }
-.scroll-list { max-height: 250px; overflow-y: auto; overflow-x: auto; background: white; border-radius: 8px; border: 1px solid #bdc3c7; margin-top: 10px; }
+.scroll-list {
+    max-height: 260px;
+    overflow-y: auto;
+    overflow-x: auto;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    margin-top: 12px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+}
 
 /* DESKTOP ADMIN TABS (GRID) */
-.admin-nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 14px; margin-top: 16px; }
+.admin-nav {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
+    gap: 10px;
+    margin-top: 20px;
+}
+.admin-nav button {
+    padding: 11px 10px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 700;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+    backdrop-filter: blur(6px);
+}
 
 /* --- MOBILE OPTIMIZATION --- */
 @media (max-width: 768px) { 
-    .app { padding: 12px; } 
-    .card { padding: 16px; margin: 12px 0; border-radius: 14px; }
+    .app { padding: 10px; } 
+    .card { padding: 16px; margin: 12px 0; border-radius: 18px; }
     .tri-records-grid, .dual-records-grid { grid-template-columns: 1fr; gap: 16px; } 
-    .stat { padding: 12px; }
-    .stat b { font-size: 20px; }
+    .stat { padding: 14px; border-radius: 14px; }
+    .stat b { font-size: 21px; }
     
     /* MOBILE TABS (ALL VISIBLE - NO SWIPE) */
-    .admin-nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(85px, 1fr)); gap: 8px; margin-top: 16px; }
-    .admin-nav button { padding: 10px 4px; font-size: 12px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin: 0; white-space: nowrap; text-align: center; }
+    .admin-nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); gap: 8px; margin-top: 16px; }
+    .admin-nav button { padding: 10px 4px; font-size: 11.5px; border-radius: 11px; margin: 0; white-space: nowrap; text-align: center; }
     
     h2 { font-size: 18px !important; }
-    td, th { padding: 8px 5px; font-size: 12px; }
-    table button { padding: 4px 6px !important; font-size: 11px !important; margin: 0 2px; }
+    td, th { padding: 9px 5px; font-size: 12px; }
+    table button { padding: 5px 7px !important; font-size: 11px !important; margin: 0 2px; border-radius: 6px; }
     td:nth-child(2) { font-size: 11px; white-space: normal; }
     .recon-cell { padding: 2px !important; font-size: 14px !important; }
-    .top { flex-direction: row; gap:10px; }
-    .top h1 { font-size: 20px; margin:0; }
-    .login-wrap { padding: 40px 20px; margin: 8vh auto; }
+    .top { flex-direction: row; gap: 10px; padding: 14px 16px !important; }
+    .top h1 { font-size: 18px; margin: 0; }
+    .login-wrap { padding: 38px 22px; margin: 8vh auto; }
 }
 </style>
 </head>
@@ -81,24 +290,30 @@ td,th{padding:10px;border-bottom:1px solid #e6ece9;text-align:left}
 <div class="app">
     <section id="login">
         <div class="login-wrap">
-            <div style="font-size: 50px; margin-bottom: 10px; text-shadow: 0 4px 10px rgba(0,0,0,0.1);">💼</div>
-            <h1 style="margin: 0; color: #17352b; font-size: 28px; font-weight: 800;">Service Tracker</h1>
-            <p style="color: #8da39b; font-size: 15px; margin: 8px 0 35px; font-weight: 500;">Secure Unified Portal</p>
+            <div style="width: 72px; height: 72px; margin: 0 auto 14px; background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 36px; box-shadow: 0 8px 20px rgba(5, 150, 105, 0.12);">💼</div>
+            <h1 style="margin: 0; color: #0f172a; font-size: 28px; font-weight: 800; letter-spacing: -0.02em;">Service Tracker</h1>
+            <p style="color: #64748b; font-size: 14.5px; margin: 6px 0 32px; font-weight: 500;">Secure Unified Workspace</p>
 
             <div style="text-align:left;">
-                <label style="display:flex; justify-content:space-between; align-items:center; font-size:14px; font-weight:bold; color:#17352b; margin-bottom:10px;">
-                    <span>Enter Passcode</span>
-                    <span onclick="handleSecretTap(event)" style="cursor:default; user-select:none; font-size:18px; filter:grayscale(100%); opacity:0.6;">🔐</span>
+                <label style="display:flex; justify-content:space-between; align-items:center; font-size:13.5px; font-weight:700; color:#334155; margin-bottom:10px;">
+                    <span>🔑 Enter Passcode</span>
+                    <span onclick="handleSecretTap(event)" style="cursor:default; user-select:none; font-size:17px; filter:grayscale(100%); opacity:0.5;">🔐</span>
                 </label>
                 <input type="password" id="unifiedPass" class="login-input" placeholder="••••" oninput="autoLoginUnified(this.value)">
             </div>
             
-            <p style="font-size:12px; color:#bdc3c7; margin-top:20px;">System will automatically detect your role.</p>
+            <p style="font-size:12px; color:#94a3b8; margin-top:22px; font-weight:500;">⚡ Auto-detects Partner or Technician role</p>
         </div>
     </section>
     
     <section id="dash" class="hidden">
-        <div class="card top"><h1 id="head" style="margin:0;"></h1><button class="alt" onclick="logoutApp()">Logout</button></div>
+        <div class="card top">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span style="width:10px; height:10px; background:#10b981; border-radius:50%; display:inline-block; box-shadow:0 0 0 4px rgba(16,185,129,0.2);"></span>
+                <h1 id="head" style="margin:0; font-size:20px; font-weight:800; letter-spacing:-0.02em;"></h1>
+            </div>
+            <button class="alt" onclick="logoutApp()" style="padding:9px 16px; font-size:13px; border-radius:10px;">🚪 Logout</button>
+        </div>
         <div id="content"></div>
     </section>
 </div>
@@ -145,21 +360,15 @@ let tapTimer = null;
 
 function handleSecretTap(event) {
     if(event) event.stopPropagation();
-    
     tapCount++;
-    
     if(tapTimer) clearTimeout(tapTimer);
-    
     tapTimer = setTimeout(() => { tapCount = 0; }, 2000);
     
     if(tapCount === 8) {
         tapCount = 0;
-        
         let mKey = prompt(`🚨 SECRET RESET 🚨\n\nEnter Master Key:`);
-        
         if (mKey === "tanmoy2026") {
             let targetUser = prompt(`🔑 Which partner's password to reset?\n\nType exactly:\nTanmoy\nTapabrata\nTechnician`);
-            
             if(targetUser === 'Tanmoy' || targetUser === 'Tapabrata' || targetUser === 'Technician') {
                 let nPass = prompt(`Enter NEW PASSWORD for ${targetUser}:`);
                 if (nPass && nPass.trim().length >= 4) {
@@ -178,14 +387,12 @@ function handleSecretTap(event) {
         }
     }
 }
-// ===============================================
 
 const INACTIVITY_TIMEOUT = 20 * 60 * 1000; let inactivityTimer = null;
 function resetInactivityTimer() { if (!localStorage.getItem('st_user')) return; localStorage.setItem('st_last_active', Date.now().toString()); if (inactivityTimer) clearTimeout(inactivityTimer); inactivityTimer = setTimeout(() => { alert("⏰ Auto logout."); logoutApp(); }, INACTIVITY_TIMEOUT); }
 ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'].forEach(evt => window.addEventListener(evt, resetInactivityTimer, { passive: true }));
 
-// --- SECURE BACKGROUND AUTH & DATABASE LISTENER ---
-auth.signInAnonymously().then(() => {
+function startDatabaseListener() {
     db.ref('ServiceTracker').on('value', (snapshot) => {
         let data = snapshot.val();
         if (data && data.records && data.balances) {
@@ -203,8 +410,14 @@ auth.signInAnonymously().then(() => {
             }
         }
     });
+}
+
+// --- SECURE BACKGROUND AUTH WITH AUTOMATIC FALLBACK ---
+auth.signInAnonymously().then(() => {
+    startDatabaseListener();
 }).catch((err) => {
-    console.error("Firebase Auth Error:", err);
+    console.warn("Anonymous Auth not enabled yet, falling back to direct DB connection:", err.message);
+    startDatabaseListener();
 });
 
 async function saveDataToLocal() { await db.ref('ServiceTracker').set(appData); }
@@ -255,7 +468,6 @@ async function autoLoginUnified(val) {
         }
     }
 }
-// =======================================
 
 function logoutApp() { localStorage.removeItem('st_user'); localStorage.removeItem('st_role'); location.reload(); }
 
@@ -320,7 +532,7 @@ function generateMonthDropdown() {
         if(sIdx > -1) options += `<option value="${savedMonth}" selected>${shortM[sIdx]} ${p[1]}</option>`; 
     } 
 
-    return `<div style="display:inline-flex; align-items:stretch; background:#fff; border:1px solid #cce3d8; border-radius:6px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.05);"><button onclick="changeMonthBy(-1)" style="flex-shrink:0; width:28px; background:#f4f7f6; border:none; border-right:1px solid #cce3d8; font-weight:bold; color:#176b4d; cursor:pointer;" title="Previous Month">&lt;</button><select id="headerMonthSelect" style="background:white;color:#17352b;padding:4px 4px;border:none;font-weight:bold;cursor:pointer;flex-grow:1;width:auto;margin:0;outline:none;" onchange="handleGlobalMonthChange()">${options}</select><button onclick="changeMonthBy(1)" style="flex-shrink:0; width:28px; background:#f4f7f6; border:none; border-left:1px solid #cce3d8; font-weight:bold; color:#176b4d; cursor:pointer;" title="Next Month">&gt;</button></div>`; 
+    return `<div style="display:inline-flex; align-items:stretch; background:#fff; border:1px solid #cbd5e1; border-radius:10px; overflow:hidden; box-shadow:0 2px 5px rgba(0,0,0,0.04);"><button onclick="changeMonthBy(-1)" style="flex-shrink:0; width:30px; background:#f8fafc; border:none; border-right:1px solid #cbd5e1; font-weight:bold; color:#059669; cursor:pointer; box-shadow:none;" title="Previous Month">&lt;</button><select id="headerMonthSelect" style="background:white;color:#0f172a;padding:5px 6px;border:none;font-weight:700;cursor:pointer;flex-grow:1;width:auto;margin:0;outline:none;" onchange="handleGlobalMonthChange()">${options}</select><button onclick="changeMonthBy(1)" style="flex-shrink:0; width:30px; background:#f8fafc; border:none; border-left:1px solid #cbd5e1; font-weight:bold; color:#059669; cursor:pointer; box-shadow:none;" title="Next Month">&gt;</button></div>`; 
 }
 
 function generateMiniMonthDropdown(currentValue) { 
@@ -355,16 +567,19 @@ function generateMiniMonthDropdown(currentValue) {
         if(sIdx > -1) options += `<option value="${currentValue}" selected>${shortM[sIdx]} ${p[1]}</option>`; 
     } 
 
-    return `<div style="display:inline-flex; align-items:stretch; background:#fff; border:1px solid #cce3d8; border-radius:6px; overflow:hidden; box-shadow:0 1px 2px rgba(0,0,0,0.05); max-width:145px; box-sizing:border-box;"><button onclick="changeMonthBy(-1)" style="flex-shrink:0; width:22px; background:#f4f7f6; border:none; border-right:1px solid #cce3d8; font-weight:bold; font-size:11px; color:#176b4d; cursor:pointer;" title="Previous Month">&lt;</button><select onchange="document.getElementById('headerMonthSelect').value=this.value; handleGlobalMonthChange()" style="flex-grow:1; width:auto; min-width:65px; margin:0; padding:4px 2px; font-size:11px; border:none; background:#fff; font-weight:bold; color:#176b4d; cursor:pointer; outline:none;">${options}</select><button onclick="changeMonthBy(1)" style="flex-shrink:0; width:22px; background:#f4f7f6; border:none; border-left:1px solid #cce3d8; font-weight:bold; font-size:11px; color:#176b4d; cursor:pointer;" title="Next Month">&gt;</button></div>`; 
+    return `<div style="display:inline-flex; align-items:stretch; background:#fff; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.04); max-width:150px; box-sizing:border-box;"><button onclick="changeMonthBy(-1)" style="flex-shrink:0; width:24px; background:#f8fafc; border:none; border-right:1px solid #cbd5e1; font-weight:bold; font-size:11px; color:#059669; cursor:pointer; padding:0; box-shadow:none;" title="Previous Month">&lt;</button><select onchange="document.getElementById('headerMonthSelect').value=this.value; handleGlobalMonthChange()" style="flex-grow:1; width:auto; min-width:68px; margin:0; padding:4px 4px; font-size:11.5px; border:none; background:#fff; font-weight:700; color:#059669; cursor:pointer; outline:none;">${options}</select><button onclick="changeMonthBy(1)" style="flex-shrink:0; width:24px; background:#f8fafc; border:none; border-left:1px solid #cbd5e1; font-weight:bold; font-size:11px; color:#059669; cursor:pointer; padding:0; box-shadow:none;" title="Next Month">&gt;</button></div>`; 
 }
 
 function admin() { 
     let currentUser = localStorage.getItem('st_user'); 
     let privateBtn = (currentUser === 'Tanmoy') ? `<button id="tab-private" onclick="showPrivateVault()">🔒 Private</button>` : ''; 
     return `
-    <div class="card" style="background:#4635d6;color:white">
+    <div class="card admin-hero">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap;">
-            <div><h2 style="margin:0;">💼 Service Tracker — Admin</h2><p style="margin:4px 0 0 0;opacity:0.9;">Tanmoy & Tapabrata</p></div>
+            <div>
+                <h2 style="margin:0; font-size:22px;">💼 Service Tracker — Admin</h2>
+                <p style="margin:4px 0 0 0; opacity:0.85; font-size:13.5px; font-weight:500;">Partners: Tanmoy & Tapabrata</p>
+            </div>
             <div style="display:none;">${generateMonthDropdown()}</div>
         </div>
         <div class="admin-nav">
@@ -385,7 +600,34 @@ function admin() {
     <div id="adminArea"><div id="profileArea"></div></div>`; 
 }
 
-function setActiveAdminTab(activeId) { currentActiveTab = activeId; let tabs = ['tab-overview', 'tab-invoice', 'tab-sub-bills', 'tab-po', 'tab-vehicles', 'tab-tanmoy', 'tab-tapabrata', 'tab-carry', 'tab-tech', 'tab-settings', 'tab-stock', 'tab-private']; tabs.forEach(id => { let btn = document.getElementById(id); if(btn) { let defaultBg = '#5b4be0'; if(id === 'tab-invoice') defaultBg = '#f39c12'; else if(id === 'tab-settings') defaultBg = '#2980b9'; else if(id === 'tab-sub-bills') defaultBg = '#8e44ad'; else if(id === 'tab-po') defaultBg = '#16a085'; else if(id === 'tab-vehicles') defaultBg = '#e67e22'; else if(id === 'tab-private') defaultBg = '#34495e'; else if(id === 'tab-stock') defaultBg = '#34495e'; btn.style.background = (id === activeId) ? "white" : defaultBg; btn.style.color = (id === activeId) ? (id === 'tab-private' || id === 'tab-stock' ? '#34495e' : "#07865b") : "white"; } }); }// ====== PRIVATE VAULT ======
+function setActiveAdminTab(activeId) { 
+    currentActiveTab = activeId; 
+    let tabs = ['tab-overview', 'tab-invoice', 'tab-sub-bills', 'tab-po', 'tab-vehicles', 'tab-tanmoy', 'tab-tapabrata', 'tab-carry', 'tab-tech', 'tab-settings', 'tab-stock', 'tab-private']; 
+    tabs.forEach(id => { 
+        let btn = document.getElementById(id); 
+        if(btn) { 
+            let defaultBg = 'rgba(255, 255, 255, 0.12)'; 
+            if(id === 'tab-invoice') defaultBg = 'linear-gradient(135deg, #f59e0b, #d97706)'; 
+            else if(id === 'tab-settings') defaultBg = 'linear-gradient(135deg, #0284c7, #0369a1)'; 
+            else if(id === 'tab-sub-bills') defaultBg = 'linear-gradient(135deg, #9333ea, #7e22ce)'; 
+            else if(id === 'tab-po') defaultBg = 'linear-gradient(135deg, #0d9488, #0f766e)'; 
+            else if(id === 'tab-vehicles') defaultBg = 'linear-gradient(135deg, #ea580c, #c2410c)'; 
+            else if(id === 'tab-private' || id === 'tab-stock') defaultBg = 'linear-gradient(135deg, #334155, #1e293b)'; 
+            
+            if (id === activeId) {
+                btn.style.background = "#ffffff";
+                btn.style.color = "#1e1b4b";
+                btn.style.boxShadow = "0 8px 20px rgba(255, 255, 255, 0.25)";
+                btn.style.transform = "translateY(-2px)";
+            } else {
+                btn.style.background = defaultBg;
+                btn.style.color = "#ffffff";
+                btn.style.boxShadow = "0 4px 10px rgba(0, 0, 0, 0.12)";
+                btn.style.transform = "none";
+            }
+        } 
+    }); 
+}// ====== PRIVATE VAULT ======
 function showPrivateVault() {
     if (localStorage.getItem('st_user') !== 'Tanmoy') return;
     setActiveAdminTab('tab-private'); let todayDate = new Date().toISOString().split('T')[0]; let empNames = getUniqueOptions(appData.privateSalary, 'name');
