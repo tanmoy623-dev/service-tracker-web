@@ -6,6 +6,7 @@
 <title>Service Tracker</title>
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 <style>
 /* --- PREMIUM LOGIN STYLES --- */
@@ -105,7 +106,7 @@ td,th{padding:10px;border-bottom:1px solid #e6ece9;text-align:left}
 <script>
 // --- FIREBASE CONFIGURATION ---
 const firebaseConfig = { apiKey: "AIzaSyCAhAQcsnGqPTiScGJVbNR57Mbnn9jdfdU", authDomain: "servicetracker-e4887.firebaseapp.com", databaseURL: "https://servicetracker-e4887-default-rtdb.firebaseio.com/", projectId: "servicetracker-e4887", storageBucket: "servicetracker-e4887.firebasestorage.app", messagingSenderId: "64365607107", appId: "1:64365607107:web:12e4da7d9c918ad6f38a76" };
-firebase.initializeApp(firebaseConfig); const db = firebase.database(); const IMGBB_API_KEY = "2291e363544930c9291f5bf04d9e9432"; 
+firebase.initializeApp(firebaseConfig); const db = firebase.database(); const auth = firebase.auth(); const IMGBB_API_KEY = "2291e363544930c9291f5bf04d9e9432"; 
 
 let defaultData = { records: { 'Tanmoy': [], 'Tapabrata': [] }, balances: { 'Tanmoy': 0, 'Tapabrata': 0 }, passwords: { 'Tanmoy': '2196', 'Tapabrata': '2026', 'Technician': 'tech329' }, computerJobs: [], waterJobs: [], invoiceCount: 314, invoices: [], submittedBills: [], poRecords: [], vehicles: [], signature: '', privateVault: [], privateSalary: [], config: { cfStartMonth: '2026-08', enablePastCF: false } };
 let appData = JSON.parse(JSON.stringify(defaultData)); let isFirstLoad = true, currentEditId = null, currentEntryType = 'income'; let currentInvoiceEditId = null, currentTechEditId = null, currentTechEditPhoto = ''; let currentSubmittedBillEditId = null, currentPOEditId = null, currentVehicleEditId = null, currentSalaryEditId = null, currentActiveTab = 'tab-overview'; 
@@ -183,22 +184,27 @@ const INACTIVITY_TIMEOUT = 20 * 60 * 1000; let inactivityTimer = null;
 function resetInactivityTimer() { if (!localStorage.getItem('st_user')) return; localStorage.setItem('st_last_active', Date.now().toString()); if (inactivityTimer) clearTimeout(inactivityTimer); inactivityTimer = setTimeout(() => { alert("⏰ Auto logout."); logoutApp(); }, INACTIVITY_TIMEOUT); }
 ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'].forEach(evt => window.addEventListener(evt, resetInactivityTimer, { passive: true }));
 
-db.ref('ServiceTracker').on('value', (snapshot) => {
-    let data = snapshot.val();
-    if (data && data.records && data.balances) {
-        appData = data; appData.poRecords = getArray(appData.poRecords); appData.submittedBills = getArray(appData.submittedBills); appData.invoices = getArray(appData.invoices); appData.computerJobs = getArray(appData.computerJobs); appData.waterJobs = getArray(appData.waterJobs); appData.vehicles = getArray(appData.vehicles); appData.privateVault = getArray(appData.privateVault); appData.privateSalary = getArray(appData.privateSalary);
-        for(let p in appData.records) appData.records[p] = getArray(appData.records[p]);
-        if(!appData.passwords) appData.passwords = { 'Tanmoy': '2196', 'Tapabrata': '2026', 'Technician': 'tech329' };
-        if(!appData.passwords['Technician']) appData.passwords['Technician'] = 'tech329'; 
-        if(!appData.invoiceCount) appData.invoiceCount = 314; if(!appData.signature) appData.signature = ''; if(!appData.config) appData.config = { cfStartMonth: '2026-08', enablePastCF: false };
-    } else db.ref('ServiceTracker').set(defaultData);
-    if(isFirstLoad) {
-        isFirstLoad = false; let savedUser = localStorage.getItem('st_user'); let savedRole = localStorage.getItem('st_role'); let lastActive = parseInt(localStorage.getItem('st_last_active') || '0', 10);
-        if(savedUser && savedRole) {
-            if (lastActive && (Date.now() - lastActive > INACTIVITY_TIMEOUT)) { logoutApp(); return; } resetInactivityTimer(); document.getElementById('login').classList.add('hidden'); document.getElementById('dash').classList.remove('hidden'); document.getElementById('head').textContent = savedUser + ' Dashboard';
-            if(savedRole === 'admin') { document.getElementById('content').innerHTML = admin(); showAdminOverview(); } else { document.getElementById('content').innerHTML = user(); }
+// --- SECURE BACKGROUND AUTH & DATABASE LISTENER ---
+auth.signInAnonymously().then(() => {
+    db.ref('ServiceTracker').on('value', (snapshot) => {
+        let data = snapshot.val();
+        if (data && data.records && data.balances) {
+            appData = data; appData.poRecords = getArray(appData.poRecords); appData.submittedBills = getArray(appData.submittedBills); appData.invoices = getArray(appData.invoices); appData.computerJobs = getArray(appData.computerJobs); appData.waterJobs = getArray(appData.waterJobs); appData.vehicles = getArray(appData.vehicles); appData.privateVault = getArray(appData.privateVault); appData.privateSalary = getArray(appData.privateSalary);
+            for(let p in appData.records) appData.records[p] = getArray(appData.records[p]);
+            if(!appData.passwords) appData.passwords = { 'Tanmoy': '2196', 'Tapabrata': '2026', 'Technician': 'tech329' };
+            if(!appData.passwords['Technician']) appData.passwords['Technician'] = 'tech329'; 
+            if(!appData.invoiceCount) appData.invoiceCount = 314; if(!appData.signature) appData.signature = ''; if(!appData.config) appData.config = { cfStartMonth: '2026-08', enablePastCF: false };
+        } else db.ref('ServiceTracker').set(defaultData);
+        if(isFirstLoad) {
+            isFirstLoad = false; let savedUser = localStorage.getItem('st_user'); let savedRole = localStorage.getItem('st_role'); let lastActive = parseInt(localStorage.getItem('st_last_active') || '0', 10);
+            if(savedUser && savedRole) {
+                if (lastActive && (Date.now() - lastActive > INACTIVITY_TIMEOUT)) { logoutApp(); return; } resetInactivityTimer(); document.getElementById('login').classList.add('hidden'); document.getElementById('dash').classList.remove('hidden'); document.getElementById('head').textContent = savedUser + ' Dashboard';
+                if(savedRole === 'admin') { document.getElementById('content').innerHTML = admin(); showAdminOverview(); } else { document.getElementById('content').innerHTML = user(); }
+            }
         }
-    }
+    });
+}).catch((err) => {
+    console.error("Firebase Auth Error:", err);
 });
 
 async function saveDataToLocal() { await db.ref('ServiceTracker').set(appData); }
