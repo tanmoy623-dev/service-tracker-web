@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5">
 <title>Service Tracker</title>
 <!-- Modern Google Font -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -26,7 +26,10 @@
     --border-soft: #e2e8f0;
 }
 
-* { box-sizing: border-box; }
+* { 
+    box-sizing: border-box; 
+    -webkit-tap-highlight-color: transparent;
+}
 
 body {
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -35,6 +38,7 @@ body {
     background-image: radial-gradient(at 0% 0%, rgba(79, 70, 229, 0.05) 0px, transparent 50%), radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.06) 0px, transparent 50%);
     color: var(--text-main);
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
 }
 
 .app { max-width: 1220px; margin: auto; padding: 24px; }
@@ -81,7 +85,6 @@ body {
     margin: 18px 0;
     box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.05), 0 4px 12px -2px rgba(15, 23, 42, 0.03);
     border: 1px solid rgba(226, 232, 240, 0.85);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 .card h2 {
     font-weight: 800;
@@ -101,7 +104,7 @@ body {
 }
 .admin-hero h2 { color: #ffffff !important; }
 
-.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
 
 .role {
     padding: 20px;
@@ -134,7 +137,7 @@ input, select {
     border: 1.5px solid #cbd5e1;
     border-radius: 12px;
     box-sizing: border-box;
-    font-size: 14.5px;
+    font-size: 15px;
     font-family: inherit;
     background: #f8fafc;
     color: #0f172a;
@@ -159,13 +162,14 @@ button {
     cursor: pointer;
     transition: all 0.2s ease;
     box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);
+    touch-action: manipulation;
 }
 button:hover:not(:disabled) {
     transform: translateY(-1px);
     filter: brightness(1.05);
 }
 button:active:not(:disabled) {
-    transform: translateY(0);
+    transform: scale(0.98);
 }
 button.alt {
     background: #f1f5f9;
@@ -197,7 +201,11 @@ button:disabled { background: #94a3b8; cursor: not-allowed; opacity: 0.7; box-sh
 .negative { color: var(--danger) !important; font-weight: 800; }
 .positive { color: var(--brand-primary) !important; font-weight: 800; }
 
-/* --- MODERN TABLES --- */
+/* --- MODERN TABLES & TOUCH SCROLL --- */
+div[style*="overflow-x:auto"] {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+}
 table { width: 100%; border-collapse: separate; border-spacing: 0; }
 th {
     padding: 12px 10px;
@@ -216,6 +224,7 @@ td {
     text-align: left;
     font-size: 14px;
     color: #1e293b;
+    vertical-align: middle;
 }
 tr:hover td { background-color: #f8fafc; }
 
@@ -224,64 +233,153 @@ tr:hover td { background-color: #f8fafc; }
     justify-content: space-between;
     align-items: center;
     padding: 16px 24px !important;
-    background: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.92);
     backdrop-filter: blur(10px);
+    position: sticky;
+    top: 10px;
+    z-index: 50;
 }
 .part-row-box { background: #f8fafc; padding: 14px; border: 1px solid #e2e8f0; border-radius: 14px; margin-bottom: 12px; }
 .b-qty, .b-rate, .b-desc { margin: 0; padding: 8px 10px; border-radius: 8px; }
 .bill-table th { background: #ecfdf5; color: #065f46; font-size: 13px; }
 
 /* SMART TABLE RESPONSIVENESS */
-.dual-records-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 24px; }
-.tri-records-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 24px; }
+.dual-records-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(460px, 1fr)); gap: 22px; }
+.tri-records-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px; }
 .scroll-list {
-    max-height: 260px;
+    max-height: 270px;
     overflow-y: auto;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
     background: white;
     border-radius: 12px;
     border: 1px solid #e2e8f0;
     margin-top: 12px;
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
 }
 
 /* DESKTOP ADMIN TABS (GRID) */
 .admin-nav {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
     gap: 10px;
     margin-top: 20px;
 }
 .admin-nav button {
-    padding: 11px 10px;
+    padding: 12px 10px;
     border-radius: 12px;
     font-size: 13px;
     font-weight: 700;
     border: 1px solid rgba(255, 255, 255, 0.16);
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
     backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-height: 44px;
 }
 
-/* --- MOBILE OPTIMIZATION --- */
-@media (max-width: 768px) { 
+/* =========================================================
+   TABLET OPTIMIZATION (iPad / Android Tablets: 641px - 1024px)
+   ========================================================= */
+@media (min-width: 641px) and (max-width: 1024px) {
+    .app { padding: 16px; max-width: 100%; }
+    .card { padding: 20px; margin: 14px 0; border-radius: 20px; }
+    
+    /* Stack dual/tri record tables vertically so columns never cut off */
+    .dual-records-grid, .tri-records-grid { 
+        grid-template-columns: 1fr !important; 
+        gap: 20px; 
+    }
+    
+    /* Clean 4-column navigation bar for tablets */
+    .admin-nav { 
+        grid-template-columns: repeat(4, 1fr); 
+        gap: 10px; 
+    }
+    .admin-nav button { 
+        font-size: 13px; 
+        padding: 12px 8px; 
+        min-height: 46px;
+    }
+
+    /* 2-column partner cards on tablet */
+    .grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+    input, select { font-size: 15.5px; padding: 12px 14px; }
+}
+
+/* =========================================================
+   MOBILE PHONE OPTIMIZATION (All Smartphones: Up to 640px)
+   ========================================================= */
+@media (max-width: 640px) { 
     .app { padding: 10px; } 
-    .card { padding: 16px; margin: 12px 0; border-radius: 18px; }
-    .tri-records-grid, .dual-records-grid { grid-template-columns: 1fr; gap: 16px; } 
-    .stat { padding: 14px; border-radius: 14px; }
-    .stat b { font-size: 21px; }
+    .card { padding: 16px 14px; margin: 12px 0; border-radius: 18px; }
+    .top { position: static; padding: 12px 14px !important; border-radius: 16px; }
+    .top h1 { font-size: 16.5px !important; }
     
-    /* MOBILE TABS (ALL VISIBLE - NO SWIPE) */
-    .admin-nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); gap: 8px; margin-top: 16px; }
-    .admin-nav button { padding: 10px 4px; font-size: 11.5px; border-radius: 11px; margin: 0; white-space: nowrap; text-align: center; }
+    .tri-records-grid, .dual-records-grid, .grid { 
+        grid-template-columns: 1fr !important; 
+        gap: 14px; 
+    } 
     
-    h2 { font-size: 18px !important; }
-    td, th { padding: 9px 5px; font-size: 12px; }
-    table button { padding: 5px 7px !important; font-size: 11px !important; margin: 0 2px; border-radius: 6px; }
-    td:nth-child(2) { font-size: 11px; white-space: normal; }
-    .recon-cell { padding: 2px !important; font-size: 14px !important; }
-    .top { flex-direction: row; gap: 10px; padding: 14px 16px !important; }
-    .top h1 { font-size: 18px; margin: 0; }
-    .login-wrap { padding: 38px 22px; margin: 8vh auto; }
+    .stat { padding: 16px; border-radius: 16px; }
+    .stat b { font-size: 24px !important; }
+    
+    /* 3-Column Uniform Grid for Mobile Nav (No Cramped Text) */
+    .admin-nav { 
+        display: grid; 
+        grid-template-columns: repeat(3, 1fr); 
+        gap: 8px; 
+        margin-top: 16px; 
+    }
+    .admin-nav button { 
+        padding: 10px 4px; 
+        font-size: 11.5px; 
+        border-radius: 11px; 
+        margin: 0; 
+        white-space: nowrap; 
+        text-align: center;
+        min-height: 42px;
+    }
+    
+    /* Prevent iOS/Android Auto-Zoom on Input Focus */
+    input, select { 
+        font-size: 16px !important; 
+        padding: 11px 12px; 
+        margin-bottom: 12px; 
+        border-radius: 10px;
+    }
+    
+    /* Auto-Stack Inline Split Rows in Partner Form on Mobile */
+    #partnerFormCard div[style*="grid-template-columns: 2fr 1fr"],
+    #partnerFormCard div[style*="minmax(180px, 1fr)"] {
+        grid-template-columns: 1fr !important;
+        gap: 4px !important;
+    }
+    
+    /* Keep Segmented Income/Expense/Profit Pill Bar 3-Columns */
+    #partnerFormCard div[style*="1fr 1fr 1fr"] {
+        grid-template-columns: 1fr 1fr 1fr !important;
+        gap: 4px !important;
+        padding: 4px !important;
+    }
+    #partnerFormCard div[style*="1fr 1fr 1fr"] button {
+        font-size: 12px !important;
+        padding: 9px 4px !important;
+    }
+
+    /* Full-Width Search & Export Bar on Mobile */
+    #partnerSearchInput, #vehSearchInput, #poSearchInput, #sbSearchInput {
+        max-width: 100% !important;
+        width: 100% !important;
+    }
+
+    h2 { font-size: 17.5px !important; }
+    td, th { padding: 9px 6px; font-size: 12.5px; }
+    table button { padding: 6px 8px !important; font-size: 11.5px !important; margin: 0 1px; border-radius: 7px; }
+    td:nth-child(2) { font-size: 11.5px; white-space: nowrap; }
+    .recon-cell { padding: 4px !important; font-size: 15px !important; }
+    .login-wrap { padding: 36px 20px; margin: 6vh auto; border-radius: 24px; }
 }
 </style>
 </head>
@@ -309,10 +407,10 @@ tr:hover td { background-color: #f8fafc; }
     <section id="dash" class="hidden">
         <div class="card top">
             <div style="display:flex; align-items:center; gap:10px;">
-                <span style="width:10px; height:10px; background:#10b981; border-radius:50%; display:inline-block; box-shadow:0 0 0 4px rgba(16,185,129,0.2);"></span>
+                <span style="width:10px; height:10px; background:#10b981; border-radius:50%; display:inline-block; box-shadow:0 0 0 4px rgba(16,185,129,0.2); flex-shrink:0;"></span>
                 <h1 id="head" style="margin:0; font-size:20px; font-weight:800; letter-spacing:-0.02em;"></h1>
             </div>
-            <button class="alt" onclick="logoutApp()" style="padding:9px 16px; font-size:13px; border-radius:10px;">🚪 Logout</button>
+            <button class="alt" onclick="logoutApp()" style="padding:8px 14px; font-size:12.5px; border-radius:10px; flex-shrink:0;">🚪 Logout</button>
         </div>
         <div id="content"></div>
     </section>
@@ -567,7 +665,7 @@ function generateMiniMonthDropdown(currentValue) {
         if(sIdx > -1) options += `<option value="${currentValue}" selected>${shortM[sIdx]} ${p[1]}</option>`; 
     } 
 
-    return `<div style="display:inline-flex; align-items:stretch; background:#fff; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.04); max-width:150px; box-sizing:border-box;"><button onclick="changeMonthBy(-1)" style="flex-shrink:0; width:24px; background:#f8fafc; border:none; border-right:1px solid #cbd5e1; font-weight:bold; font-size:11px; color:#059669; cursor:pointer; padding:0; box-shadow:none;" title="Previous Month">&lt;</button><select onchange="document.getElementById('headerMonthSelect').value=this.value; handleGlobalMonthChange()" style="flex-grow:1; width:auto; min-width:68px; margin:0; padding:4px 4px; font-size:11.5px; border:none; background:#fff; font-weight:700; color:#059669; cursor:pointer; outline:none;">${options}</select><button onclick="changeMonthBy(1)" style="flex-shrink:0; width:24px; background:#f8fafc; border:none; border-left:1px solid #cbd5e1; font-weight:bold; font-size:11px; color:#059669; cursor:pointer; padding:0; box-shadow:none;" title="Next Month">&gt;</button></div>`; 
+    return `<div style="display:inline-flex; align-items:stretch; background:#fff; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.04); max-width:155px; box-sizing:border-box;"><button onclick="changeMonthBy(-1)" style="flex-shrink:0; width:26px; background:#f8fafc; border:none; border-right:1px solid #cbd5e1; font-weight:bold; font-size:11px; color:#059669; cursor:pointer; padding:0; box-shadow:none;" title="Previous Month">&lt;</button><select onchange="document.getElementById('headerMonthSelect').value=this.value; handleGlobalMonthChange()" style="flex-grow:1; width:auto; min-width:72px; margin:0; padding:5px 4px; font-size:12px !important; border:none; background:#fff; font-weight:700; color:#059669; cursor:pointer; outline:none;">${options}</select><button onclick="changeMonthBy(1)" style="flex-shrink:0; width:26px; background:#f8fafc; border:none; border-left:1px solid #cbd5e1; font-weight:bold; font-size:11px; color:#059669; cursor:pointer; padding:0; box-shadow:none;" title="Next Month">&gt;</button></div>`; 
 }
 
 function admin() { 
@@ -577,8 +675,8 @@ function admin() {
     <div class="card admin-hero">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap;">
             <div>
-                <h2 style="margin:0; font-size:22px;">💼 Service Tracker — Admin</h2>
-                <p style="margin:4px 0 0 0; opacity:0.85; font-size:13.5px; font-weight:500;">Partners: Tanmoy & Tapabrata</p>
+                <h2 style="margin:0; font-size:21px;">💼 Service Tracker — Admin</h2>
+                <p style="margin:4px 0 0 0; opacity:0.85; font-size:13px; font-weight:500;">Partners: Tanmoy & Tapabrata</p>
             </div>
             <div style="display:none;">${generateMonthDropdown()}</div>
         </div>
@@ -656,15 +754,50 @@ function pushSalaryToPartnerForm(id) { let v = getArray(appData.privateSalary).f
 window.deletePrivateVault = function(id) { if(confirm("Are you sure you want to delete this secret entry?")) { appData.privateVault = getArray(appData.privateVault).filter(x => String(x.id) !== String(id)); saveDataToLocal().then(() => renderPrivateVault()); } };
 window.pushToPartnerForm = function(id) { try { let vaultList = getArray(appData.privateVault); let v = vaultList.find(x => String(x.id) === String(id)); if(!v) return alert("Entry not found!"); partnerProfile('Tanmoy'); setTimeout(() => { let dateEl = document.getElementById('entryDate'), amountEl = document.getElementById('entryAmount'), detailsEl = document.getElementById('entryDetails'); if (dateEl && v.date) dateEl.value = v.date; if (amountEl && v.amount) amountEl.value = v.amount; if (detailsEl) { let cleanText = v.details || ''; if (cleanText.includes('🤖')) cleanText = cleanText.replace(/🤖\s*/g, '').trim(); detailsEl.value = cleanText; } window.scrollTo({ top: 0, behavior: 'smooth' }); setTimeout(() => { let c = confirm("✅ Entry loaded! Delete from Private Vault now?"); if(c) { appData.privateVault = getArray(appData.privateVault).filter(x => String(x.id) !== String(id)); saveDataToLocal(); } }, 400); }, 150); } catch(err) { alert("Error: " + err.message); } };
 
-// ====== OVERVIEW ======
+// ====== OVERVIEW (PRO EXECUTIVE EDITION) ======
 function showAdminOverview() {
     setActiveAdminTab('tab-overview'); 
     let hm = document.getElementById('headerMonthSelect'); let selectedMonthText = hm ? hm.value : "August 2026"; 
     let cutoffDate = (appData.config && appData.config.cfStartMonth) ? appData.config.cfStartMonth + '-01' : '2026-08-01';
     
-    function getMonthData(pName, monthStr) { let recs = getArray(appData.records[pName]); if (monthStr && monthStr !== "All Time") { let parts = monthStr.split(' '); let mIdx = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].indexOf(parts[0]) + 1; let mStr = mIdx < 10 ? '0' + mIdx : mIdx.toString(); let mQuery = parts[1] + '-' + mStr; recs = recs.filter(r => r.date && r.date.startsWith(mQuery)); } let inc = 0, exp = 0, prof = 0; recs.forEach(r => { if (!appData.config?.enablePastCF && r.date < cutoffDate) return; let amt = parseFloat(r.amount) || 0; if(r.type === 'income') inc += amt; else if(r.type === 'expense') exp += amt; else if(r.type === 'profit') prof += amt; }); return { net: inc - exp - prof, prof: prof }; }
+    function getMonthData(pName, monthStr) { 
+        let recs = getArray(appData.records[pName]); 
+        if (monthStr && monthStr !== "All Time") { 
+            let parts = monthStr.split(' '); 
+            let mIdx = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].indexOf(parts[0]) + 1; 
+            let mStr = mIdx < 10 ? '0' + mIdx : mIdx.toString(); 
+            let mQuery = parts[1] + '-' + mStr; 
+            recs = recs.filter(r => r.date && r.date.startsWith(mQuery)); 
+        } 
+        let inc = 0, exp = 0, prof = 0; 
+        recs.forEach(r => { 
+            if (!appData.config?.enablePastCF && r.date < cutoffDate) return; 
+            let amt = parseFloat(r.amount) || 0; 
+            if(r.type === 'income') inc += amt; 
+            else if(r.type === 'expense') exp += amt; 
+            else if(r.type === 'profit') prof += amt; 
+        }); 
+        return { inc: inc, exp: exp, net: inc - exp - prof, prof: prof }; 
+    }
     
-    function getHistoricalBal(pName, monthStr) { if(!monthStr || monthStr === "All Time") return { bal: 0, month: "All Time" }; let parts = monthStr.split(' '); let mName = parts[0]; let yNum = parseInt(parts[1]); const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]; let mIndex = months.indexOf(mName); let prevMIndex = mIndex === 0 ? 11 : mIndex - 1; let prevYearNum = mIndex === 0 ? yNum - 1 : yNum; let lastDay = new Date(prevYearNum, prevMIndex + 1, 0, 23, 59, 59); let pRecs = getArray(appData.records[pName]); let validPastNet = 0; pRecs.forEach(r => { if(r.date) { let dP = r.date.split('-'); let rDate = new Date(parseInt(dP[0]), parseInt(dP[1])-1, parseInt(dP[2]), 12, 0, 0); if(rDate <= lastDay) { if (appData.config?.enablePastCF || r.date >= cutoffDate) validPastNet += (r.type === 'income' ? parseFloat(r.amount) : -parseFloat(r.amount)); } } }); return { bal: validPastNet, month: months[prevMIndex] + " " + prevYearNum }; }
+    function getHistoricalBal(pName, monthStr) { 
+        if(!monthStr || monthStr === "All Time") return { bal: 0, month: "All Time" }; 
+        let parts = monthStr.split(' '); let mName = parts[0]; let yNum = parseInt(parts[1]); 
+        const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]; 
+        let mIndex = months.indexOf(mName); let prevMIndex = mIndex === 0 ? 11 : mIndex - 1; let prevYearNum = mIndex === 0 ? yNum - 1 : yNum; 
+        let lastDay = new Date(prevYearNum, prevMIndex + 1, 0, 23, 59, 59); 
+        let pRecs = getArray(appData.records[pName]); let validPastNet = 0; 
+        pRecs.forEach(r => { 
+            if(r.date) { 
+                let dP = r.date.split('-'); 
+                let rDate = new Date(parseInt(dP[0]), parseInt(dP[1])-1, parseInt(dP[2]), 12, 0, 0); 
+                if(rDate <= lastDay) { 
+                    if (appData.config?.enablePastCF || r.date >= cutoffDate) validPastNet += (r.type === 'income' ? parseFloat(r.amount) : -parseFloat(r.amount)); 
+                } 
+            } 
+        }); 
+        return { bal: validPastNet, month: months[prevMIndex] + " " + prevYearNum }; 
+    }
     
     let tanDataMonth = getMonthData('Tanmoy', selectedMonthText); let tapDataMonth = getMonthData('Tapabrata', selectedMonthText); 
     let tanData = getHistoricalBal('Tanmoy', selectedMonthText); let tapData = getHistoricalBal('Tapabrata', selectedMonthText);
@@ -678,24 +811,179 @@ function showAdminOverview() {
         tapBalToDisplay = tapData.bal + tapDataMonth.net; 
     }
     
-    let carryTextTanmoy = selectedMonthText === "All Time" ? "₹0" : "₹" + tanData.bal.toLocaleString('en-IN'); let carryTextTapabrata = selectedMonthText === "All Time" ? "₹0" : "₹" + tapData.bal.toLocaleString('en-IN');
+    let combinedCash = tanBalToDisplay + tapBalToDisplay;
+    let carryTextTanmoy = selectedMonthText === "All Time" ? "₹0" : "₹" + tanData.bal.toLocaleString('en-IN'); 
+    let carryTextTapabrata = selectedMonthText === "All Time" ? "₹0" : "₹" + tapData.bal.toLocaleString('en-IN');
+    
+    // Progress Bar Ratios (Income vs Expense)
+    let tanTotalFlow = tanDataMonth.inc + tanDataMonth.exp;
+    let tanIncPct = tanTotalFlow > 0 ? Math.round((tanDataMonth.inc / tanTotalFlow) * 100) : 50;
+    let tapTotalFlow = tapDataMonth.inc + tapDataMonth.exp;
+    let tapIncPct = tapTotalFlow > 0 ? Math.round((tapDataMonth.inc / tapTotalFlow) * 100) : 50;
+
     let billList = getArray(appData.submittedBills); let pendingBillsArr = billList.filter(b => !b.isPaid); let pendingBillAmt = pendingBillsArr.reduce((sum, b) => sum + (parseFloat(b.amount) || 0), 0);
-    let pendingBillsHTML = `<div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse; font-size:13px;"><tr style="background:#f5eef8; color:#8e44ad; text-align:left;"><th style="padding:8px; border-bottom:1px solid #ddd;">Date</th><th style="padding:8px; border-bottom:1px solid #ddd;">Location / Party</th><th style="padding:8px; border-bottom:1px solid #ddd;">Bill No. & Period</th><th style="padding:8px; border-bottom:1px solid #ddd;">Amount</th></tr>`; if (pendingBillsArr.length > 0) { pendingBillsHTML += pendingBillsArr.map(b => `<tr><td style="padding:8px; border-bottom:1px solid #eee;">${formatDate(b.date)}</td><td style="padding:8px; border-bottom:1px solid #eee;"><strong>${b.location}</strong></td><td style="padding:8px; border-bottom:1px solid #eee;">${b.billNo}${b.period ? `<br><span style="font-size:11px;color:#555;">${b.period}</span>` : ''}</td><td style="padding:8px; border-bottom:1px solid #eee; font-weight:bold; color:#e21d4f;">₹${b.amount}</td></tr>`).join(''); } else pendingBillsHTML += `<tr><td colspan="4" style="text-align:center; padding:15px; color:#888;">All bills paid! 💸</td></tr>`; pendingBillsHTML += `</table></div>`;
+    let pendingBillsHTML = `<div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse; font-size:13px;"><tr style="background:#f5f3ff; color:#6d28d9; text-align:left;"><th style="padding:10px; border-bottom:1px solid #e2e8f0;">Date</th><th style="padding:10px; border-bottom:1px solid #e2e8f0;">Location / Party</th><th style="padding:10px; border-bottom:1px solid #e2e8f0;">Bill No. & Period</th><th style="padding:10px; border-bottom:1px solid #e2e8f0;">Amount</th></tr>`; if (pendingBillsArr.length > 0) { pendingBillsHTML += pendingBillsArr.map(b => `<tr><td style="padding:9px 10px; border-bottom:1px solid #f1f5f9;">${formatDate(b.date)}</td><td style="padding:9px 10px; border-bottom:1px solid #f1f5f9;"><strong>${b.location}</strong></td><td style="padding:9px 10px; border-bottom:1px solid #f1f5f9;">${b.billNo}${b.period ? `<br><span style="font-size:11px;color:#64748b;">${b.period}</span>` : ''}</td><td style="padding:9px 10px; border-bottom:1px solid #f1f5f9; font-weight:800; color:#e11d48;">₹${b.amount}</td></tr>`).join(''); } else pendingBillsHTML += `<tr><td colspan="4" style="text-align:center; padding:18px; color:#64748b; font-weight:500;">All bills paid! 💸</td></tr>`; pendingBillsHTML += `</table></div>`;
+    
     let invRecords = getArray(appData.invoices); let pendingInvArr = invRecords.filter(i => !i.isPaid); let pendingInvAmt = pendingInvArr.reduce((sum, i) => sum + (parseFloat(i.gTotal) || 0), 0);
-    let pendingInvHTML = `<div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse; font-size:13px;"><tr style="background:#fcf3cf; color:#d35400; text-align:left;"><th style="padding:8px; border-bottom:1px solid #ddd;">Date</th><th style="padding:8px; border-bottom:1px solid #ddd;">Voucher No.</th><th style="padding:8px; border-bottom:1px solid #ddd;">Name</th><th style="padding:8px; border-bottom:1px solid #ddd;">Amount</th></tr>`; if (pendingInvArr.length > 0) { pendingInvHTML += pendingInvArr.map(i => `<tr><td style="padding:8px; border-bottom:1px solid #eee;">${i.date || '-'}</td><td style="padding:8px; border-bottom:1px solid #eee;"><strong>${i.invNo}</strong></td><td style="padding:8px; border-bottom:1px solid #eee;"><strong>${i.bName}</strong></td><td style="padding:8px; border-bottom:1px solid #eee; font-weight:bold; color:#e21d4f;">₹${i.gTotal}</td></tr>`).join(''); } else pendingInvHTML += `<tr><td colspan="4" style="text-align:center; padding:15px; color:#888;">No pending petty cash records! ✅</td></tr>`; pendingInvHTML += `</table></div>`;
-    let poList = getArray(appData.poRecords); let ongoingPOs = poList.filter(p => !p.isCompleted);
-    let ongoingPOsHTML = `<div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse; font-size:13px;"><tr style="background:#d4e6f1; color:#2980b9; text-align:left;"><th style="padding:8px; border-bottom:1px solid #ddd;">Issue Date</th><th style="padding:8px; border-bottom:1px solid #ddd;">Authority</th><th style="padding:8px; border-bottom:1px solid #ddd;">PO No.</th><th style="padding:8px; border-bottom:1px solid #ddd;">Amount</th></tr>`; if(ongoingPOs.length > 0) { ongoingPOsHTML += ongoingPOs.map(p => `<tr><td style="padding:8px; border-bottom:1px solid #eee;">${formatDate(p.date)}</td><td style="padding:8px; border-bottom:1px solid #eee;"><strong>${p.authority}</strong></td><td style="padding:8px; border-bottom:1px solid #eee;">${p.poNo}</td><td style="padding:8px; border-bottom:1px solid #eee; font-weight:bold; color:#e67e22;">₹${p.amount}</td></tr>`).join(''); } else ongoingPOsHTML += `<tr><td colspan="4" style="text-align:center; padding:15px; color:#888;">No ongoing POs! 🎉</td></tr>`; ongoingPOsHTML += `</table></div>`;
+    let pendingInvHTML = `<div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse; font-size:13px;"><tr style="background:#fffbeb; color:#b45309; text-align:left;"><th style="padding:10px; border-bottom:1px solid #e2e8f0;">Date</th><th style="padding:10px; border-bottom:1px solid #e2e8f0;">Voucher No.</th><th style="padding:10px; border-bottom:1px solid #e2e8f0;">Name</th><th style="padding:10px; border-bottom:1px solid #e2e8f0;">Amount</th></tr>`; if (pendingInvArr.length > 0) { pendingInvHTML += pendingInvArr.map(i => `<tr><td style="padding:9px 10px; border-bottom:1px solid #f1f5f9;">${i.date || '-'}</td><td style="padding:9px 10px; border-bottom:1px solid #f1f5f9;"><strong>${i.invNo}</strong></td><td style="padding:9px 10px; border-bottom:1px solid #f1f5f9;"><strong>${i.bName}</strong></td><td style="padding:9px 10px; border-bottom:1px solid #f1f5f9; font-weight:800; color:#e11d48;">₹${i.gTotal}</td></tr>`).join(''); } else pendingInvHTML += `<tr><td colspan="4" style="text-align:center; padding:18px; color:#64748b; font-weight:500;">No pending petty cash records! ✅</td></tr>`; pendingInvHTML += `</table></div>`;
+    
+    let poList = getArray(appData.poRecords); let ongoingPOs = poList.filter(p => !p.isCompleted); let ongoingPOAmt = ongoingPOs.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+    let ongoingPOsHTML = `<div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse; font-size:13px;"><tr style="background:#f0fdfa; color:#0f766e; text-align:left;"><th style="padding:10px; border-bottom:1px solid #e2e8f0;">Issue Date</th><th style="padding:10px; border-bottom:1px solid #e2e8f0;">Authority</th><th style="padding:10px; border-bottom:1px solid #e2e8f0;">PO No.</th><th style="padding:10px; border-bottom:1px solid #e2e8f0;">Amount</th></tr>`; if(ongoingPOs.length > 0) { ongoingPOsHTML += ongoingPOs.map(p => `<tr><td style="padding:9px 10px; border-bottom:1px solid #f1f5f9;">${formatDate(p.date)}</td><td style="padding:9px 10px; border-bottom:1px solid #f1f5f9;"><strong>${p.authority}</strong></td><td style="padding:9px 10px; border-bottom:1px solid #f1f5f9;">${p.poNo}</td><td style="padding:9px 10px; border-bottom:1px solid #f1f5f9; font-weight:800; color:#d97706;">₹${p.amount}</td></tr>`).join(''); } else ongoingPOsHTML += `<tr><td colspan="4" style="text-align:center; padding:18px; color:#64748b; font-weight:500;">No ongoing POs! 🎉</td></tr>`; ongoingPOsHTML += `</table></div>`;
     
     document.getElementById('profileArea').innerHTML = `
-    <div class="card"><h2>📊 Partner Overview</h2><div class="grid">
-        <div class="stat"><div style="display:flex; justify-content:space-between; align-items:flex-start;"><div><span style="font-weight:bold;color:#17352b;">Tanmoy's Balance</span><span style="font-size:11px; color:#555; display:block; margin-top:2px;">(Total Cash in Hand)</span></div>${generateMiniMonthDropdown(selectedMonthText)}</div><b class="${tanBalToDisplay >= 0 ? 'positive' : 'negative'}">₹${tanBalToDisplay.toLocaleString('en-IN')}</b><div style="font-size:12px; color:#555; margin-top:8px; display:flex; justify-content:space-between; border-top:1px solid #cce3d8; padding-top:6px;"><span>CF (${tanData.month} End):</span><b>${carryTextTanmoy}</b></div><div style="font-size:12px; color:#8e44ad; margin-top:4px; display:flex; justify-content:space-between;"><span>🟣 Profit Booked:</span><b>₹${tanDataMonth.prof.toLocaleString('en-IN')}</b></div></div>
-        <div class="stat"><div style="display:flex; justify-content:space-between; align-items:flex-start;"><div><span style="font-weight:bold;color:#17352b;">Tapabrata's Balance</span><span style="font-size:11px; color:#555; display:block; margin-top:2px;">(Total Cash in Hand)</span></div>${generateMiniMonthDropdown(selectedMonthText)}</div><b class="${tapBalToDisplay >= 0 ? 'positive' : 'negative'}">₹${tapBalToDisplay.toLocaleString('en-IN')}</b><div style="font-size:12px; color:#555; margin-top:8px; display:flex; justify-content:space-between; border-top:1px solid #cce3d8; padding-top:6px;"><span>CF (${tapData.month} End):</span><b>${carryTextTapabrata}</b></div><div style="font-size:12px; color:#8e44ad; margin-top:4px; display:flex; justify-content:space-between;"><span>🟣 Profit Booked:</span><b>₹${tapDataMonth.prof.toLocaleString('en-IN')}</b></div></div>
-    </div></div>
-    <div class="card"><h2>📈 Detailed Business Tracker</h2><div style="display:flex; flex-direction:column; gap:15px;">
-        <div style="background:#f9ebf9; padding:16px; border-radius:12px;"><strong style="font-size:18px; color:#8e44ad; border-bottom:1px solid #bdc3c7; padding-bottom:5px; margin-bottom:10px; display:block;">📋 Bill Track</strong><div style="display:flex; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap;"><span style="font-size:14px;">Total Bills: <strong style="font-size:16px;">${billList.length}</strong></span><span style="font-size:14px; color:#e21d4f;">⏳ Pending: <strong style="font-size:16px;">${pendingBillsArr.length}</strong> <br><span style="font-size:11px;">(₹${pendingBillAmt.toLocaleString('en-IN')})</span></span><span style="font-size:14px; color:#07865b;">✅ Paid: <strong style="font-size:16px;">${billList.length - pendingBillsArr.length}</strong></span></div><div class="scroll-list" style="padding:0;">${pendingBillsHTML}</div></div>
-        <div style="background:#fef5e7; padding:16px; border-radius:12px;"><strong style="font-size:18px; color:#f39c12; border-bottom:1px solid #bdc3c7; padding-bottom:5px; margin-bottom:10px; display:block;">🧾 Petty Cash</strong><div style="display:flex; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap;"><span style="font-size:14px;">Total Petty Cash: <strong style="font-size:16px;">${invRecords.length}</strong></span><span style="font-size:14px; color:#e21d4f;">⏳ Pending: <strong style="font-size:16px;">${pendingInvArr.length}</strong> <br><span style="font-size:11px;">(₹${pendingInvAmt.toLocaleString('en-IN')})</span></span><span style="font-size:14px; color:#07865b;">✅ Paid: <strong style="font-size:16px;">${invRecords.length - pendingInvArr.length}</strong></span></div><div class="scroll-list" style="padding:0;">${pendingInvHTML}</div></div>
-        <div style="background:#e8f4f8; padding:16px; border-radius:12px;"><strong style="font-size:18px; color:#2980b9; border-bottom:1px solid #bdc3c7; padding-bottom:5px; margin-bottom:10px; display:block;">📄 PO Track</strong><div style="display:flex; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap;"><span style="font-size:14px;">Total POs: <strong style="font-size:16px;">${poList.length}</strong></span><span style="font-size:14px; color:#e67e22;">⏳ Ongoing: <strong style="font-size:16px;">${ongoingPOs.length}</strong></span><span style="font-size:14px; color:#07865b;">✅ Completed: <strong style="font-size:16px;">${poList.length - ongoingPOs.length}</strong></span></div><div class="scroll-list" style="padding:0;">${ongoingPOsHTML}</div></div>
-    </div></div>`;
+    <div class="card" style="border: 1px solid #e2e8f0; box-shadow: 0 12px 32px -4px rgba(15, 23, 42, 0.05);">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:20px; padding-bottom:14px; border-bottom:1px solid #f1f5f9;">
+            <div>
+                <h2 style="margin:0; font-size:20px; font-weight:800; color:#0f172a; display:flex; align-items:center; gap:8px;">📊 Executive Partner Overview</h2>
+                <span style="font-size:12.5px; color:#64748b; font-weight:500;">Real-time liquidity & monthly cashflow breakdown</span>
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; padding:6px 12px; border-radius:10px; font-size:12px;">
+                    <span style="color:#64748b; font-weight:600;">Combined Cash:</span>
+                    <b class="${combinedCash >= 0 ? 'positive' : 'negative'}" style="font-size:14px; margin-left:4px;">₹${combinedCash.toLocaleString('en-IN')}</b>
+                </div>
+                ${generateMiniMonthDropdown(selectedMonthText)}
+            </div>
+        </div>
+
+        <div class="grid">
+            <!-- TANMOY CARD -->
+            <div class="stat" style="background:linear-gradient(145deg, #ffffff 0%, #f8fafc 100%); border:1px solid #cbd5e1; border-top:4px solid #4f46e5; border-radius:18px; padding:20px; box-shadow:0 6px 18px rgba(15,23,42,0.03);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div style="width:38px; height:38px; border-radius:10px; background:#eef2ff; color:#4f46e5; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px;">T</div>
+                        <div>
+                            <span style="font-weight:800; color:#0f172a; font-size:16px; display:block;">Tanmoy</span>
+                            <span style="font-size:10.5px; color:#64748b; font-weight:700; letter-spacing:0.04em;">TOTAL CASH IN HAND</span>
+                        </div>
+                    </div>
+                    <button onclick="partnerProfile('Tanmoy')" class="alt" style="padding:6px 10px; font-size:11.5px; border-radius:8px;">Profile ↗</button>
+                </div>
+
+                <b class="${tanBalToDisplay >= 0 ? 'positive' : 'negative'}" style="font-size:30px; margin: 10px 0 14px 0; letter-spacing:-0.03em;">₹${tanBalToDisplay.toLocaleString('en-IN')}</b>
+
+                <!-- Month Income vs Expense Mini Grid -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
+                    <div style="background:#ecfdf5; border:1px solid #a7f3d0; padding:8px 10px; border-radius:10px;">
+                        <span style="font-size:10.5px; color:#047857; font-weight:700; display:block;">🟢 MONTH INCOME</span>
+                        <strong style="font-size:14px; color:#065f46;">₹${tanDataMonth.inc.toLocaleString('en-IN')}</strong>
+                    </div>
+                    <div style="background:#fff1f2; border:1px solid #fecdd3; padding:8px 10px; border-radius:10px;">
+                        <span style="font-size:10.5px; color:#be123c; font-weight:700; display:block;">🔴 MONTH EXPENSE</span>
+                        <strong style="font-size:14px; color:#9f1239;">₹${tanDataMonth.exp.toLocaleString('en-IN')}</strong>
+                    </div>
+                </div>
+
+                <!-- Visual Cashflow Bar -->
+                <div style="height:6px; width:100%; background:#fecdd3; border-radius:99px; overflow:hidden; margin-bottom:12px;">
+                    <div style="height:100%; width:${tanIncPct}%; background:#10b981; border-radius:99px;"></div>
+                </div>
+
+                <div style="font-size:12.5px; color:#475569; display:flex; justify-content:space-between; border-top:1px dashed #cbd5e1; padding-top:10px;">
+                    <span style="font-weight:600;">🔄 Carry Fwd (${tanData.month}):</span>
+                    <strong style="color:#0f172a;">${carryTextTanmoy}</strong>
+                </div>
+                <div style="font-size:12.5px; color:#7c3aed; display:flex; justify-content:space-between; margin-top:6px;">
+                    <span style="font-weight:600;">🟣 Profit Booked:</span>
+                    <strong>₹${tanDataMonth.prof.toLocaleString('en-IN')}</strong>
+                </div>
+            </div>
+
+            <!-- TAPABRATA CARD -->
+            <div class="stat" style="background:linear-gradient(145deg, #ffffff 0%, #f8fafc 100%); border:1px solid #cbd5e1; border-top:4px solid #0d9488; border-radius:18px; padding:20px; box-shadow:0 6px 18px rgba(15,23,42,0.03);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div style="width:38px; height:38px; border-radius:10px; background:#f0fdfa; color:#0d9488; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px;">T</div>
+                        <div>
+                            <span style="font-weight:800; color:#0f172a; font-size:16px; display:block;">Tapabrata</span>
+                            <span style="font-size:10.5px; color:#64748b; font-weight:700; letter-spacing:0.04em;">TOTAL CASH IN HAND</span>
+                        </div>
+                    </div>
+                    <button onclick="partnerProfile('Tapabrata')" class="alt" style="padding:6px 10px; font-size:11.5px; border-radius:8px;">Profile ↗</button>
+                </div>
+
+                <b class="${tapBalToDisplay >= 0 ? 'positive' : 'negative'}" style="font-size:30px; margin: 10px 0 14px 0; letter-spacing:-0.03em;">₹${tapBalToDisplay.toLocaleString('en-IN')}</b>
+
+                <!-- Month Income vs Expense Mini Grid -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
+                    <div style="background:#ecfdf5; border:1px solid #a7f3d0; padding:8px 10px; border-radius:10px;">
+                        <span style="font-size:10.5px; color:#047857; font-weight:700; display:block;">🟢 MONTH INCOME</span>
+                        <strong style="font-size:14px; color:#065f46;">₹${tapDataMonth.inc.toLocaleString('en-IN')}</strong>
+                    </div>
+                    <div style="background:#fff1f2; border:1px solid #fecdd3; padding:8px 10px; border-radius:10px;">
+                        <span style="font-size:10.5px; color:#be123c; font-weight:700; display:block;">🔴 MONTH EXPENSE</span>
+                        <strong style="font-size:14px; color:#9f1239;">₹${tapDataMonth.exp.toLocaleString('en-IN')}</strong>
+                    </div>
+                </div>
+
+                <!-- Visual Cashflow Bar -->
+                <div style="height:6px; width:100%; background:#fecdd3; border-radius:99px; overflow:hidden; margin-bottom:12px;">
+                    <div style="height:100%; width:${tapIncPct}%; background:#10b981; border-radius:99px;"></div>
+                </div>
+
+                <div style="font-size:12.5px; color:#475569; display:flex; justify-content:space-between; border-top:1px dashed #cbd5e1; padding-top:10px;">
+                    <span style="font-weight:600;">🔄 Carry Fwd (${tapData.month}):</span>
+                    <strong style="color:#0f172a;">${carryTextTapabrata}</strong>
+                </div>
+                <div style="font-size:12.5px; color:#7c3aed; display:flex; justify-content:space-between; margin-top:6px;">
+                    <span style="font-weight:600;">🟣 Profit Booked:</span>
+                    <strong>₹${tapDataMonth.prof.toLocaleString('en-IN')}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- OPERATIONS & PIPELINE TRACKER -->
+    <div class="card">
+        <div style="margin-bottom:18px;">
+            <h2 style="margin:0; font-size:20px; font-weight:800; color:#0f172a;">📈 Active Business Pipeline</h2>
+            <span style="font-size:12.5px; color:#64748b; font-weight:500;">Track pending payments, petty cash vouchers, and ongoing work orders</span>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:18px;">
+            <!-- BILL TRACK CARD -->
+            <div style="background:#ffffff; padding:18px; border-radius:16px; border:1px solid #e2e8f0; border-left:5px solid #8b5cf6; box-shadow:0 4px 12px rgba(0,0,0,0.02);">
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding-bottom:10px; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+                    <strong style="font-size:16px; color:#6d28d9; display:flex; align-items:center; gap:6px;">📋 Submitted Bills</strong>
+                    <button onclick="showSubmittedBills()" class="alt" style="padding:5px 10px; font-size:11.5px; border-radius:8px;">Manage Bills ↗</button>
+                </div>
+                <div style="display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
+                    <span style="background:#f8fafc; border:1px solid #e2e8f0; padding:5px 10px; border-radius:8px; font-size:12.5px; color:#334155;">Total: <b>${billList.length}</b></span>
+                    <span style="background:#fff1f2; border:1px solid #fecdd3; padding:5px 10px; border-radius:8px; font-size:12.5px; color:#be123c;">⏳ Pending: <b>${pendingBillsArr.length}</b> (₹${pendingBillAmt.toLocaleString('en-IN')})</span>
+                    <span style="background:#ecfdf5; border:1px solid #a7f3d0; padding:5px 10px; border-radius:8px; font-size:12.5px; color:#047857;">✅ Paid: <b>${billList.length - pendingBillsArr.length}</b></span>
+                </div>
+                <div class="scroll-list" style="padding:0; margin-top:8px;">${pendingBillsHTML}</div>
+            </div>
+
+            <!-- PETTY CASH CARD -->
+            <div style="background:#ffffff; padding:18px; border-radius:16px; border:1px solid #e2e8f0; border-left:5px solid #f59e0b; box-shadow:0 4px 12px rgba(0,0,0,0.02);">
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding-bottom:10px; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+                    <strong style="font-size:16px; color:#b45309; display:flex; align-items:center; gap:6px;">🧾 Petty Cash Vouchers</strong>
+                    <button onclick="showInvoice()" class="alt" style="padding:5px 10px; font-size:11.5px; border-radius:8px;">Open Petty Cash ↗</button>
+                </div>
+                <div style="display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
+                    <span style="background:#f8fafc; border:1px solid #e2e8f0; padding:5px 10px; border-radius:8px; font-size:12.5px; color:#334155;">Total: <b>${invRecords.length}</b></span>
+                    <span style="background:#fff1f2; border:1px solid #fecdd3; padding:5px 10px; border-radius:8px; font-size:12.5px; color:#be123c;">⏳ Pending: <b>${pendingInvArr.length}</b> (₹${pendingInvAmt.toLocaleString('en-IN')})</span>
+                    <span style="background:#ecfdf5; border:1px solid #a7f3d0; padding:5px 10px; border-radius:8px; font-size:12.5px; color:#047857;">✅ Paid: <b>${invRecords.length - pendingInvArr.length}</b></span>
+                </div>
+                <div class="scroll-list" style="padding:0; margin-top:8px;">${pendingInvHTML}</div>
+            </div>
+
+            <!-- PO TRACK CARD -->
+            <div style="background:#ffffff; padding:18px; border-radius:16px; border:1px solid #e2e8f0; border-left:5px solid #0d9488; box-shadow:0 4px 12px rgba(0,0,0,0.02);">
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding-bottom:10px; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+                    <strong style="font-size:16px; color:#0f766e; display:flex; align-items:center; gap:6px;">📄 Purchase Orders (PO)</strong>
+                    <button onclick="showPOTracker()" class="alt" style="padding:5px 10px; font-size:11.5px; border-radius:8px;">Manage POs ↗</button>
+                </div>
+                <div style="display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
+                    <span style="background:#f8fafc; border:1px solid #e2e8f0; padding:5px 10px; border-radius:8px; font-size:12.5px; color:#334155;">Total POs: <b>${poList.length}</b></span>
+                    <span style="background:#fffbeb; border:1px solid #fde68a; padding:5px 10px; border-radius:8px; font-size:12.5px; color:#b45309;">⏳ Ongoing: <b>${ongoingPOs.length}</b> (₹${ongoingPOAmt.toLocaleString('en-IN')})</span>
+                    <span style="background:#ecfdf5; border:1px solid #a7f3d0; padding:5px 10px; border-radius:8px; font-size:12.5px; color:#047857;">✅ Completed: <b>${poList.length - ongoingPOs.length}</b></span>
+                </div>
+                <div class="scroll-list" style="padding:0; margin-top:8px;">${ongoingPOsHTML}</div>
+            </div>
+        </div>
+    </div>`;
 }
 
 // ====== VEHICLES ======
@@ -756,9 +1044,11 @@ async function saveVehicle() {
 }
 
 function deleteVehicle(id) { if(confirm("Are you sure you want to delete this vehicle expense?")) { let oldV = getArray(appData.vehicles).find(x => String(x.id) === String(id)); if(oldV) { appData.balances[oldV.paidBy] += oldV.amount; appData.records[oldV.paidBy] = getArray(appData.records[oldV.paidBy]).filter(r => String(r.id) !== String(id)); appData.vehicles = getArray(appData.vehicles).filter(x => String(x.id) !== String(id)); saveDataToLocal().then(() => showVehicles()); } } }
-function editVehicle(id) { let v = getArray(appData.vehicles).find(x => String(x.id) === String(id)); if(v) { currentVehicleEditId = id; document.getElementById('vDate').value = v.date || ''; document.getElementById('vCar').value = v.car || 'Tcl car'; document.getElementById('vCategory').value = v.category || ''; document.getElementById('vDetails').value = (v.details === '-' ? '' : v.details || ''); document.getElementById('vAmount').value = v.amount || ''; let pbEl = document.getElementById('vPaidBy'); if(pbEl) pbEl.value = v.paidBy || 'Tanmoy'; let btn = document.getElementById('vSaveBtn'); if(btn) { btn.innerText = "✏️ Update Expense"; btn.style.background = "#f39c12"; } window.scrollTo({top:0}); } }// ====== PARTNER PROFILE ======
+function editVehicle(id) { let v = getArray(appData.vehicles).find(x => String(x.id) === String(id)); if(v) { currentVehicleEditId = id; document.getElementById('vDate').value = v.date || ''; document.getElementById('vCar').value = v.car || 'Tcl car'; document.getElementById('vCategory').value = v.category || ''; document.getElementById('vDetails').value = (v.details === '-' ? '' : v.details || ''); document.getElementById('vAmount').value = v.amount || ''; let pbEl = document.getElementById('vPaidBy'); if(pbEl) pbEl.value = v.paidBy || 'Tanmoy'; let btn = document.getElementById('vSaveBtn'); if(btn) { btn.innerText = "✏️ Update Expense"; btn.style.background = "#f39c12"; } window.scrollTo({top:0}); } }// ====== PARTNER PROFILE (MODERN PRO EDITION) ======
 
 let currentPartnerDateFilter = '';
+let lastCalcTotalProf = 0;
+
 function setPartnerDateFilter(val, name) {
     currentPartnerDateFilter = val;
     renderPartnerData(name);
@@ -773,32 +1063,132 @@ function partnerProfile(name){
     setActiveAdminTab(name === 'Tanmoy' ? 'tab-tanmoy' : 'tab-tapabrata');
     currentEditId = null; 
     let todayDate = window.lastSelectedDate || new Date().toISOString().split('T')[0];
-    let allDetails = []; getArray(appData.records['Tanmoy']).forEach(r => { if(r.details && !r.isAuto) allDetails.push(r.details); }); getArray(appData.records['Tapabrata']).forEach(r => { if(r.details && !r.isAuto) allDetails.push(r.details); });
+    let allDetails = []; 
+    getArray(appData.records['Tanmoy']).forEach(r => { if(r.details && !r.isAuto) allDetails.push(r.details); }); 
+    getArray(appData.records['Tapabrata']).forEach(r => { if(r.details && !r.isAuto) allDetails.push(r.details); });
     let detailsSuggest = [...new Set(allDetails)].sort().map(v => `<option value="${v}">`).join('');
     let pendingBills = getArray(appData.submittedBills).filter(b => !b.isPaid).map(b => `<option value="${b.billNo}">`).join('');
-    let globalMonth = document.getElementById('headerMonthSelect') ? document.getElementById('headerMonthSelect').value : '';
+    let accentColor = name === 'Tanmoy' ? '#4f46e5' : '#0d9488';
+    let avatarBg = name === 'Tanmoy' ? '#eef2ff' : '#f0fdfa';
 
     document.getElementById('profileArea').innerHTML = `
-    <datalist id="dlPartnerDetails">${detailsSuggest}</datalist><datalist id="dlPendingBills">${pendingBills}</datalist>
-    <div class="card"><h2>👨‍💼 Partner Profile — ${name}</h2><div id="partnerBalArea"></div></div>
-    <div class="card"><h2>＋ Add Entry for ${name}</h2>
-        <div class="grid" style="grid-template-columns: 1fr 1fr 1fr;"><button id="incomeBtn" onclick="setEntryType('income')">Income</button><button id="expenseBtn" class="alt" onclick="setEntryType('expense')">Expenditure</button><button id="profitBtn" class="alt" onclick="setEntryType('profit')">Profit Book</button></div>
-        <div id="transferCheckboxDiv" style="margin:12px 0; background:#eff7f3; border:1px solid #cce3d8; padding:12px; border-radius:8px; display:none;"><label style="font-weight:bold; color:#176b4d; display:flex; align-items:center; cursor:pointer; margin:0;"><input type="checkbox" id="transferCheckbox" style="width:auto; margin:0 10px 0 0; transform:scale(1.2);"> 🔄 Transfer to ${name === 'Tanmoy' ? 'Tapabrata' : 'Tanmoy'}</label></div>
-        <div id="quickVehicleDiv" style="margin:12px 0; background:#fdf2e9; border:1px solid #f5cba7; padding:12px; border-radius:8px; display:none;"><label style="font-weight:bold; color:#d35400; display:flex; align-items:center; cursor:pointer; margin:0;"><input type="checkbox" id="isVehicleExpense" style="width:auto; margin:0 10px 0 0; transform:scale(1.2);" onchange="document.getElementById('vehicleOptions').style.display = this.checked ? 'flex' : 'none'"> 🚗 Add as Vehicle Expense?</label><div id="vehicleOptions" style="display:none; gap:10px; flex-wrap:wrap; margin-top:10px;"><div style="flex:1; min-width:120px;"><label style="font-size:12px; margin-bottom:4px; display:block;">Select Car</label><select id="qvCar" style="margin:0;"><option value="Tcl car">Tcl car</option><option value="Dcl car">Dcl car</option></select></div><div style="flex:1; min-width:120px;"><label style="font-size:12px; margin-bottom:4px; display:block;">Category</label><select id="qvCategory" style="margin:0;"><option value="Fuel">⛽ Fuel</option><option value="Maintenance">🛠️ Maintenance</option><option value="Toll/Parking">🎫 Toll/Parking</option><option value="Other">📝 Other</option></select></div></div></div>
-        <div id="billNoDiv" style="margin:6px 0 12px; display:block;"><label style="display:block; margin-bottom:4px;">Bill No. <span style="font-size:11px; font-weight:normal; color:#555;">(Optional)</span></label><input id="entryBillNo" list="dlPendingBills" placeholder="Optional Bill No..." style="margin:0;"></div>
-        <label>Date</label><input type="date" id="entryDate" value="${todayDate}" onchange="window.lastSelectedDate=this.value">
-        <label>Amount (₹)</label><input type="number" id="entryAmount">
-        <label>Details</label><input id="entryDetails" list="dlPartnerDetails">
-        <label>Photo</label><input type="file" id="entryPhoto" accept="image/*">
-        <button onclick="savePartnerEntry('${name}')" style="width:100%;margin-top:8px;" id="entrySaveBtn">Save Entry</button>
+    <datalist id="dlPartnerDetails">${detailsSuggest}</datalist>
+    <datalist id="dlPendingBills">${pendingBills}</datalist>
+
+    <!-- FINANCIAL SUMMARY CARD -->
+    <div class="card" style="border-top: 4px solid ${accentColor};">
+        <div id="partnerBalArea"></div>
     </div>
-    <div class="card"><div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;"><h2 style="margin:0;">📋 Monthly Records</h2><div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;"><button onclick="downloadPartnerCSV('${name}')" style="background:#16a085; color:white; padding:8px 12px; margin:0; border-radius:8px;">📥 Export Excel</button><input type="text" id="partnerSearchInput" placeholder="🔍 Search Details, Bill..." oninput="renderPartnerData('${name}')" style="max-width:260px; margin:0; padding:8px 12px;"></div></div><div id="recordsGrid" class="dual-records-grid"><div id="incTable"></div><div id="expTable"></div><div id="profTable" style="display:none;"></div></div></div>`;
-    renderPartnerData(name); setEntryType(currentEntryType);
+
+    <!-- MODERN ADD ENTRY CARD -->
+    <div class="card" id="partnerFormCard" style="border: 1px solid #e2e8f0;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div style="width:36px; height:36px; border-radius:10px; background:${avatarBg}; color:${accentColor}; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px;">＋</div>
+                <div>
+                    <h2 style="margin:0; font-size:18px;" id="formTitleText">Add Entry for ${name}</h2>
+                    <span style="font-size:12px; color:#64748b;">Date & category stay saved for quick backlog entry</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Segmented Control Pill Bar -->
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:6px; background:#f1f5f9; padding:6px; border-radius:14px; margin-bottom:16px; border:1px solid #e2e8f0;">
+            <button id="incomeBtn" onclick="setEntryType('income')" style="margin:0; border-radius:10px; padding:10px 8px; font-size:13.5px;">🟢 Income</button>
+            <button id="expenseBtn" class="alt" onclick="setEntryType('expense')" style="margin:0; border-radius:10px; padding:10px 8px; font-size:13.5px;">🔴 Expenditure</button>
+            <button id="profitBtn" class="alt" onclick="setEntryType('profit')" style="margin:0; border-radius:10px; padding:10px 8px; font-size:13.5px;">🟣 Profit Book</button>
+        </div>
+
+        <!-- Transfer Option Banner -->
+        <div id="transferCheckboxDiv" style="margin:0 0 14px 0; background:#ecfdf5; border:1px solid #a7f3d0; padding:12px 14px; border-radius:12px; display:none;">
+            <label style="font-weight:700; color:#065f46; display:flex; align-items:center; cursor:pointer; margin:0; font-size:13.5px;">
+                <input type="checkbox" id="transferCheckbox" style="width:auto; margin:0 10px 0 0; transform:scale(1.2); accent-color:#059669;"> 
+                🔄 Auto-Transfer to ${name === 'Tanmoy' ? 'Tapabrata' : 'Tanmoy'}'s Account
+            </label>
+        </div>
+
+        <!-- Vehicle Expense Option Banner -->
+        <div id="quickVehicleDiv" style="margin:0 0 14px 0; background:#fff7ed; border:1px solid #fed7aa; padding:12px 14px; border-radius:12px; display:none;">
+            <label style="font-weight:700; color:#c2410c; display:flex; align-items:center; cursor:pointer; margin:0; font-size:13.5px;">
+                <input type="checkbox" id="isVehicleExpense" style="width:auto; margin:0 10px 0 0; transform:scale(1.2); accent-color:#ea580c;" onchange="document.getElementById('vehicleOptions').style.display = this.checked ? 'flex' : 'none'"> 
+                🚗 Link as Vehicle Expense
+            </label>
+            <div id="vehicleOptions" style="display:none; gap:12px; flex-wrap:wrap; margin-top:12px; padding-top:12px; border-top:1px dashed #fdba74;">
+                <div style="flex:1; min-width:130px;">
+                    <label style="font-size:12px; color:#9a3412; margin-bottom:4px;">Select Car</label>
+                    <select id="qvCar" style="margin:0; background:#fff;"><option value="Tcl car">Tcl car</option><option value="Dcl car">Dcl car</option></select>
+                </div>
+                <div style="flex:1; min-width:130px;">
+                    <label style="font-size:12px; color:#9a3412; margin-bottom:4px;">Category</label>
+                    <select id="qvCategory" style="margin:0; background:#fff;"><option value="Fuel">⛽ Fuel</option><option value="Maintenance">🛠️ Maintenance</option><option value="Toll/Parking">🎫 Toll/Parking</option><option value="Other">📝 Other</option></select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Optional Bill No (Only for Income) -->
+        <div id="billNoDiv" style="margin:0 0 14px 0; display:block;">
+            <label style="display:block; margin-bottom:5px;">🧾 Link Bill No. <span style="font-size:11.5px; font-weight:500; color:#64748b;">(Optional - Auto-marks bill as Paid)</span></label>
+            <input id="entryBillNo" list="dlPendingBills" placeholder="Select or type pending Bill No..." style="margin:0;">
+        </div>
+
+        <!-- Compact 2-Column Date & Amount Row -->
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:14px;">
+            <div>
+                <label>📅 Date</label>
+                <input type="date" id="entryDate" value="${todayDate}" onchange="window.lastSelectedDate=this.value">
+            </div>
+            <div>
+                <label>₹ Amount</label>
+                <input type="number" id="entryAmount" placeholder="0.00" style="font-weight:700;">
+            </div>
+        </div>
+
+        <!-- Details & Photo Row -->
+        <div style="display:grid; grid-template-columns: 2fr 1fr; gap:14px; align-items:start;">
+            <div>
+                <label>📝 Details / Description</label>
+                <input id="entryDetails" list="dlPartnerDetails" placeholder="Enter transaction details...">
+            </div>
+            <div>
+                <label>📷 Receipt Photo</label>
+                <input type="file" id="entryPhoto" accept="image/*" style="padding:9px; font-size:12.5px;">
+            </div>
+        </div>
+
+        <button onclick="savePartnerEntry('${name}')" style="width:100%; margin-top:4px; padding:14px; font-size:15px;" id="entrySaveBtn">💾 Save Entry</button>
+    </div>
+
+    <!-- MONTHLY RECORDS CARD -->
+    <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:18px; padding-bottom:14px; border-bottom:1px solid #f1f5f9;">
+            <div>
+                <h2 style="margin:0; font-size:19px;">📋 Monthly Ledger Records</h2>
+                <span style="font-size:12px; color:#64748b;">Click any row to toggle reconciliation status (⬜ / ✅ / ❌)</span>
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                <button onclick="downloadPartnerCSV('${name}')" style="background:linear-gradient(135deg, #0d9488, #0f766e); color:white; padding:9px 14px; margin:0; border-radius:10px; font-size:13px;">📥 Export CSV</button>
+                <input type="text" id="partnerSearchInput" placeholder="🔍 Search details, bill, amt..." oninput="renderPartnerData('${name}')" style="max-width:250px; margin:0; padding:9px 14px; border-radius:10px;">
+            </div>
+        </div>
+        <div id="recordsGrid" class="dual-records-grid">
+            <div id="incTable"></div>
+            <div id="expTable"></div>
+            <div id="profTable" style="display:none;"></div>
+        </div>
+    </div>`;
+    renderPartnerData(name); 
+    setEntryType(currentEntryType);
 }
 
 function renderPartnerData(name) {
-    let globalMonth = document.getElementById('headerMonthSelect') ? document.getElementById('headerMonthSelect').value : ''; let monthQuery = '';
-    if (globalMonth && globalMonth !== 'All Time') { let parts = globalMonth.split(' '); let mIdx = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].indexOf(parts[0]) + 1; let mStr = mIdx < 10 ? '0' + mIdx : mIdx.toString(); monthQuery = parts[1] + '-' + mStr; }
+    let globalMonth = document.getElementById('headerMonthSelect') ? document.getElementById('headerMonthSelect').value : ''; 
+    let monthQuery = '';
+    if (globalMonth && globalMonth !== 'All Time') { 
+        let parts = globalMonth.split(' '); 
+        let mIdx = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].indexOf(parts[0]) + 1; 
+        let mStr = mIdx < 10 ? '0' + mIdx : mIdx.toString(); 
+        monthQuery = parts[1] + '-' + mStr; 
+    }
     
     let query = document.getElementById('partnerSearchInput') ? document.getElementById('partnerSearchInput').value.toLowerCase() : '';
     let dateFilter = currentPartnerDateFilter || '';
@@ -812,54 +1202,269 @@ function renderPartnerData(name) {
     
     let totalInc = 0, totalExp = 0, totalProf = 0;
     function makeRow(r, type) {
-        if(type==='income') totalInc += parseFloat(r.amount) || 0; else if(type==='expense') totalExp += parseFloat(r.amount) || 0; else totalProf += parseFloat(r.amount) || 0;
-        let proof = '-'; if (r.photo && r.photo.length > 5) proof = `<a href="${r.photo}" target="_blank" style="text-decoration:none; font-size:16px;">📷</a>`; else if (r.link && r.link.length > 5) proof = `<a href="${r.link}" target="_blank" style="text-decoration:none; font-size:16px;">🔗</a>`;
-        let bTag = r.billNo ? `<br><span style="font-size:11px; color:#8e44ad; font-weight:bold;">🧾 ${r.billNo}</span>` : '';
-        let rState = r.reconState !== undefined ? r.reconState : (r.isReconciled ? 1 : 0); let statusIcon = rState === 1 ? '✅' : (rState === 2 ? '❌' : '⬜'); let bgStyle = rState === 1 ? 'background-color:#eefdf6 !important;' : (rState === 2 ? 'background-color:#fadbd8 !important;' : '');
-        let typeClr = type === 'income' ? 'positive' : (type === 'expense' ? 'negative' : ''); let amtStyle = type === 'profit' ? 'style="color:#8e44ad; font-weight:bold;"' : `class="${typeClr}"`;
-        return `<tr onclick="toggleRowCheck(this, event, '${type==='income'?'inc':(type==='expense'?'exp':'prof')}', '${r.id}', '${name}')" style="cursor:pointer; transition: background 0.2s; ${bgStyle}"><td style="text-align:center; user-select:none;" class="recon-cell" data-state="${rState}" data-id="${r.id}" data-amt="${r.amount}">${statusIcon}</td><td>${formatDate(r.date)}</td><td>${r.details}${bTag}</td><td style="text-align:center;">${proof}</td><td ${amtStyle}>₹${r.amount}</td><td style="white-space:nowrap;"><button onclick="editEntry('${r.id}', '${type}', '${name}')" style="background:#f39c12; color:white; border:none; border-radius:4px; padding:4px 6px;">✏️</button><button onclick="deleteEntry('${r.id}', '${name}')" style="background:#e21d4f; color:white; border:none; border-radius:4px; padding:4px 6px; margin-left:4px;">🗑️</button></td></tr>`;
+        if(type==='income') totalInc += parseFloat(r.amount) || 0; 
+        else if(type==='expense') totalExp += parseFloat(r.amount) || 0; 
+        else totalProf += parseFloat(r.amount) || 0;
+
+        let proof = '-'; 
+        if (r.photo && r.photo.length > 5) proof = `<a href="${r.photo}" target="_blank" style="text-decoration:none; font-size:15px; background:#f1f5f9; padding:4px 7px; border-radius:6px; display:inline-block;">📷</a>`; 
+        else if (r.link && r.link.length > 5) proof = `<a href="${r.link}" target="_blank" style="text-decoration:none; font-size:15px; background:#f1f5f9; padding:4px 7px; border-radius:6px; display:inline-block;">🔗</a>`;
+        
+        let bTag = r.billNo ? `<br><span style="display:inline-block; margin-top:3px; font-size:10.5px; background:#f3e8ff; color:#7e22ce; padding:2px 6px; border-radius:5px; font-weight:700;">🧾 ${r.billNo}</span>` : '';
+        let rState = r.reconState !== undefined ? r.reconState : (r.isReconciled ? 1 : 0); 
+        let statusIcon = rState === 1 ? '✅' : (rState === 2 ? '❌' : '⬜'); 
+        let bgStyle = rState === 1 ? 'background-color:#ecfdf5 !important;' : (rState === 2 ? 'background-color:#fff1f2 !important;' : '');
+        let typeClr = type === 'income' ? 'positive' : (type === 'expense' ? 'negative' : ''); 
+        let amtStyle = type === 'profit' ? 'style="color:#7c3aed; font-weight:800;"' : `class="${typeClr}"`;
+        
+        return `<tr onclick="toggleRowCheck(this, event, '${type==='income'?'inc':(type==='expense'?'exp':'prof')}', '${r.id}', '${name}')" style="cursor:pointer; transition: background 0.15s; ${bgStyle}">
+            <td style="text-align:center; user-select:none;" class="recon-cell" data-state="${rState}" data-id="${r.id}" data-amt="${r.amount}">${statusIcon}</td>
+            <td style="font-weight:600; color:#475569; white-space:nowrap;">${formatDate(r.date)}</td>
+            <td style="font-weight:500;">${r.details}${bTag}</td>
+            <td style="text-align:center;">${proof}</td>
+            <td ${amtStyle} style="white-space:nowrap;">₹${parseFloat(r.amount).toLocaleString('en-IN')}</td>
+            <td style="white-space:nowrap; text-align:right;">
+                <button onclick="editEntry('${r.id}', '${type}', '${name}')" style="background:#fef3c7; color:#b45309; border:1px solid #fde68a; border-radius:7px; padding:5px 8px; box-shadow:none;" title="Edit">✏️</button>
+                <button onclick="deleteEntry('${r.id}', '${name}')" style="background:#ffe4e6; color:#be123c; border:1px solid #fecdd3; border-radius:7px; padding:5px 8px; margin-left:4px; box-shadow:none;" title="Delete">🗑️</button>
+            </td>
+        </tr>`;
     }
 
-    let incs = recs.filter(r=>r.type==='income').map(r=> makeRow(r, 'income')).join(''); let exps = recs.filter(r=>r.type==='expense').map(r=> makeRow(r, 'expense')).join(''); let profs = recs.filter(r=>r.type==='profit').map(r=> makeRow(r, 'profit')).join('');
+    let incs = recs.filter(r=>r.type==='income').map(r=> makeRow(r, 'income')).join(''); 
+    let exps = recs.filter(r=>r.type==='expense').map(r=> makeRow(r, 'expense')).join(''); 
+    let profs = recs.filter(r=>r.type==='profit').map(r=> makeRow(r, 'profit')).join('');
+    lastCalcTotalProf = totalProf;
     
     let dateDisp = dateFilter ? formatDate(dateFilter) : 'Date';
-    let clearBtnHTML = dateFilter ? `<span onclick="event.stopPropagation(); clearPartnerDateFilter('${name}');" style="color:#e21d4f; cursor:pointer; font-weight:bold; font-size:13px; margin-left:3px; z-index:2; position:relative;" title="Clear Date Filter">✖</span>` : '';
-    let dateHdrHTML = `<th style="white-space:nowrap; vertical-align:middle;"><div style="display:inline-flex; align-items:center; gap:2px; position:relative;"><label style="display:inline-flex; align-items:center; gap:3px; cursor:pointer; margin:0; font-weight:bold; color:inherit;" title="Click to filter by date"><span>${dateDisp}</span><span style="font-size:13px;">📅</span><input type="date" value="${dateFilter}" onchange="setPartnerDateFilter(this.value, '${name}')" style="position:absolute; left:0; top:0; width:100%; height:100%; opacity:0; cursor:pointer;"></label>${clearBtnHTML}</div></th>`;
+    let clearBtnHTML = dateFilter ? `<span onclick="event.stopPropagation(); clearPartnerDateFilter('${name}');" style="color:#e11d48; cursor:pointer; font-weight:800; font-size:13px; margin-left:4px; z-index:2; position:relative;" title="Clear Date Filter">✖</span>` : '';
+    let dateHdrHTML = `<th style="white-space:nowrap; vertical-align:middle;"><div style="display:inline-flex; align-items:center; gap:3px; position:relative;"><label style="display:inline-flex; align-items:center; gap:4px; cursor:pointer; margin:0; font-weight:700; color:inherit; font-size:12px;" title="Click to filter by date"><span>${dateDisp}</span><span style="font-size:13px;">📅</span><input type="date" value="${dateFilter}" onchange="setPartnerDateFilter(this.value, '${name}')" style="position:absolute; left:0; top:0; width:100%; height:100%; opacity:0; cursor:pointer;"></label>${clearBtnHTML}</div></th>`;
     
-    document.getElementById('incTable').innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #07865b; margin-bottom:8px; padding-bottom:4px;"><div style="display:flex; align-items:center;"><h3 style="color:#07865b; margin:0;">🟢 Income</h3><span id="incGroupTotalBadge" style="display:none; background:#d4efdf; color:#07865b; padding:4px 8px; border-radius:10px; font-size:13px; margin-left:10px; font-weight:bold;">Matched: ₹0</span></div><b style="color:#07865b;">Total: ₹${totalInc.toLocaleString('en-IN')}</b></div><div style="overflow-x:auto;"><table><tr><th style="width:30px; text-align:center;"><button onclick="toggleAllRows('inc', '${name}')" style="background:#eee; border:1px solid #ccc; border-radius:4px; cursor:pointer; font-size:11px; padding:3px 5px; color:#333;">All</button></th>${dateHdrHTML}<th>Details</th><th style="text-align:center;">Proof</th><th>Amt</th><th>Action</th></tr>${incs||'<tr><td colspan="6" style="text-align:center;">No records</td></tr>'}</table></div>`;
-    document.getElementById('expTable').innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #e21d4f; margin-bottom:8px; padding-bottom:4px;"><div style="display:flex; align-items:center;"><h3 style="color:#e21d4f; margin:0;">🔴 Expense</h3><span id="expGroupTotalBadge" style="display:none; background:#fadbd8; color:#e21d4f; padding:4px 8px; border-radius:10px; font-size:13px; margin-left:10px; font-weight:bold;">Matched: ₹0</span></div><b style="color:#e21d4f;">Total: ₹${totalExp.toLocaleString('en-IN')}</b></div><div style="overflow-x:auto;"><table><tr><th style="width:30px; text-align:center;"><button onclick="toggleAllRows('exp', '${name}')" style="background:#eee; border:1px solid #ccc; border-radius:4px; cursor:pointer; font-size:11px; padding:3px 5px; color:#333;">All</button></th>${dateHdrHTML}<th>Details</th><th style="text-align:center;">Proof</th><th>Amt</th><th>Action</th></tr>${exps||'<tr><td colspan="6" style="text-align:center;">No records</td></tr>'}</table></div>`;
-    document.getElementById('profTable').innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #8e44ad; margin-bottom:8px; padding-bottom:4px;"><div style="display:flex; align-items:center;"><h3 style="color:#8e44ad; margin:0;">🟣 Profit Booked</h3><span id="profGroupTotalBadge" style="display:none; background:#ebdef0; color:#8e44ad; padding:4px 8px; border-radius:10px; font-size:13px; margin-left:10px; font-weight:bold;">Matched: ₹0</span></div><b style="color:#8e44ad;">Total: ₹${totalProf.toLocaleString('en-IN')}</b></div><div style="overflow-x:auto;"><table><tr><th style="width:30px; text-align:center;"><button onclick="toggleAllRows('prof', '${name}')" style="background:#eee; border:1px solid #ccc; border-radius:4px; cursor:pointer; font-size:11px; padding:3px 5px; color:#333;">All</button></th>${dateHdrHTML}<th>Details</th><th style="text-align:center;">Proof</th><th>Amt</th><th>Action</th></tr>${profs||'<tr><td colspan="6" style="text-align:center;">No records</td></tr>'}</table></div>`;
+    // Sub-Card Table 1: Income
+    document.getElementById('incTable').innerHTML = `
+    <div style="border:1px solid #a7f3d0; border-radius:16px; overflow:hidden; background:#ffffff; box-shadow:0 4px 12px rgba(5,150,105,0.03);">
+        <div style="display:flex; justify-content:space-between; align-items:center; background:linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); padding:12px 16px; border-bottom:1px solid #a7f3d0; flex-wrap:wrap; gap:8px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <h3 style="color:#065f46; margin:0; font-size:15px; font-weight:800;">🟢 Income</h3>
+                <span id="incGroupTotalBadge" style="display:none; background:#059669; color:#ffffff; padding:3px 9px; border-radius:99px; font-size:11.5px; font-weight:700;">Matched: ₹0</span>
+            </div>
+            <span style="background:#ffffff; color:#047857; padding:4px 10px; border-radius:8px; font-size:13.5px; font-weight:800; border:1px solid #a7f3d0;">₹${totalInc.toLocaleString('en-IN')}</span>
+        </div>
+        <div style="overflow-x:auto;">
+            <table>
+                <tr>
+                    <th style="width:34px; text-align:center;"><button onclick="toggleAllRows('inc', '${name}')" style="background:#fff; border:1px solid #cbd5e1; border-radius:6px; cursor:pointer; font-size:10.5px; padding:3px 6px; color:#334155; box-shadow:none;">All</button></th>
+                    ${dateHdrHTML}
+                    <th>Details</th>
+                    <th style="text-align:center;">Proof</th>
+                    <th>Amt</th>
+                    <th style="text-align:right;">Action</th>
+                </tr>
+                ${incs||'<tr><td colspan="6" style="text-align:center; padding:24px; color:#94a3b8;">No income records found</td></tr>'}
+            </table>
+        </div>
+    </div>`;
 
-    let currentNetBalance = totalInc - totalExp - totalProf; let cfBalance = 0; let cutoffDate = (appData.config && appData.config.cfStartMonth) ? appData.config.cfStartMonth + '-01' : '2026-08-01';
+    // Sub-Card Table 2: Expense
+    document.getElementById('expTable').innerHTML = `
+    <div style="border:1px solid #fecdd3; border-radius:16px; overflow:hidden; background:#ffffff; box-shadow:0 4px 12px rgba(225,29,72,0.03);">
+        <div style="display:flex; justify-content:space-between; align-items:center; background:linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); padding:12px 16px; border-bottom:1px solid #fecdd3; flex-wrap:wrap; gap:8px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <h3 style="color:#9f1239; margin:0; font-size:15px; font-weight:800;">🔴 Expenditure</h3>
+                <span id="expGroupTotalBadge" style="display:none; background:#e11d48; color:#ffffff; padding:3px 9px; border-radius:99px; font-size:11.5px; font-weight:700;">Matched: ₹0</span>
+            </div>
+            <span style="background:#ffffff; color:#be123c; padding:4px 10px; border-radius:8px; font-size:13.5px; font-weight:800; border:1px solid #fecdd3;">₹${totalExp.toLocaleString('en-IN')}</span>
+        </div>
+        <div style="overflow-x:auto;">
+            <table>
+                <tr>
+                    <th style="width:34px; text-align:center;"><button onclick="toggleAllRows('exp', '${name}')" style="background:#fff; border:1px solid #cbd5e1; border-radius:6px; cursor:pointer; font-size:10.5px; padding:3px 6px; color:#334155; box-shadow:none;">All</button></th>
+                    ${dateHdrHTML}
+                    <th>Details</th>
+                    <th style="text-align:center;">Proof</th>
+                    <th>Amt</th>
+                    <th style="text-align:right;">Action</th>
+                </tr>
+                ${exps||'<tr><td colspan="6" style="text-align:center; padding:24px; color:#94a3b8;">No expense records found</td></tr>'}
+            </table>
+        </div>
+    </div>`;
+
+    // Sub-Card Table 3: Profit Booked
+    document.getElementById('profTable').innerHTML = `
+    <div style="border:1px solid #e9d5ff; border-radius:16px; overflow:hidden; background:#ffffff; box-shadow:0 4px 12px rgba(124,58,237,0.03);">
+        <div style="display:flex; justify-content:space-between; align-items:center; background:linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%); padding:12px 16px; border-bottom:1px solid #e9d5ff; flex-wrap:wrap; gap:8px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <h3 style="color:#6b21a8; margin:0; font-size:15px; font-weight:800;">🟣 Profit Booked</h3>
+                <span id="profGroupTotalBadge" style="display:none; background:#7c3aed; color:#ffffff; padding:3px 9px; border-radius:99px; font-size:11.5px; font-weight:700;">Matched: ₹0</span>
+            </div>
+            <span style="background:#ffffff; color:#7e22ce; padding:4px 10px; border-radius:8px; font-size:13.5px; font-weight:800; border:1px solid #e9d5ff;">₹${totalProf.toLocaleString('en-IN')}</span>
+        </div>
+        <div style="overflow-x:auto;">
+            <table>
+                <tr>
+                    <th style="width:34px; text-align:center;"><button onclick="toggleAllRows('prof', '${name}')" style="background:#fff; border:1px solid #cbd5e1; border-radius:6px; cursor:pointer; font-size:10.5px; padding:3px 6px; color:#334155; box-shadow:none;">All</button></th>
+                    ${dateHdrHTML}
+                    <th>Details</th>
+                    <th style="text-align:center;">Proof</th>
+                    <th>Amt</th>
+                    <th style="text-align:right;">Action</th>
+                </tr>
+                ${profs||'<tr><td colspan="6" style="text-align:center; padding:24px; color:#94a3b8;">No profit records found</td></tr>'}
+            </table>
+        </div>
+    </div>`;
+
+    // Auto-show Profit Table if there are profit entries in this month OR profit tab is selected
+    let grid = document.getElementById('recordsGrid'), profTableEl = document.getElementById('profTable');
+    if(grid && profTableEl) {
+        if(currentEntryType === 'profit' || totalProf > 0) {
+            grid.className = 'tri-records-grid';
+            profTableEl.style.display = 'block';
+        } else {
+            grid.className = 'dual-records-grid';
+            profTableEl.style.display = 'none';
+        }
+    }
+
+    let currentNetBalance = totalInc - totalExp - totalProf; 
+    let cfBalance = 0; 
+    let cutoffDate = (appData.config && appData.config.cfStartMonth) ? appData.config.cfStartMonth + '-01' : '2026-08-01';
     if (globalMonth && globalMonth !== 'All Time') {
-        let parts = globalMonth.split(' '); let mIdx = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].indexOf(parts[0]); let yNum = parseInt(parts[1]); let endOfPrevMonth = new Date(yNum, mIdx, 0, 23, 59, 59); let validPastInc = 0, validPastExp = 0, validPastProf = 0;
-        getArray(appData.records[name]).forEach(r => { if(r.date) { let rParts = r.date.split('-'); if(rParts.length === 3) { let rDate = new Date(parseInt(rParts[0]), parseInt(rParts[1])-1, parseInt(rParts[2]), 12, 0, 0); if(rDate <= endOfPrevMonth) { if(appData.config?.enablePastCF || r.date >= cutoffDate) { let amt = parseFloat(r.amount) || 0; if(r.type === 'income') validPastInc += amt; else if(r.type === 'expense') validPastExp += amt; else if(r.type === 'profit') validPastProf += amt; } } } } });
+        let parts = globalMonth.split(' '); 
+        let mIdx = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].indexOf(parts[0]); 
+        let yNum = parseInt(parts[1]); 
+        let endOfPrevMonth = new Date(yNum, mIdx, 0, 23, 59, 59); 
+        let validPastInc = 0, validPastExp = 0, validPastProf = 0;
+        getArray(appData.records[name]).forEach(r => { 
+            if(r.date) { 
+                let rParts = r.date.split('-'); 
+                if(rParts.length === 3) { 
+                    let rDate = new Date(parseInt(rParts[0]), parseInt(rParts[1])-1, parseInt(rParts[2]), 12, 0, 0); 
+                    if(rDate <= endOfPrevMonth) { 
+                        if(appData.config?.enablePastCF || r.date >= cutoffDate) { 
+                            let amt = parseFloat(r.amount) || 0; 
+                            if(r.type === 'income') validPastInc += amt; 
+                            else if(r.type === 'expense') validPastExp += amt; 
+                            else if(r.type === 'profit') validPastProf += amt; 
+                        } 
+                    } 
+                } 
+            } 
+        });
         cfBalance = validPastInc - validPastExp - validPastProf;
     } else {
-        let validNet = 0; getArray(appData.records[name]).forEach(r => { if(appData.config?.enablePastCF || (r.date && r.date >= cutoffDate)) { let amt = parseFloat(r.amount) || 0; validNet += (r.type === 'income') ? amt : -amt; } }); currentNetBalance = validNet;
+        let validNet = 0; 
+        getArray(appData.records[name]).forEach(r => { 
+            if(appData.config?.enablePastCF || (r.date && r.date >= cutoffDate)) { 
+                let amt = parseFloat(r.amount) || 0; 
+                validNet += (r.type === 'income') ? amt : -amt; 
+            } 
+        }); 
+        currentNetBalance = validNet;
     }
-    let totalCashInHand = cfBalance + currentNetBalance; let balTitleText = (globalMonth && globalMonth !== 'All Time') ? `Financial Summary (${globalMonth})` : `Overall Summary (All Time)`;
+    let totalCashInHand = cfBalance + currentNetBalance; 
+    let balTitleText = (globalMonth && globalMonth !== 'All Time') ? `${globalMonth}` : `All Time`;
+    let accentColor = name === 'Tanmoy' ? '#4f46e5' : '#0d9488';
+    let avatarBg = name === 'Tanmoy' ? '#eef2ff' : '#f0fdfa';
 
-    document.getElementById('partnerBalArea').innerHTML = `<div style="background:#eff7f3; padding:15px; border-radius:12px; margin-bottom:10px; border:1px solid #cce3d8;"><div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #cce3d8; padding-bottom:10px; margin-bottom:12px; flex-wrap:wrap; gap:10px;"><span style="font-weight:bold; color:#176b4d; font-size:15px;">💰 ${balTitleText}</span>${generateMiniMonthDropdown(globalMonth)}</div><div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap:10px; text-align:center;"><div style="background:#fff; padding:10px; border-radius:8px; border:1px solid #cce3d8;"><span style="font-size:11px; color:#555; display:block; margin-bottom:4px;">Previous Balance (CF)</span><b class="${cfBalance >= 0 ? 'positive' : 'negative'}" style="font-size:15px;">₹${cfBalance.toLocaleString('en-IN')}</b></div><div style="background:#fff; padding:10px; border-radius:8px; border:1px solid #cce3d8;"><span style="font-size:11px; color:#555; display:block; margin-bottom:4px;">Net This Month</span><b class="${currentNetBalance >= 0 ? 'positive' : 'negative'}" style="font-size:15px;">₹${currentNetBalance.toLocaleString('en-IN')}</b></div><div style="background:#fff; padding:10px; border-radius:8px; border:2px solid #176b4d; box-shadow:0 2px 4px #0002;"><span style="font-size:12px; font-weight:bold; color:#17352b; display:block; margin-bottom:4px;">Total Cash In Hand</span><b class="${totalCashInHand >= 0 ? 'positive' : 'negative'}" style="font-size:18px;">₹${totalCashInHand.toLocaleString('en-IN')}</b></div></div></div>`;
+    document.getElementById('partnerBalArea').innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:18px; padding-bottom:12px; border-bottom:1px solid #f1f5f9;">
+        <div style="display:flex; align-items:center; gap:12px;">
+            <div style="width:42px; height:42px; border-radius:12px; background:${avatarBg}; color:${accentColor}; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:18px;">${name.charAt(0)}</div>
+            <div>
+                <h2 style="margin:0; font-size:20px;">${name}'s Financial Profile</h2>
+                <span style="font-size:12px; color:#64748b; font-weight:500;">Viewing summary for <b>${balTitleText}</b></span>
+            </div>
+        </div>
+        ${generateMiniMonthDropdown(globalMonth)}
+    </div>
+
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap:14px;">
+        <!-- Card 1: Previous CF -->
+        <div style="background:#f8fafc; padding:16px; border-radius:16px; border:1px solid #e2e8f0;">
+            <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.04em; display:block; margin-bottom:6px;">🔄 Previous Balance (CF)</span>
+            <b class="${cfBalance >= 0 ? 'positive' : 'negative'}" style="font-size:22px; display:block;">₹${cfBalance.toLocaleString('en-IN')}</b>
+            <span style="font-size:11px; color:#94a3b8; display:block; margin-top:6px;">Brought forward to ${balTitleText}</span>
+        </div>
+
+        <!-- Card 2: Net This Period -->
+        <div style="background:#f8fafc; padding:16px; border-radius:16px; border:1px solid #e2e8f0;">
+            <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.04em; display:block; margin-bottom:6px;">📊 Net This Period</span>
+            <b class="${currentNetBalance >= 0 ? 'positive' : 'negative'}" style="font-size:22px; display:block;">₹${currentNetBalance.toLocaleString('en-IN')}</b>
+            <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; font-size:11px; font-weight:700;">
+                <span style="color:#059669;" title="Income">+₹${totalInc.toLocaleString('en-IN')}</span>
+                <span style="color:#cbd5e1;">|</span>
+                <span style="color:#e11d48;" title="Expenditure">-₹${totalExp.toLocaleString('en-IN')}</span>
+                <span style="color:#cbd5e1;">|</span>
+                <span style="color:#7c3aed;" title="Profit Booked">🟣 -₹${totalProf.toLocaleString('en-IN')}</span>
+            </div>
+        </div>
+
+        <!-- Card 3: Profit Booked Card -->
+        <div style="background:linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%); padding:16px; border-radius:16px; border:1px solid #d8b4fe;">
+            <span style="font-size:11px; font-weight:800; color:#6b21a8; text-transform:uppercase; letter-spacing:0.04em; display:block; margin-bottom:6px;">🟣 Profit Booked</span>
+            <b style="font-size:22px; color:#7c3aed; display:block; font-weight:800;">₹${totalProf.toLocaleString('en-IN')}</b>
+            <span style="font-size:11px; color:#7e22ce; font-weight:600; display:block; margin-top:6px;">Withdrawn in ${balTitleText}</span>
+        </div>
+
+        <!-- Card 4: Total Cash In Hand -->
+        <div style="background:linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); padding:16px; border-radius:16px; border:1.5px solid #10b981; box-shadow:0 8px 20px rgba(5, 150, 105, 0.08);">
+            <span style="font-size:11px; font-weight:800; color:#065f46; text-transform:uppercase; letter-spacing:0.04em; display:block; margin-bottom:6px;">💰 Total Cash In Hand</span>
+            <b class="${totalCashInHand >= 0 ? 'positive' : 'negative'}" style="font-size:25px; display:block; letter-spacing:-0.02em;">₹${totalCashInHand.toLocaleString('en-IN')}</b>
+            <span style="font-size:11px; color:#047857; font-weight:600; display:block; margin-top:6px;">Available Liquidity (CF + Net)</span>
+        </div>
+    </div>`;
+
     setTimeout(() => { calcGroupTotal('inc'); calcGroupTotal('exp'); calcGroupTotal('prof'); }, 100);
 }
 
 function setEntryType(t) {
-    currentEntryType = t; let i = document.getElementById('incomeBtn'), e = document.getElementById('expenseBtn'), p = document.getElementById('profitBtn');
-    if(i) { i.className='alt'; i.style=''; } if(e) { e.className='alt'; e.style=''; } if(p) { p.className='alt'; p.style=''; }
-    if(t==='income') { i.className=''; i.style.background='white'; i.style.color='#07865b'; i.style.border='2px solid #07865b'; } else if(t==='expense') { e.className=''; e.style.background='white'; e.style.color='#e21d4f'; e.style.border='2px solid #e21d4f'; } else if(t==='profit') { p.className=''; p.style.background='white'; p.style.color='#8e44ad'; p.style.border='2px solid #8e44ad'; }
+    currentEntryType = t; 
+    let i = document.getElementById('incomeBtn'), e = document.getElementById('expenseBtn'), p = document.getElementById('profitBtn');
+    [i, e, p].forEach(btn => {
+        if(btn) {
+            btn.className = 'alt';
+            btn.style.background = 'transparent';
+            btn.style.color = '#64748b';
+            btn.style.border = 'none';
+            btn.style.boxShadow = 'none';
+        }
+    });
+    if(t==='income' && i) { 
+        i.className=''; i.style.background='#ffffff'; i.style.color='#059669'; i.style.border='1px solid #a7f3d0'; i.style.boxShadow='0 2px 8px rgba(0,0,0,0.06)'; 
+    } else if(t==='expense' && e) { 
+        e.className=''; e.style.background='#ffffff'; e.style.color='#e11d48'; e.style.border='1px solid #fecdd3'; e.style.boxShadow='0 2px 8px rgba(0,0,0,0.06)'; 
+    } else if(t==='profit' && p) { 
+        p.className=''; p.style.background='#ffffff'; p.style.color='#7c3aed'; p.style.border='1px solid #ddd6fe'; p.style.boxShadow='0 2px 8px rgba(0,0,0,0.06)'; 
+    }
+
     let tc = document.getElementById('transferCheckboxDiv'), qv = document.getElementById('quickVehicleDiv'), bn = document.getElementById('billNoDiv');
     if(tc) { if(t === 'profit' || t === 'income') { tc.style.display = 'none'; if(document.getElementById('transferCheckbox')) document.getElementById('transferCheckbox').checked = false; } else tc.style.display = 'block'; }
     if(qv) { if(t === 'expense') qv.style.display = 'block'; else { qv.style.display = 'none'; if(document.getElementById('isVehicleExpense')) { document.getElementById('isVehicleExpense').checked = false; document.getElementById('vehicleOptions').style.display = 'none'; } } }
     if(bn) { if(t === 'income') bn.style.display = 'block'; else { bn.style.display = 'none'; if(document.getElementById('entryBillNo')) document.getElementById('entryBillNo').value = ''; } }
+    
     let grid = document.getElementById('recordsGrid'), profTable = document.getElementById('profTable');
-    if(grid && profTable) { if(t === 'profit') { grid.className = 'tri-records-grid'; profTable.style.display = 'block'; } else { grid.className = 'dual-records-grid'; profTable.style.display = 'none'; } }
+    if(grid && profTable) { 
+        if(t === 'profit' || lastCalcTotalProf > 0) { 
+            grid.className = 'tri-records-grid'; 
+            profTable.style.display = 'block'; 
+        } else { 
+            grid.className = 'dual-records-grid'; 
+            profTable.style.display = 'none'; 
+        } 
+    }
 }
 
 async function savePartnerEntry(name) {
-    let date = document.getElementById('entryDate').value, amt = parseFloat(document.getElementById('entryAmount').value), det = document.getElementById('entryDetails').value.trim(); let billNoEl = document.getElementById('entryBillNo'); let billNo = billNoEl ? billNoEl.value.trim() : ''; let photoInput = document.getElementById('entryPhoto'); let file = photoInput.files[0];
-    let isTransfer = document.getElementById('transferCheckbox') && document.getElementById('transferCheckbox').checked && currentEntryType !== 'profit'; let isVehicle = document.getElementById('isVehicleExpense') && document.getElementById('isVehicleExpense').checked && currentEntryType === 'expense'; let otherName = name === 'Tanmoy' ? 'Tapabrata' : 'Tanmoy';
-    if(isNaN(amt) || amt <= 0) return alert("Valid Amount required!"); if(!isVehicle && !det) return alert("Details required!"); if(file && !file.type.startsWith('image/')) return alert("Upload Image only!");
+    let date = document.getElementById('entryDate').value, amt = parseFloat(document.getElementById('entryAmount').value), det = document.getElementById('entryDetails').value.trim(); 
+    let billNoEl = document.getElementById('entryBillNo'); let billNo = billNoEl ? billNoEl.value.trim() : ''; 
+    let photoInput = document.getElementById('entryPhoto'); let file = photoInput.files[0];
+    let isTransfer = document.getElementById('transferCheckbox') && document.getElementById('transferCheckbox').checked && currentEntryType !== 'profit'; 
+    let isVehicle = document.getElementById('isVehicleExpense') && document.getElementById('isVehicleExpense').checked && currentEntryType === 'expense'; 
+    let otherName = name === 'Tanmoy' ? 'Tapabrata' : 'Tanmoy';
+    if(isNaN(amt) || amt <= 0) return alert("Valid Amount required!"); 
+    if(!isVehicle && !det) return alert("Details required!"); 
+    if(file && !file.type.startsWith('image/')) return alert("Upload Image only!");
     
     let qvCar = isVehicle ? document.getElementById('qvCar').value : '';
     let qvCat = isVehicle ? document.getElementById('qvCategory').value : '';
@@ -955,21 +1560,27 @@ function editEntry(id, type, name) {
             } else { document.getElementById('entryDetails').value = r.details; }
         } else { document.getElementById('entryDetails').value = r.details; }
 
-        let btn = document.getElementById('entrySaveBtn'); if(btn) { btn.innerText = "✏️ Update Entry"; btn.style.background = "#f39c12"; } 
+        let formCard = document.getElementById('partnerFormCard');
+        if(formCard) formCard.style.border = "2px solid #f59e0b";
+        let titleEl = document.getElementById('formTitleText');
+        if(titleEl) titleEl.innerText = `✏️ Editing Entry for ${name}`;
+
+        let btn = document.getElementById('entrySaveBtn'); 
+        if(btn) { btn.innerText = "✏️ Update Entry"; btn.style.background = "linear-gradient(135deg, #f59e0b, #d97706)"; } 
         window.scrollTo({ top: 0, behavior: 'smooth' }); 
     }
 }
 
 function toggleRowCheck(row, event, type, id, name) {
     if(event.target.tagName === 'BUTTON' || event.target.tagName === 'A') return;
-    let cell = row.querySelector('.recon-cell'); if(cell) { let currentState = parseInt(cell.getAttribute('data-state') || '0'); let newState = (currentState + 1) % 3; cell.setAttribute('data-state', newState); cell.innerText = newState === 1 ? '✅' : (newState === 2 ? '❌' : '⬜'); if(newState === 1) row.style.setProperty('background-color', '#eefdf6', 'important'); else if(newState === 2) row.style.setProperty('background-color', '#fadbd8', 'important'); else row.style.removeProperty('background-color'); calcGroupTotal(type); if(id && name && appData.records[name]) { let rIndex = appData.records[name].findIndex(x => String(x.id) === String(id)); if(rIndex !== -1) { appData.records[name][rIndex].reconState = newState; db.ref('ServiceTracker/records/' + name + '/' + rIndex + '/reconState').set(newState); } } }
+    let cell = row.querySelector('.recon-cell'); if(cell) { let currentState = parseInt(cell.getAttribute('data-state') || '0'); let newState = (currentState + 1) % 3; cell.setAttribute('data-state', newState); cell.innerText = newState === 1 ? '✅' : (newState === 2 ? '❌' : '⬜'); if(newState === 1) row.style.setProperty('background-color', '#ecfdf5', 'important'); else if(newState === 2) row.style.setProperty('background-color', '#fff1f2', 'important'); else row.style.removeProperty('background-color'); calcGroupTotal(type); if(id && name && appData.records[name]) { let rIndex = appData.records[name].findIndex(x => String(x.id) === String(id)); if(rIndex !== -1) { appData.records[name][rIndex].reconState = newState; db.ref('ServiceTracker/records/' + name + '/' + rIndex + '/reconState').set(newState); } } }
 }
 
 function toggleAllRows(type, name) {
     let tableId = type === 'inc' ? 'incTable' : (type === 'exp' ? 'expTable' : 'profTable'); let table = document.getElementById(tableId); if(!table) return;
     let cells = table.querySelectorAll('.recon-cell'); let allGreen = true; cells.forEach(c => { if(parseInt(c.getAttribute('data-state')||'0') !== 1) allGreen = false; });
     let targetState = allGreen ? 0 : 1; let updates = {};
-    cells.forEach(cell => { cell.setAttribute('data-state', targetState); cell.innerText = targetState === 1 ? '✅' : '⬜'; let row = cell.closest('tr'); if(targetState === 1) row.style.setProperty('background-color', '#eefdf6', 'important'); else row.style.removeProperty('background-color'); let id = cell.getAttribute('data-id'); if(id && name && appData.records[name]) { let rIndex = appData.records[name].findIndex(x => String(x.id) === String(id)); if(rIndex !== -1) { appData.records[name][rIndex].reconState = targetState; updates[rIndex + '/reconState'] = targetState; } } });
+    cells.forEach(cell => { cell.setAttribute('data-state', targetState); cell.innerText = targetState === 1 ? '✅' : '⬜'; let row = cell.closest('tr'); if(targetState === 1) row.style.setProperty('background-color', '#ecfdf5', 'important'); else row.style.removeProperty('background-color'); let id = cell.getAttribute('data-id'); if(id && name && appData.records[name]) { let rIndex = appData.records[name].findIndex(x => String(x.id) === String(id)); if(rIndex !== -1) { appData.records[name][rIndex].reconState = targetState; updates[rIndex + '/reconState'] = targetState; } } });
     calcGroupTotal(type); if(Object.keys(updates).length > 0) db.ref('ServiceTracker/records/' + name).update(updates);
 }
 
