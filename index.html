@@ -31,39 +31,43 @@
     -webkit-tap-highlight-color: transparent;
 }
 
-body {
-    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-    margin: 0;
-    background: var(--bg-main);
-    background-image: radial-gradient(at 0% 0%, rgba(79, 70, 229, 0.05) 0px, transparent 50%), radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.06) 0px, transparent 50%);
-    color: var(--text-main);
-    -webkit-font-smoothing: antialiased;
+html, body {
+    width: 100%;
+    max-width: 100vw;
     overflow-x: hidden;
+    margin: 0;
+    padding: 0;
 }
 
-.app { max-width: 1220px; margin: auto; padding: 24px; }
+body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg-main);
+    color: var(--text-main);
+    -webkit-font-smoothing: antialiased;
+}
+
+.app { width: 100%; max-width: 1220px; margin: auto; padding: 20px; }
 
 /* --- PREMIUM LOGIN STYLES --- */
 .login-wrap {
-    max-width: 410px;
-    margin: 12vh auto;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(12px);
-    padding: 48px 32px;
-    border-radius: 28px;
-    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08), 0 4px 12px rgba(15, 23, 42, 0.03);
+    max-width: 400px;
+    margin: 10vh auto;
+    background: #ffffff;
+    padding: 40px 28px;
+    border-radius: 24px;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
     text-align: center;
-    border: 1px solid rgba(255, 255, 255, 0.8);
+    border: 1px solid var(--border-soft);
 }
 .login-input {
     width: 100%;
-    padding: 18px;
+    padding: 16px;
     border: 2px solid var(--border-soft);
-    border-radius: 16px;
-    font-size: 26px;
+    border-radius: 14px;
+    font-size: 24px;
     letter-spacing: 10px;
     outline: none;
-    transition: all 0.25s ease;
+    transition: all 0.2s ease;
     text-align: center;
     font-weight: 800;
     background: #f8fafc;
@@ -74,17 +78,18 @@ body {
     border-color: var(--brand-primary);
     background: #ffffff;
     box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.12);
-    transform: translateY(-1px);
 }
 
 /* --- CARDS & CONTAINERS --- */
 .card {
     background: var(--card-bg);
-    padding: 26px;
-    border-radius: 22px;
-    margin: 18px 0;
-    box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.05), 0 4px 12px -2px rgba(15, 23, 42, 0.03);
-    border: 1px solid rgba(226, 232, 240, 0.85);
+    padding: 22px;
+    border-radius: 20px;
+    margin: 14px 0;
+    box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+    border: 1px solid var(--border-soft);
+    width: 100%;
+    overflow: hidden;
 }
 .card h2 {
     font-weight: 800;
@@ -95,49 +100,40 @@ body {
 
 /* --- ADMIN HERO BANNER --- */
 .admin-hero {
-    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 55%, #4338ca 100%) !important;
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 60%, #312e81 100%) !important;
     color: white !important;
     border: none !important;
-    box-shadow: 0 16px 36px -6px rgba(49, 46, 129, 0.35) !important;
-    position: relative;
-    overflow: hidden;
+    box-shadow: 0 12px 30px -6px rgba(15, 23, 42, 0.3) !important;
 }
 .admin-hero h2 { color: #ffffff !important; }
 
-.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.grid > div { min-width: 0; }
 
-.role {
-    padding: 20px;
-    border: 2px solid var(--border-soft);
-    border-radius: 16px;
-    cursor: pointer;
-    background: #f8fafc;
-    transition: all 0.2s ease;
+/* PARTNER 4-CARD SUMMARY GRID */
+.partner-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
 }
-.role:hover {
-    border-color: var(--brand-primary);
-    background: #ffffff;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(5, 150, 105, 0.08);
-}
+.partner-summary-grid > div { min-width: 0; }
 
 /* --- FORM INPUTS & BUTTONS --- */
 label {
     display: block;
     font-weight: 700;
     color: #334155;
-    font-size: 13.5px;
-    margin-bottom: 6px;
-    letter-spacing: 0.01em;
+    font-size: 13px;
+    margin-bottom: 5px;
 }
 input, select {
     width: 100%;
-    padding: 12px 14px;
-    margin: 0 0 16px 0;
+    padding: 11px 13px;
+    margin: 0 0 14px 0;
     border: 1.5px solid #cbd5e1;
-    border-radius: 12px;
+    border-radius: 10px;
     box-sizing: border-box;
-    font-size: 15px;
+    font-size: 14.5px;
     font-family: inherit;
     background: #f8fafc;
     color: #0f172a;
@@ -147,239 +143,215 @@ input:focus, select:focus {
     outline: none;
     border-color: var(--brand-primary);
     background: #ffffff;
-    box-shadow: 0 0 0 3.5px rgba(5, 150, 105, 0.12);
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.12);
 }
 
 button {
-    padding: 12px 18px;
+    padding: 11px 16px;
     border: 0;
-    border-radius: 12px;
+    border-radius: 10px;
     background: linear-gradient(135deg, #059669 0%, #047857 100%);
     color: white;
     font-weight: 700;
     font-family: inherit;
-    font-size: 14px;
+    font-size: 13.5px;
     cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);
+    transition: all 0.15s ease;
     touch-action: manipulation;
 }
-button:hover:not(:disabled) {
-    transform: translateY(-1px);
-    filter: brightness(1.05);
-}
-button:active:not(:disabled) {
-    transform: scale(0.98);
-}
+button:active:not(:disabled) { transform: scale(0.97); }
 button.alt {
     background: #f1f5f9;
     color: #334155;
     box-shadow: none;
-    border: 1px solid #e2e8f0;
+    border: 1px solid #cbd5e1;
 }
-button.alt:hover { background: #e2e8f0; }
-button:disabled { background: #94a3b8; cursor: not-allowed; opacity: 0.7; box-shadow: none; }
+button:disabled { background: #94a3b8; cursor: not-allowed; opacity: 0.7; }
 
 .hidden { display: none; }
 
 /* --- MODERN STAT CARDS --- */
 .stat {
     background: linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%);
-    padding: 20px;
-    border-radius: 18px;
+    padding: 18px;
+    border-radius: 16px;
     border: 1px solid #bbf7d0;
-    box-shadow: 0 6px 18px rgba(5, 150, 105, 0.05);
-    position: relative;
+    min-width: 0;
 }
 .stat b {
     display: block;
-    font-size: 26px;
+    font-size: 24px;
     font-weight: 800;
-    margin-top: 8px;
+    margin-top: 6px;
     letter-spacing: -0.02em;
+    word-break: break-word;
 }
 .negative { color: var(--danger) !important; font-weight: 800; }
 .positive { color: var(--brand-primary) !important; font-weight: 800; }
 
-/* --- MODERN TABLES & TOUCH SCROLL --- */
+/* --- MODERN TABLES & STRICT OVERFLOW CONTROL --- */
 div[style*="overflow-x:auto"] {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
 }
-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+table { width: 100%; border-collapse: collapse; table-layout: auto; }
 th {
-    padding: 12px 10px;
+    padding: 10px 8px;
     background: #f8fafc;
     color: #475569;
     font-weight: 700;
-    font-size: 12px;
+    font-size: 11.5px;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
-    border-bottom: 2px solid #e2e8f0;
+    border-bottom: 1.5px solid #e2e8f0;
     text-align: left;
 }
 td {
-    padding: 12px 10px;
+    padding: 10px 8px;
     border-bottom: 1px solid #f1f5f9;
     text-align: left;
-    font-size: 14px;
+    font-size: 13.5px;
     color: #1e293b;
     vertical-align: middle;
 }
-tr:hover td { background-color: #f8fafc; }
 
 .top {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 24px !important;
-    background: rgba(255, 255, 255, 0.92);
-    backdrop-filter: blur(10px);
-    position: sticky;
-    top: 10px;
-    z-index: 50;
+    padding: 14px 20px !important;
 }
-.part-row-box { background: #f8fafc; padding: 14px; border: 1px solid #e2e8f0; border-radius: 14px; margin-bottom: 12px; }
-.b-qty, .b-rate, .b-desc { margin: 0; padding: 8px 10px; border-radius: 8px; }
-.bill-table th { background: #ecfdf5; color: #065f46; font-size: 13px; }
+.part-row-box { background: #f8fafc; padding: 12px; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 10px; }
+.b-qty, .b-rate, .b-desc { margin: 0; padding: 8px; border-radius: 8px; }
+.bill-table th { background: #ecfdf5; color: #065f46; font-size: 12px; }
 
-/* SMART TABLE RESPONSIVENESS */
-.dual-records-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(460px, 1fr)); gap: 22px; }
-.tri-records-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px; }
+/* STRICT GRID WRAPPERS (PREVENTS RIGHT OVERFLOW) */
+.dual-records-grid { 
+    display: grid; 
+    grid-template-columns: repeat(2, minmax(0, 1fr)); 
+    gap: 18px; 
+    width: 100%;
+}
+.tri-records-grid { 
+    display: grid; 
+    grid-template-columns: repeat(3, minmax(0, 1fr)); 
+    gap: 16px; 
+    width: 100%;
+}
+.dual-records-grid > div, .tri-records-grid > div {
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+}
+
 .scroll-list {
-    max-height: 270px;
+    max-height: 250px;
     overflow-y: auto;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     background: white;
-    border-radius: 12px;
+    border-radius: 10px;
     border: 1px solid #e2e8f0;
-    margin-top: 12px;
+    margin-top: 10px;
 }
 
-/* DESKTOP ADMIN TABS (GRID) */
+/* ADMIN NAVIGATION TABS */
 .admin-nav {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-    gap: 10px;
-    margin-top: 20px;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 16px;
 }
 .admin-nav button {
-    padding: 12px 10px;
-    border-radius: 12px;
-    font-size: 13px;
+    padding: 10px 6px;
+    border-radius: 10px;
+    font-size: 12.5px;
     font-weight: 700;
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
-    backdrop-filter: blur(6px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    min-height: 44px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    box-shadow: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* =========================================================
-   TABLET OPTIMIZATION (iPad / Android Tablets: 641px - 1024px)
+   TABLET OPTIMIZATION (max-width: 1024px)
    ========================================================= */
-@media (min-width: 641px) and (max-width: 1024px) {
-    .app { padding: 16px; max-width: 100%; }
-    .card { padding: 20px; margin: 14px 0; border-radius: 20px; }
-    
-    /* Stack dual/tri record tables vertically so columns never cut off */
+@media (max-width: 1024px) {
     .dual-records-grid, .tri-records-grid { 
-        grid-template-columns: 1fr !important; 
-        gap: 20px; 
+        grid-template-columns: minmax(0, 1fr) !important; 
+        gap: 16px; 
     }
-    
-    /* Clean 4-column navigation bar for tablets */
-    .admin-nav { 
-        grid-template-columns: repeat(4, 1fr); 
-        gap: 10px; 
-    }
-    .admin-nav button { 
-        font-size: 13px; 
-        padding: 12px 8px; 
-        min-height: 46px;
-    }
-
-    /* 2-column partner cards on tablet */
-    .grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
-    input, select { font-size: 15.5px; padding: 12px 14px; }
+    .admin-nav { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .partner-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* =========================================================
-   MOBILE PHONE OPTIMIZATION (All Smartphones: Up to 640px)
+   MOBILE PHONE OPTIMIZATION (max-width: 640px)
    ========================================================= */
 @media (max-width: 640px) { 
-    .app { padding: 10px; } 
-    .card { padding: 16px 14px; margin: 12px 0; border-radius: 18px; }
-    .top { position: static; padding: 12px 14px !important; border-radius: 16px; }
-    .top h1 { font-size: 16.5px !important; }
+    .app { padding: 8px; } 
+    .card { padding: 14px 12px; margin: 10px 0; border-radius: 16px; }
+    .top { padding: 10px 14px !important; border-radius: 14px; margin-top: 4px; }
+    .top h1 { font-size: 15.5px !important; }
     
-    .tri-records-grid, .dual-records-grid, .grid { 
-        grid-template-columns: 1fr !important; 
-        gap: 14px; 
-    } 
-    
-    .stat { padding: 16px; border-radius: 16px; }
-    .stat b { font-size: 24px !important; }
-    
-    /* 3-Column Uniform Grid for Mobile Nav (No Cramped Text) */
+    /* Compact 4-Column Nav on Mobile (Only 3 neat rows) */
+    .admin-hero { padding: 14px 12px !important; }
+    .admin-hero h2 { font-size: 17px !important; }
     .admin-nav { 
-        display: grid; 
-        grid-template-columns: repeat(3, 1fr); 
-        gap: 8px; 
-        margin-top: 16px; 
+        grid-template-columns: repeat(4, minmax(0, 1fr)); 
+        gap: 6px; 
+        margin-top: 12px; 
     }
     .admin-nav button { 
-        padding: 10px 4px; 
-        font-size: 11.5px; 
-        border-radius: 11px; 
-        margin: 0; 
-        white-space: nowrap; 
-        text-align: center;
-        min-height: 42px;
-    }
-    
-    /* Prevent iOS/Android Auto-Zoom on Input Focus */
-    input, select { 
-        font-size: 16px !important; 
-        padding: 11px 12px; 
-        margin-bottom: 12px; 
-        border-radius: 10px;
-    }
-    
-    /* Auto-Stack Inline Split Rows in Partner Form on Mobile */
-    #partnerFormCard div[style*="grid-template-columns: 2fr 1fr"],
-    #partnerFormCard div[style*="minmax(180px, 1fr)"] {
-        grid-template-columns: 1fr !important;
-        gap: 4px !important;
-    }
-    
-    /* Keep Segmented Income/Expense/Profit Pill Bar 3-Columns */
-    #partnerFormCard div[style*="1fr 1fr 1fr"] {
-        grid-template-columns: 1fr 1fr 1fr !important;
-        gap: 4px !important;
-        padding: 4px !important;
-    }
-    #partnerFormCard div[style*="1fr 1fr 1fr"] button {
-        font-size: 12px !important;
-        padding: 9px 4px !important;
+        padding: 9px 2px; 
+        font-size: 10.5px; 
+        border-radius: 9px; 
+        letter-spacing: -0.02em;
     }
 
-    /* Full-Width Search & Export Bar on Mobile */
+    /* 2x2 Compact Grid for Partner Balance Summary Cards */
+    .partner-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 8px !important;
+    }
+    .partner-summary-grid > div {
+        padding: 11px 10px !important;
+        border-radius: 12px !important;
+    }
+    .partner-summary-grid b {
+        font-size: 16.5px !important;
+        margin-top: 2px !important;
+    }
+    
+    .grid { grid-template-columns: minmax(0, 1fr) !important; gap: 12px; } 
+    .stat { padding: 14px; border-radius: 14px; }
+    .stat b { font-size: 22px !important; }
+    
+    /* Compact Inputs */
+    label { font-size: 12px; margin-bottom: 4px; }
+    input, select { 
+        font-size: 15px !important; 
+        padding: 9px 10px; 
+        margin-bottom: 10px; 
+        border-radius: 9px;
+    }
+
+    /* Fit Tables Inside Screen Without Overflowing */
+    th { padding: 8px 4px; font-size: 10px; }
+    td { padding: 8px 4px; font-size: 11.5px; word-break: break-word; }
+    td:nth-child(2) { font-size: 10.5px; white-space: nowrap; }
+    table button { padding: 4px 6px !important; font-size: 10.5px !important; margin: 0 1px; border-radius: 5px; }
+    .recon-cell { padding: 2px !important; font-size: 13px !important; width: 24px !important; }
+
+    /* Search & Export Bar on Mobile */
     #partnerSearchInput, #vehSearchInput, #poSearchInput, #sbSearchInput {
         max-width: 100% !important;
         width: 100% !important;
     }
-
-    h2 { font-size: 17.5px !important; }
-    td, th { padding: 9px 6px; font-size: 12.5px; }
-    table button { padding: 6px 8px !important; font-size: 11.5px !important; margin: 0 1px; border-radius: 7px; }
-    td:nth-child(2) { font-size: 11.5px; white-space: nowrap; }
-    .recon-cell { padding: 4px !important; font-size: 15px !important; }
-    .login-wrap { padding: 36px 20px; margin: 6vh auto; border-radius: 24px; }
 }
 </style>
 </head>
@@ -388,29 +360,29 @@ tr:hover td { background-color: #f8fafc; }
 <div class="app">
     <section id="login">
         <div class="login-wrap">
-            <div style="width: 72px; height: 72px; margin: 0 auto 14px; background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 36px; box-shadow: 0 8px 20px rgba(5, 150, 105, 0.12);">💼</div>
-            <h1 style="margin: 0; color: #0f172a; font-size: 28px; font-weight: 800; letter-spacing: -0.02em;">Service Tracker</h1>
-            <p style="color: #64748b; font-size: 14.5px; margin: 6px 0 32px; font-weight: 500;">Secure Unified Workspace</p>
+            <div style="width: 64px; height: 64px; margin: 0 auto 12px; background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 32px;">💼</div>
+            <h1 style="margin: 0; color: #0f172a; font-size: 26px; font-weight: 800;">Service Tracker</h1>
+            <p style="color: #64748b; font-size: 14px; margin: 6px 0 28px; font-weight: 500;">Secure Unified Workspace</p>
 
             <div style="text-align:left;">
-                <label style="display:flex; justify-content:space-between; align-items:center; font-size:13.5px; font-weight:700; color:#334155; margin-bottom:10px;">
+                <label style="display:flex; justify-content:space-between; align-items:center; font-size:13px; font-weight:700; color:#334155; margin-bottom:8px;">
                     <span>🔑 Enter Passcode</span>
-                    <span onclick="handleSecretTap(event)" style="cursor:default; user-select:none; font-size:17px; filter:grayscale(100%); opacity:0.5;">🔐</span>
+                    <span onclick="handleSecretTap(event)" style="cursor:default; user-select:none; font-size:16px; filter:grayscale(100%); opacity:0.5;">🔐</span>
                 </label>
                 <input type="password" id="unifiedPass" class="login-input" placeholder="••••" oninput="autoLoginUnified(this.value)">
             </div>
             
-            <p style="font-size:12px; color:#94a3b8; margin-top:22px; font-weight:500;">⚡ Auto-detects Partner or Technician role</p>
+            <p style="font-size:11.5px; color:#94a3b8; margin-top:20px; font-weight:500;">⚡ Auto-detects Partner or Technician role</p>
         </div>
     </section>
     
     <section id="dash" class="hidden">
         <div class="card top">
-            <div style="display:flex; align-items:center; gap:10px;">
-                <span style="width:10px; height:10px; background:#10b981; border-radius:50%; display:inline-block; box-shadow:0 0 0 4px rgba(16,185,129,0.2); flex-shrink:0;"></span>
-                <h1 id="head" style="margin:0; font-size:20px; font-weight:800; letter-spacing:-0.02em;"></h1>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span style="width:9px; height:9px; background:#10b981; border-radius:50%; display:inline-block; box-shadow:0 0 0 3px rgba(16,185,129,0.2);"></span>
+                <h1 id="head" style="margin:0; font-size:18px; font-weight:800;"></h1>
             </div>
-            <button class="alt" onclick="logoutApp()" style="padding:8px 14px; font-size:12.5px; border-radius:10px; flex-shrink:0;">🚪 Logout</button>
+            <button class="alt" onclick="logoutApp()" style="padding:7px 12px; font-size:12px; border-radius:8px;">🚪 Logout</button>
         </div>
         <div id="content"></div>
     </section>
@@ -510,18 +482,15 @@ function startDatabaseListener() {
     });
 }
 
-// --- SECURE BACKGROUND AUTH WITH AUTOMATIC FALLBACK ---
 auth.signInAnonymously().then(() => {
     startDatabaseListener();
 }).catch((err) => {
-    console.warn("Anonymous Auth not enabled yet, falling back to direct DB connection:", err.message);
     startDatabaseListener();
 });
 
 async function saveDataToLocal() { await db.ref('ServiceTracker').set(appData); }
 async function hashPassword(password) { const encoder = new TextEncoder(); const data = encoder.encode(password); const hash = await crypto.subtle.digest('SHA-256', data); return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join(''); }
 
-// === MAGIC UNIFIED AUTO LOGIN LOGIC ===
 async function autoLoginUnified(val) {
     if(!val) return;
     let enteredHash = await hashPassword(val.trim());
@@ -538,7 +507,6 @@ async function autoLoginUnified(val) {
         for (let u of users) {
             let storedPass = appData.passwords[u] || (u === 'Tanmoy' ? '2196' : (u === 'Tapabrata' ? '2026' : 'tech329'));
             let isMatch = (storedPass.length === 64) ? (enteredHash === storedPass) : (val.trim() === storedPass.trim());
-            
             if (isMatch) {
                 matchedUser = u;
                 matchedRole = (u === 'Technician') ? 'user' : 'admin';
@@ -552,10 +520,8 @@ async function autoLoginUnified(val) {
         localStorage.setItem('st_user', matchedUser); 
         localStorage.setItem('st_role', matchedRole); 
         resetInactivityTimer(); 
-        
         document.getElementById('login').classList.add('hidden'); 
         document.getElementById('dash').classList.remove('hidden'); 
-        
         if(matchedRole === 'admin') {
             document.getElementById('head').textContent = matchedUser + ' Dashboard'; 
             document.getElementById('content').innerHTML = admin(); 
@@ -630,7 +596,7 @@ function generateMonthDropdown() {
         if(sIdx > -1) options += `<option value="${savedMonth}" selected>${shortM[sIdx]} ${p[1]}</option>`; 
     } 
 
-    return `<div style="display:inline-flex; align-items:stretch; background:#fff; border:1px solid #cbd5e1; border-radius:10px; overflow:hidden; box-shadow:0 2px 5px rgba(0,0,0,0.04);"><button onclick="changeMonthBy(-1)" style="flex-shrink:0; width:30px; background:#f8fafc; border:none; border-right:1px solid #cbd5e1; font-weight:bold; color:#059669; cursor:pointer; box-shadow:none;" title="Previous Month">&lt;</button><select id="headerMonthSelect" style="background:white;color:#0f172a;padding:5px 6px;border:none;font-weight:700;cursor:pointer;flex-grow:1;width:auto;margin:0;outline:none;" onchange="handleGlobalMonthChange()">${options}</select><button onclick="changeMonthBy(1)" style="flex-shrink:0; width:30px; background:#f8fafc; border:none; border-left:1px solid #cbd5e1; font-weight:bold; color:#059669; cursor:pointer; box-shadow:none;" title="Next Month">&gt;</button></div>`; 
+    return `<div style="display:inline-flex; align-items:stretch; background:#fff; border:1px solid #cbd5e1; border-radius:10px; overflow:hidden;"><button onclick="changeMonthBy(-1)" style="flex-shrink:0; width:28px; background:#f8fafc; border:none; border-right:1px solid #cbd5e1; font-weight:bold; color:#059669; cursor:pointer;">&lt;</button><select id="headerMonthSelect" style="background:white;color:#0f172a;padding:5px 6px;border:none;font-weight:700;cursor:pointer;flex-grow:1;width:auto;margin:0;outline:none;" onchange="handleGlobalMonthChange()">${options}</select><button onclick="changeMonthBy(1)" style="flex-shrink:0; width:28px; background:#f8fafc; border:none; border-left:1px solid #cbd5e1; font-weight:bold; color:#059669; cursor:pointer;">&gt;</button></div>`; 
 }
 
 function generateMiniMonthDropdown(currentValue) { 
@@ -665,7 +631,7 @@ function generateMiniMonthDropdown(currentValue) {
         if(sIdx > -1) options += `<option value="${currentValue}" selected>${shortM[sIdx]} ${p[1]}</option>`; 
     } 
 
-    return `<div style="display:inline-flex; align-items:stretch; background:#fff; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.04); max-width:155px; box-sizing:border-box;"><button onclick="changeMonthBy(-1)" style="flex-shrink:0; width:26px; background:#f8fafc; border:none; border-right:1px solid #cbd5e1; font-weight:bold; font-size:11px; color:#059669; cursor:pointer; padding:0; box-shadow:none;" title="Previous Month">&lt;</button><select onchange="document.getElementById('headerMonthSelect').value=this.value; handleGlobalMonthChange()" style="flex-grow:1; width:auto; min-width:72px; margin:0; padding:5px 4px; font-size:12px !important; border:none; background:#fff; font-weight:700; color:#059669; cursor:pointer; outline:none;">${options}</select><button onclick="changeMonthBy(1)" style="flex-shrink:0; width:26px; background:#f8fafc; border:none; border-left:1px solid #cbd5e1; font-weight:bold; font-size:11px; color:#059669; cursor:pointer; padding:0; box-shadow:none;" title="Next Month">&gt;</button></div>`; 
+    return `<div style="display:inline-flex; align-items:stretch; background:#fff; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden; max-width:145px;"><button onclick="changeMonthBy(-1)" style="flex-shrink:0; width:24px; background:#f8fafc; border:none; border-right:1px solid #cbd5e1; font-weight:bold; font-size:11px; color:#059669; cursor:pointer; padding:0;">&lt;</button><select onchange="document.getElementById('headerMonthSelect').value=this.value; handleGlobalMonthChange()" style="flex-grow:1; width:auto; min-width:65px; margin:0; padding:4px 3px; font-size:11.5px !important; border:none; background:#fff; font-weight:700; color:#059669; cursor:pointer; outline:none;">${options}</select><button onclick="changeMonthBy(1)" style="flex-shrink:0; width:24px; background:#f8fafc; border:none; border-left:1px solid #cbd5e1; font-weight:bold; font-size:11px; color:#059669; cursor:pointer; padding:0;">&gt;</button></div>`; 
 }
 
 function admin() { 
@@ -673,17 +639,17 @@ function admin() {
     let privateBtn = (currentUser === 'Tanmoy') ? `<button id="tab-private" onclick="showPrivateVault()">🔒 Private</button>` : ''; 
     return `
     <div class="card admin-hero">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap;">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
             <div>
-                <h2 style="margin:0; font-size:21px;">💼 Service Tracker — Admin</h2>
-                <p style="margin:4px 0 0 0; opacity:0.85; font-size:13px; font-weight:500;">Partners: Tanmoy & Tapabrata</p>
+                <h2 style="margin:0; font-size:19px;">💼 Service Tracker</h2>
+                <p style="margin:2px 0 0 0; opacity:0.75; font-size:12px; font-weight:500;">Tanmoy & Tapabrata</p>
             </div>
             <div style="display:none;">${generateMonthDropdown()}</div>
         </div>
         <div class="admin-nav">
             <button id="tab-overview" onclick="showAdminOverview()">📊 Overview</button>
             <button id="tab-po" onclick="showPOTracker()">📄 PO Track</button>
-            <button id="tab-sub-bills" onclick="showSubmittedBills()">📋 Bill Track</button>
+            <button id="tab-sub-bills" onclick="showSubmittedBills()">📋 Bills</button>
             <button id="tab-invoice" onclick="showInvoice()">🧾 Petty Cash</button>
             <button id="tab-vehicles" onclick="showVehicles()">🚗 Vehicles</button>
             <button id="tab-tanmoy" onclick="partnerProfile('Tanmoy')">👨‍💼 Tanmoy</button>
@@ -704,24 +670,16 @@ function setActiveAdminTab(activeId) {
     tabs.forEach(id => { 
         let btn = document.getElementById(id); 
         if(btn) { 
-            let defaultBg = 'rgba(255, 255, 255, 0.12)'; 
-            if(id === 'tab-invoice') defaultBg = 'linear-gradient(135deg, #f59e0b, #d97706)'; 
-            else if(id === 'tab-settings') defaultBg = 'linear-gradient(135deg, #0284c7, #0369a1)'; 
-            else if(id === 'tab-sub-bills') defaultBg = 'linear-gradient(135deg, #9333ea, #7e22ce)'; 
-            else if(id === 'tab-po') defaultBg = 'linear-gradient(135deg, #0d9488, #0f766e)'; 
-            else if(id === 'tab-vehicles') defaultBg = 'linear-gradient(135deg, #ea580c, #c2410c)'; 
-            else if(id === 'tab-private' || id === 'tab-stock') defaultBg = 'linear-gradient(135deg, #334155, #1e293b)'; 
-            
             if (id === activeId) {
                 btn.style.background = "#ffffff";
-                btn.style.color = "#1e1b4b";
-                btn.style.boxShadow = "0 8px 20px rgba(255, 255, 255, 0.25)";
-                btn.style.transform = "translateY(-2px)";
+                btn.style.color = "#0f172a";
+                btn.style.borderColor = "#ffffff";
+                btn.style.boxShadow = "0 4px 12px rgba(255, 255, 255, 0.25)";
             } else {
-                btn.style.background = defaultBg;
-                btn.style.color = "#ffffff";
-                btn.style.boxShadow = "0 4px 10px rgba(0, 0, 0, 0.12)";
-                btn.style.transform = "none";
+                btn.style.background = "rgba(255, 255, 255, 0.1)";
+                btn.style.color = "#e2e8f0";
+                btn.style.borderColor = "rgba(255, 255, 255, 0.14)";
+                btn.style.boxShadow = "none";
             }
         } 
     }); 
@@ -1044,7 +1002,7 @@ async function saveVehicle() {
 }
 
 function deleteVehicle(id) { if(confirm("Are you sure you want to delete this vehicle expense?")) { let oldV = getArray(appData.vehicles).find(x => String(x.id) === String(id)); if(oldV) { appData.balances[oldV.paidBy] += oldV.amount; appData.records[oldV.paidBy] = getArray(appData.records[oldV.paidBy]).filter(r => String(r.id) !== String(id)); appData.vehicles = getArray(appData.vehicles).filter(x => String(x.id) !== String(id)); saveDataToLocal().then(() => showVehicles()); } } }
-function editVehicle(id) { let v = getArray(appData.vehicles).find(x => String(x.id) === String(id)); if(v) { currentVehicleEditId = id; document.getElementById('vDate').value = v.date || ''; document.getElementById('vCar').value = v.car || 'Tcl car'; document.getElementById('vCategory').value = v.category || ''; document.getElementById('vDetails').value = (v.details === '-' ? '' : v.details || ''); document.getElementById('vAmount').value = v.amount || ''; let pbEl = document.getElementById('vPaidBy'); if(pbEl) pbEl.value = v.paidBy || 'Tanmoy'; let btn = document.getElementById('vSaveBtn'); if(btn) { btn.innerText = "✏️ Update Expense"; btn.style.background = "#f39c12"; } window.scrollTo({top:0}); } }// ====== PARTNER PROFILE (TOGGLE PROFIT TABLE EDITION) ======
+function editVehicle(id) { let v = getArray(appData.vehicles).find(x => String(x.id) === String(id)); if(v) { currentVehicleEditId = id; document.getElementById('vDate').value = v.date || ''; document.getElementById('vCar').value = v.car || 'Tcl car'; document.getElementById('vCategory').value = v.category || ''; document.getElementById('vDetails').value = (v.details === '-' ? '' : v.details || ''); document.getElementById('vAmount').value = v.amount || ''; let pbEl = document.getElementById('vPaidBy'); if(pbEl) pbEl.value = v.paidBy || 'Tanmoy'; let btn = document.getElementById('vSaveBtn'); if(btn) { btn.innerText = "✏️ Update Expense"; btn.style.background = "#f39c12"; } window.scrollTo({top:0}); } }// ====== PARTNER PROFILE (MOBILE & DESKTOP PERFECTED EDITION) ======
 
 let currentPartnerDateFilter = '';
 
@@ -1079,59 +1037,58 @@ function partnerProfile(name){
         <div id="partnerBalArea"></div>
     </div>
 
-    <!-- MODERN ADD ENTRY CARD -->
+    <!-- COMPACT ADD ENTRY CARD -->
     <div class="card" id="partnerFormCard" style="border: 1px solid #e2e8f0;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
-            <div style="display:flex; align-items:center; gap:10px;">
-                <div style="width:36px; height:36px; border-radius:10px; background:${avatarBg}; color:${accentColor}; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px;">＋</div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:32px; height:32px; border-radius:8px; background:${avatarBg}; color:${accentColor}; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:15px;">＋</div>
                 <div>
-                    <h2 style="margin:0; font-size:18px;" id="formTitleText">Add Entry for ${name}</h2>
-                    <span style="font-size:12px; color:#64748b;">Date & category stay saved for quick backlog entry</span>
+                    <h2 style="margin:0; font-size:16.5px;" id="formTitleText">Add Entry for ${name}</h2>
                 </div>
             </div>
         </div>
 
         <!-- Segmented Control Pill Bar -->
-        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:6px; background:#f1f5f9; padding:6px; border-radius:14px; margin-bottom:16px; border:1px solid #e2e8f0;">
-            <button id="incomeBtn" onclick="setEntryType('income')" style="margin:0; border-radius:10px; padding:10px 8px; font-size:13.5px;">🟢 Income</button>
-            <button id="expenseBtn" class="alt" onclick="setEntryType('expense')" style="margin:0; border-radius:10px; padding:10px 8px; font-size:13.5px;">🔴 Expenditure</button>
-            <button id="profitBtn" class="alt" onclick="setEntryType('profit')" style="margin:0; border-radius:10px; padding:10px 8px; font-size:13.5px;">🟣 Profit Book</button>
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:5px; background:#f1f5f9; padding:5px; border-radius:12px; margin-bottom:14px; border:1px solid #e2e8f0;">
+            <button id="incomeBtn" onclick="setEntryType('income')" style="margin:0; border-radius:8px; padding:9px 4px; font-size:12.5px;">🟢 Income</button>
+            <button id="expenseBtn" class="alt" onclick="setEntryType('expense')" style="margin:0; border-radius:8px; padding:9px 4px; font-size:12.5px;">🔴 Expense</button>
+            <button id="profitBtn" class="alt" onclick="setEntryType('profit')" style="margin:0; border-radius:8px; padding:9px 4px; font-size:12.5px;">🟣 Profit</button>
         </div>
 
         <!-- Transfer Option Banner -->
-        <div id="transferCheckboxDiv" style="margin:0 0 14px 0; background:#ecfdf5; border:1px solid #a7f3d0; padding:12px 14px; border-radius:12px; display:none;">
-            <label style="font-weight:700; color:#065f46; display:flex; align-items:center; cursor:pointer; margin:0; font-size:13.5px;">
-                <input type="checkbox" id="transferCheckbox" style="width:auto; margin:0 10px 0 0; transform:scale(1.2); accent-color:#059669;"> 
-                🔄 Auto-Transfer to ${name === 'Tanmoy' ? 'Tapabrata' : 'Tanmoy'}'s Account
+        <div id="transferCheckboxDiv" style="margin:0 0 12px 0; background:#ecfdf5; border:1px solid #a7f3d0; padding:10px 12px; border-radius:10px; display:none;">
+            <label style="font-weight:700; color:#065f46; display:flex; align-items:center; cursor:pointer; margin:0; font-size:12.5px;">
+                <input type="checkbox" id="transferCheckbox" style="width:auto; margin:0 8px 0 0; transform:scale(1.15); accent-color:#059669;"> 
+                🔄 Auto-Transfer to ${name === 'Tanmoy' ? 'Tapabrata' : 'Tanmoy'}
             </label>
         </div>
 
         <!-- Vehicle Expense Option Banner -->
-        <div id="quickVehicleDiv" style="margin:0 0 14px 0; background:#fff7ed; border:1px solid #fed7aa; padding:12px 14px; border-radius:12px; display:none;">
-            <label style="font-weight:700; color:#c2410c; display:flex; align-items:center; cursor:pointer; margin:0; font-size:13.5px;">
-                <input type="checkbox" id="isVehicleExpense" style="width:auto; margin:0 10px 0 0; transform:scale(1.2); accent-color:#ea580c;" onchange="document.getElementById('vehicleOptions').style.display = this.checked ? 'flex' : 'none'"> 
+        <div id="quickVehicleDiv" style="margin:0 0 12px 0; background:#fff7ed; border:1px solid #fed7aa; padding:10px 12px; border-radius:10px; display:none;">
+            <label style="font-weight:700; color:#c2410c; display:flex; align-items:center; cursor:pointer; margin:0; font-size:12.5px;">
+                <input type="checkbox" id="isVehicleExpense" style="width:auto; margin:0 8px 0 0; transform:scale(1.15); accent-color:#ea580c;" onchange="document.getElementById('vehicleOptions').style.display = this.checked ? 'grid' : 'none'"> 
                 🚗 Link as Vehicle Expense
             </label>
-            <div id="vehicleOptions" style="display:none; gap:12px; flex-wrap:wrap; margin-top:12px; padding-top:12px; border-top:1px dashed #fdba74;">
-                <div style="flex:1; min-width:130px;">
-                    <label style="font-size:12px; color:#9a3412; margin-bottom:4px;">Select Car</label>
+            <div id="vehicleOptions" style="display:none; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; padding-top:10px; border-top:1px dashed #fdba74;">
+                <div>
+                    <label style="font-size:11px; color:#9a3412;">Select Car</label>
                     <select id="qvCar" style="margin:0; background:#fff;"><option value="Tcl car">Tcl car</option><option value="Dcl car">Dcl car</option></select>
                 </div>
-                <div style="flex:1; min-width:130px;">
-                    <label style="font-size:12px; color:#9a3412; margin-bottom:4px;">Category</label>
-                    <select id="qvCategory" style="margin:0; background:#fff;"><option value="Fuel">⛽ Fuel</option><option value="Maintenance">🛠️ Maintenance</option><option value="Toll/Parking">🎫 Toll/Parking</option><option value="Other">📝 Other</option></select>
+                <div>
+                    <label style="font-size:11px; color:#9a3412;">Category</label>
+                    <select id="qvCategory" style="margin:0; background:#fff;"><option value="Fuel">⛽ Fuel</option><option value="Maintenance">🛠️ Maint.</option><option value="Toll/Parking">🎫 Toll</option><option value="Other">📝 Other</option></select>
                 </div>
             </div>
         </div>
 
         <!-- Optional Bill No (Only for Income) -->
-        <div id="billNoDiv" style="margin:0 0 14px 0; display:block;">
-            <label style="display:block; margin-bottom:5px;">🧾 Link Bill No. <span style="font-size:11.5px; font-weight:500; color:#64748b;">(Optional - Auto-marks bill as Paid)</span></label>
+        <div id="billNoDiv" style="margin:0 0 10px 0; display:block;">
+            <label style="display:block; margin-bottom:4px;">🧾 Link Bill No. <span style="font-size:11px; font-weight:500; color:#64748b;">(Optional)</span></label>
             <input id="entryBillNo" list="dlPendingBills" placeholder="Select or type pending Bill No..." style="margin:0;">
         </div>
 
-        <!-- Compact 2-Column Date & Amount Row -->
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:14px;">
+        <!-- Always Side-by-Side Date & Amount (Saves huge vertical space on Mobile) -->
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
             <div>
                 <label>📅 Date</label>
                 <input type="date" id="entryDate" value="${todayDate}" onchange="window.lastSelectedDate=this.value">
@@ -1143,34 +1100,33 @@ function partnerProfile(name){
         </div>
 
         <!-- Details & Photo Row -->
-        <div style="display:grid; grid-template-columns: 2fr 1fr; gap:14px; align-items:start;">
+        <div style="display:grid; grid-template-columns: 1.6fr 1fr; gap:10px; align-items:start;">
             <div>
-                <label>📝 Details / Description</label>
-                <input id="entryDetails" list="dlPartnerDetails" placeholder="Enter transaction details...">
+                <label>📝 Details</label>
+                <input id="entryDetails" list="dlPartnerDetails" placeholder="Description...">
             </div>
             <div>
-                <label>📷 Receipt Photo</label>
-                <input type="file" id="entryPhoto" accept="image/*" style="padding:9px; font-size:12.5px;">
+                <label>📷 Photo</label>
+                <input type="file" id="entryPhoto" accept="image/*" style="padding:7px; font-size:11.5px;">
             </div>
         </div>
 
-        <button onclick="savePartnerEntry('${name}')" style="width:100%; margin-top:4px; padding:14px; font-size:15px;" id="entrySaveBtn">💾 Save Entry</button>
+        <button onclick="savePartnerEntry('${name}')" style="width:100%; margin-top:2px; padding:12px; font-size:14px;" id="entrySaveBtn">💾 Save Entry</button>
     </div>
 
     <!-- MONTHLY RECORDS CARD -->
     <div class="card">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:18px; padding-bottom:14px; border-bottom:1px solid #f1f5f9;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid #f1f5f9;">
             <div>
-                <h2 style="margin:0; font-size:19px;">📋 Monthly Ledger Records</h2>
-                <span style="font-size:12px; color:#64748b;">Click any row to toggle reconciliation status (⬜ / ✅ / ❌)</span>
+                <h2 style="margin:0; font-size:17.5px;">📋 Monthly Ledger Records</h2>
+                <span style="font-size:11px; color:#64748b;">Tap row to reconcile (⬜ / ✅ / ❌)</span>
             </div>
-            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-                <button onclick="downloadPartnerCSV('${name}')" style="background:linear-gradient(135deg, #0d9488, #0f766e); color:white; padding:9px 14px; margin:0; border-radius:10px; font-size:13px;">📥 Export CSV</button>
-                <input type="text" id="partnerSearchInput" placeholder="🔍 Search details, bill, amt..." oninput="renderPartnerData('${name}')" style="max-width:250px; margin:0; padding:9px 14px; border-radius:10px;">
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; width:100%; max-width:360px;">
+                <input type="text" id="partnerSearchInput" placeholder="🔍 Search..." oninput="renderPartnerData('${name}')" style="flex:1; margin:0; padding:8px 12px; border-radius:8px; font-size:13px;">
+                <button onclick="downloadPartnerCSV('${name}')" style="background:#0d9488; color:white; padding:8px 12px; margin:0; border-radius:8px; font-size:12px; flex-shrink:0;">📥 CSV</button>
             </div>
         </div>
         
-        <!-- Standard Clean Layout (Dual Grid usually, Tri Grid when Profit is clicked) -->
         <div id="recordsGrid" class="dual-records-grid">
             <div id="incTable"></div>
             <div id="expTable"></div>
@@ -1208,25 +1164,25 @@ function renderPartnerData(name) {
         else totalProf += parseFloat(r.amount) || 0;
 
         let proof = '-'; 
-        if (r.photo && r.photo.length > 5) proof = `<a href="${r.photo}" target="_blank" style="text-decoration:none; font-size:15px; background:#f1f5f9; padding:4px 7px; border-radius:6px; display:inline-block;">📷</a>`; 
-        else if (r.link && r.link.length > 5) proof = `<a href="${r.link}" target="_blank" style="text-decoration:none; font-size:15px; background:#f1f5f9; padding:4px 7px; border-radius:6px; display:inline-block;">🔗</a>`;
+        if (r.photo && r.photo.length > 5) proof = `<a href="${r.photo}" target="_blank" style="text-decoration:none; font-size:13px;">📷</a>`; 
+        else if (r.link && r.link.length > 5) proof = `<a href="${r.link}" target="_blank" style="text-decoration:none; font-size:13px;">🔗</a>`;
         
-        let bTag = r.billNo ? `<br><span style="display:inline-block; margin-top:3px; font-size:10.5px; background:#f3e8ff; color:#7e22ce; padding:2px 6px; border-radius:5px; font-weight:700;">🧾 ${r.billNo}</span>` : '';
+        let bTag = r.billNo ? `<br><span style="display:inline-block; margin-top:2px; font-size:9.5px; background:#f3e8ff; color:#7e22ce; padding:1px 5px; border-radius:4px; font-weight:700;">🧾 ${r.billNo}</span>` : '';
         let rState = r.reconState !== undefined ? r.reconState : (r.isReconciled ? 1 : 0); 
         let statusIcon = rState === 1 ? '✅' : (rState === 2 ? '❌' : '⬜'); 
         let bgStyle = rState === 1 ? 'background-color:#ecfdf5 !important;' : (rState === 2 ? 'background-color:#fff1f2 !important;' : '');
         let typeClr = type === 'income' ? 'positive' : (type === 'expense' ? 'negative' : ''); 
         let amtStyle = type === 'profit' ? 'style="color:#7c3aed; font-weight:800;"' : `class="${typeClr}"`;
         
-        return `<tr onclick="toggleRowCheck(this, event, '${type==='income'?'inc':(type==='expense'?'exp':'prof')}', '${r.id}', '${name}')" style="cursor:pointer; transition: background 0.15s; ${bgStyle}">
+        return `<tr onclick="toggleRowCheck(this, event, '${type==='income'?'inc':(type==='expense'?'exp':'prof')}', '${r.id}', '${name}')" style="cursor:pointer; ${bgStyle}">
             <td style="text-align:center; user-select:none;" class="recon-cell" data-state="${rState}" data-id="${r.id}" data-amt="${r.amount}">${statusIcon}</td>
             <td style="font-weight:600; color:#475569; white-space:nowrap;">${formatDate(r.date)}</td>
             <td style="font-weight:500;">${r.details}${bTag}</td>
             <td style="text-align:center;">${proof}</td>
             <td ${amtStyle} style="white-space:nowrap;">₹${parseFloat(r.amount).toLocaleString('en-IN')}</td>
             <td style="white-space:nowrap; text-align:right;">
-                <button onclick="editEntry('${r.id}', '${type}', '${name}')" style="background:#fef3c7; color:#b45309; border:1px solid #fde68a; border-radius:7px; padding:5px 8px; box-shadow:none;" title="Edit">✏️</button>
-                <button onclick="deleteEntry('${r.id}', '${name}')" style="background:#ffe4e6; color:#be123c; border:1px solid #fecdd3; border-radius:7px; padding:5px 8px; margin-left:4px; box-shadow:none;" title="Delete">🗑️</button>
+                <button onclick="editEntry('${r.id}', '${type}', '${name}')" style="background:#fef3c7; color:#b45309; border:1px solid #fde68a;" title="Edit">✏️</button>
+                <button onclick="deleteEntry('${r.id}', '${name}')" style="background:#ffe4e6; color:#be123c; border:1px solid #fecdd3;" title="Delete">🗑️</button>
             </td>
         </tr>`;
     }
@@ -1236,77 +1192,77 @@ function renderPartnerData(name) {
     let profs = recs.filter(r=>r.type==='profit').map(r=> makeRow(r, 'profit')).join('');
     
     let dateDisp = dateFilter ? formatDate(dateFilter) : 'Date';
-    let clearBtnHTML = dateFilter ? `<span onclick="event.stopPropagation(); clearPartnerDateFilter('${name}');" style="color:#e11d48; cursor:pointer; font-weight:800; font-size:13px; margin-left:4px; z-index:2; position:relative;" title="Clear Date Filter">✖</span>` : '';
-    let dateHdrHTML = `<th style="white-space:nowrap; vertical-align:middle;"><div style="display:inline-flex; align-items:center; gap:3px; position:relative;"><label style="display:inline-flex; align-items:center; gap:4px; cursor:pointer; margin:0; font-weight:700; color:inherit; font-size:12px;" title="Click to filter by date"><span>${dateDisp}</span><span style="font-size:13px;">📅</span><input type="date" value="${dateFilter}" onchange="setPartnerDateFilter(this.value, '${name}')" style="position:absolute; left:0; top:0; width:100%; height:100%; opacity:0; cursor:pointer;"></label>${clearBtnHTML}</div></th>`;
+    let clearBtnHTML = dateFilter ? `<span onclick="event.stopPropagation(); clearPartnerDateFilter('${name}');" style="color:#e11d48; cursor:pointer; font-weight:800; font-size:12px; margin-left:3px; z-index:2; position:relative;">✖</span>` : '';
+    let dateHdrHTML = `<th style="white-space:nowrap;"><div style="display:inline-flex; align-items:center; gap:2px; position:relative;"><label style="display:inline-flex; align-items:center; gap:2px; cursor:pointer; margin:0; font-weight:700; color:inherit; font-size:inherit;"><span>${dateDisp}</span><span>📅</span><input type="date" value="${dateFilter}" onchange="setPartnerDateFilter(this.value, '${name}')" style="position:absolute; left:0; top:0; width:100%; height:100%; opacity:0; cursor:pointer;"></label>${clearBtnHTML}</div></th>`;
     
     document.getElementById('incTable').innerHTML = `
-    <div style="border:1px solid #a7f3d0; border-radius:16px; overflow:hidden; background:#ffffff; box-shadow:0 4px 12px rgba(5,150,105,0.03);">
-        <div style="display:flex; justify-content:space-between; align-items:center; background:linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); padding:12px 16px; border-bottom:1px solid #a7f3d0; flex-wrap:wrap; gap:8px;">
-            <div style="display:flex; align-items:center; gap:8px;">
-                <h3 style="color:#065f46; margin:0; font-size:15px; font-weight:800;">🟢 Income</h3>
-                <span id="incGroupTotalBadge" style="display:none; background:#059669; color:#ffffff; padding:3px 9px; border-radius:99px; font-size:11.5px; font-weight:700;">Matched: ₹0</span>
+    <div style="border:1px solid #a7f3d0; border-radius:14px; overflow:hidden; background:#ffffff; width:100%;">
+        <div style="display:flex; justify-content:space-between; align-items:center; background:#ecfdf5; padding:10px 12px; border-bottom:1px solid #a7f3d0; flex-wrap:wrap; gap:6px;">
+            <div style="display:flex; align-items:center; gap:6px;">
+                <h3 style="color:#065f46; margin:0; font-size:14px; font-weight:800;">🟢 Income</h3>
+                <span id="incGroupTotalBadge" style="display:none; background:#059669; color:#ffffff; padding:2px 7px; border-radius:99px; font-size:10.5px; font-weight:700;">₹0</span>
             </div>
-            <span style="background:#ffffff; color:#047857; padding:4px 10px; border-radius:8px; font-size:13.5px; font-weight:800; border:1px solid #a7f3d0;">₹${totalInc.toLocaleString('en-IN')}</span>
+            <span style="background:#ffffff; color:#047857; padding:3px 8px; border-radius:6px; font-size:12.5px; font-weight:800; border:1px solid #a7f3d0;">₹${totalInc.toLocaleString('en-IN')}</span>
         </div>
         <div style="overflow-x:auto;">
             <table>
                 <tr>
-                    <th style="width:34px; text-align:center;"><button onclick="toggleAllRows('inc', '${name}')" style="background:#fff; border:1px solid #cbd5e1; border-radius:6px; cursor:pointer; font-size:10.5px; padding:3px 6px; color:#334155; box-shadow:none;">All</button></th>
+                    <th style="width:28px; text-align:center;"><button onclick="toggleAllRows('inc', '${name}')" style="background:#fff; border:1px solid #cbd5e1; border-radius:4px; font-size:9.5px; padding:2px 4px; color:#334155;">All</button></th>
                     ${dateHdrHTML}
                     <th>Details</th>
-                    <th style="text-align:center;">Proof</th>
+                    <th style="text-align:center;">📷</th>
                     <th>Amt</th>
-                    <th style="text-align:right;">Action</th>
+                    <th style="text-align:right;">Act</th>
                 </tr>
-                ${incs||'<tr><td colspan="6" style="text-align:center; padding:24px; color:#94a3b8;">No income records found</td></tr>'}
+                ${incs||'<tr><td colspan="6" style="text-align:center; padding:18px; color:#94a3b8;">No income records</td></tr>'}
             </table>
         </div>
     </div>`;
 
     document.getElementById('expTable').innerHTML = `
-    <div style="border:1px solid #fecdd3; border-radius:16px; overflow:hidden; background:#ffffff; box-shadow:0 4px 12px rgba(225,29,72,0.03);">
-        <div style="display:flex; justify-content:space-between; align-items:center; background:linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); padding:12px 16px; border-bottom:1px solid #fecdd3; flex-wrap:wrap; gap:8px;">
-            <div style="display:flex; align-items:center; gap:8px;">
-                <h3 style="color:#9f1239; margin:0; font-size:15px; font-weight:800;">🔴 Expenditure</h3>
-                <span id="expGroupTotalBadge" style="display:none; background:#e11d48; color:#ffffff; padding:3px 9px; border-radius:99px; font-size:11.5px; font-weight:700;">Matched: ₹0</span>
+    <div style="border:1px solid #fecdd3; border-radius:14px; overflow:hidden; background:#ffffff; width:100%;">
+        <div style="display:flex; justify-content:space-between; align-items:center; background:#fff1f2; padding:10px 12px; border-bottom:1px solid #fecdd3; flex-wrap:wrap; gap:6px;">
+            <div style="display:flex; align-items:center; gap:6px;">
+                <h3 style="color:#9f1239; margin:0; font-size:14px; font-weight:800;">🔴 Expenditure</h3>
+                <span id="expGroupTotalBadge" style="display:none; background:#e11d48; color:#ffffff; padding:2px 7px; border-radius:99px; font-size:10.5px; font-weight:700;">₹0</span>
             </div>
-            <span style="background:#ffffff; color:#be123c; padding:4px 10px; border-radius:8px; font-size:13.5px; font-weight:800; border:1px solid #fecdd3;">₹${totalExp.toLocaleString('en-IN')}</span>
+            <span style="background:#ffffff; color:#be123c; padding:3px 8px; border-radius:6px; font-size:12.5px; font-weight:800; border:1px solid #fecdd3;">₹${totalExp.toLocaleString('en-IN')}</span>
         </div>
         <div style="overflow-x:auto;">
             <table>
                 <tr>
-                    <th style="width:34px; text-align:center;"><button onclick="toggleAllRows('exp', '${name}')" style="background:#fff; border:1px solid #cbd5e1; border-radius:6px; cursor:pointer; font-size:10.5px; padding:3px 6px; color:#334155; box-shadow:none;">All</button></th>
+                    <th style="width:28px; text-align:center;"><button onclick="toggleAllRows('exp', '${name}')" style="background:#fff; border:1px solid #cbd5e1; border-radius:4px; font-size:9.5px; padding:2px 4px; color:#334155;">All</button></th>
                     ${dateHdrHTML}
                     <th>Details</th>
-                    <th style="text-align:center;">Proof</th>
+                    <th style="text-align:center;">📷</th>
                     <th>Amt</th>
-                    <th style="text-align:right;">Action</th>
+                    <th style="text-align:right;">Act</th>
                 </tr>
-                ${exps||'<tr><td colspan="6" style="text-align:center; padding:24px; color:#94a3b8;">No expense records found</td></tr>'}
+                ${exps||'<tr><td colspan="6" style="text-align:center; padding:18px; color:#94a3b8;">No expense records</td></tr>'}
             </table>
         </div>
     </div>`;
 
     document.getElementById('profTable').innerHTML = `
-    <div style="border:1px solid #e9d5ff; border-radius:16px; overflow:hidden; background:#ffffff; box-shadow:0 4px 12px rgba(124,58,237,0.03);">
-        <div style="display:flex; justify-content:space-between; align-items:center; background:linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%); padding:12px 16px; border-bottom:1px solid #e9d5ff; flex-wrap:wrap; gap:8px;">
-            <div style="display:flex; align-items:center; gap:8px;">
-                <h3 style="color:#6b21a8; margin:0; font-size:15px; font-weight:800;">🟣 Profit Booked</h3>
-                <span id="profGroupTotalBadge" style="display:none; background:#7c3aed; color:#ffffff; padding:3px 9px; border-radius:99px; font-size:11.5px; font-weight:700;">Matched: ₹0</span>
+    <div style="border:1px solid #e9d5ff; border-radius:14px; overflow:hidden; background:#ffffff; width:100%;">
+        <div style="display:flex; justify-content:space-between; align-items:center; background:#faf5ff; padding:10px 12px; border-bottom:1px solid #e9d5ff; flex-wrap:wrap; gap:6px;">
+            <div style="display:flex; align-items:center; gap:6px;">
+                <h3 style="color:#6b21a8; margin:0; font-size:14px; font-weight:800;">🟣 Profit Booked</h3>
+                <span id="profGroupTotalBadge" style="display:none; background:#7c3aed; color:#ffffff; padding:2px 7px; border-radius:99px; font-size:10.5px; font-weight:700;">₹0</span>
             </div>
-            <span style="background:#ffffff; color:#7e22ce; padding:4px 10px; border-radius:8px; font-size:13.5px; font-weight:800; border:1px solid #e9d5ff;">₹${totalProf.toLocaleString('en-IN')}</span>
+            <span style="background:#ffffff; color:#7e22ce; padding:3px 8px; border-radius:6px; font-size:12.5px; font-weight:800; border:1px solid #e9d5ff;">₹${totalProf.toLocaleString('en-IN')}</span>
         </div>
         <div style="overflow-x:auto;">
             <table>
                 <tr>
-                    <th style="width:34px; text-align:center;"><button onclick="toggleAllRows('prof', '${name}')" style="background:#fff; border:1px solid #cbd5e1; border-radius:6px; cursor:pointer; font-size:10.5px; padding:3px 6px; color:#334155; box-shadow:none;">All</button></th>
+                    <th style="width:28px; text-align:center;"><button onclick="toggleAllRows('prof', '${name}')" style="background:#fff; border:1px solid #cbd5e1; border-radius:4px; font-size:9.5px; padding:2px 4px; color:#334155;">All</button></th>
                     ${dateHdrHTML}
                     <th>Details</th>
-                    <th style="text-align:center;">Proof</th>
+                    <th style="text-align:center;">📷</th>
                     <th>Amt</th>
-                    <th style="text-align:right;">Action</th>
+                    <th style="text-align:right;">Act</th>
                 </tr>
-                ${profs||'<tr><td colspan="6" style="text-align:center; padding:24px; color:#94a3b8;">No profit records found</td></tr>'}
+                ${profs||'<tr><td colspan="6" style="text-align:center; padding:18px; color:#94a3b8;">No profit records</td></tr>'}
             </table>
         </div>
     </div>`;
@@ -1353,44 +1309,42 @@ function renderPartnerData(name) {
     let avatarBg = name === 'Tanmoy' ? '#eef2ff' : '#f0fdfa';
 
     document.getElementById('partnerBalArea').innerHTML = `
-    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:18px; padding-bottom:12px; border-bottom:1px solid #f1f5f9;">
-        <div style="display:flex; align-items:center; gap:12px;">
-            <div style="width:42px; height:42px; border-radius:12px; background:${avatarBg}; color:${accentColor}; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:18px;">${name.charAt(0)}</div>
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid #f1f5f9;">
+        <div style="display:flex; align-items:center; gap:10px;">
+            <div style="width:36px; height:36px; border-radius:10px; background:${avatarBg}; color:${accentColor}; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px;">${name.charAt(0)}</div>
             <div>
-                <h2 style="margin:0; font-size:20px;">${name}'s Financial Profile</h2>
-                <span style="font-size:12px; color:#64748b; font-weight:500;">Viewing summary for <b>${balTitleText}</b></span>
+                <h2 style="margin:0; font-size:17px;">${name}'s Profile</h2>
+                <span style="font-size:11px; color:#64748b; font-weight:500;">Summary: <b>${balTitleText}</b></span>
             </div>
         </div>
         ${generateMiniMonthDropdown(globalMonth)}
     </div>
 
-    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap:14px;">
-        <div style="background:#f8fafc; padding:16px; border-radius:16px; border:1px solid #e2e8f0;">
-            <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.04em; display:block; margin-bottom:6px;">🔄 Previous Balance (CF)</span>
-            <b class="${cfBalance >= 0 ? 'positive' : 'negative'}" style="font-size:22px; display:block;">₹${cfBalance.toLocaleString('en-IN')}</b>
-            <span style="font-size:11px; color:#94a3b8; display:block; margin-top:6px;">Brought forward to ${balTitleText}</span>
+    <!-- 2x2 Grid on Mobile, 4x1 on Desktop -->
+    <div class="partner-summary-grid">
+        <div style="background:#f8fafc; padding:14px; border-radius:14px; border:1px solid #e2e8f0;">
+            <span style="font-size:10px; font-weight:700; color:#64748b; text-transform:uppercase; display:block; margin-bottom:4px;">🔄 Prev Balance (CF)</span>
+            <b class="${cfBalance >= 0 ? 'positive' : 'negative'}" style="font-size:20px; display:block;">₹${cfBalance.toLocaleString('en-IN')}</b>
         </div>
 
-        <div style="background:#f8fafc; padding:16px; border-radius:16px; border:1px solid #e2e8f0;">
-            <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.04em; display:block; margin-bottom:6px;">📊 Net This Period</span>
-            <b class="${currentNetBalance >= 0 ? 'positive' : 'negative'}" style="font-size:22px; display:block;">₹${currentNetBalance.toLocaleString('en-IN')}</b>
-            <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; font-size:11px; font-weight:700;">
-                <span style="color:#059669;" title="Income">+₹${totalInc.toLocaleString('en-IN')}</span>
+        <div style="background:#f8fafc; padding:14px; border-radius:14px; border:1px solid #e2e8f0;">
+            <span style="font-size:10px; font-weight:700; color:#64748b; text-transform:uppercase; display:block; margin-bottom:4px;">📊 Net This Period</span>
+            <b class="${currentNetBalance >= 0 ? 'positive' : 'negative'}" style="font-size:20px; display:block;">₹${currentNetBalance.toLocaleString('en-IN')}</b>
+            <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; font-size:10px; font-weight:700;">
+                <span style="color:#059669;">+₹${totalInc.toLocaleString('en-IN')}</span>
                 <span style="color:#cbd5e1;">|</span>
-                <span style="color:#e11d48;" title="Expenditure">-₹${totalExp.toLocaleString('en-IN')}</span>
+                <span style="color:#e11d48;">-₹${totalExp.toLocaleString('en-IN')}</span>
             </div>
         </div>
 
-        <div style="background:linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%); padding:16px; border-radius:16px; border:1px solid #d8b4fe;">
-            <span style="font-size:11px; font-weight:800; color:#6b21a8; text-transform:uppercase; letter-spacing:0.04em; display:block; margin-bottom:6px;">🟣 Profit Booked</span>
-            <b style="font-size:22px; color:#7c3aed; display:block; font-weight:800;">₹${totalProf.toLocaleString('en-IN')}</b>
-            <span style="font-size:11px; color:#7e22ce; font-weight:600; display:block; margin-top:6px;">Withdrawn in ${balTitleText}</span>
+        <div style="background:#faf5ff; padding:14px; border-radius:14px; border:1px solid #d8b4fe;">
+            <span style="font-size:10px; font-weight:800; color:#6b21a8; text-transform:uppercase; display:block; margin-bottom:4px;">🟣 Profit Booked</span>
+            <b style="font-size:20px; color:#7c3aed; display:block; font-weight:800;">₹${totalProf.toLocaleString('en-IN')}</b>
         </div>
 
-        <div style="background:linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); padding:16px; border-radius:16px; border:1.5px solid #10b981; box-shadow:0 8px 20px rgba(5, 150, 105, 0.08);">
-            <span style="font-size:11px; font-weight:800; color:#065f46; text-transform:uppercase; letter-spacing:0.04em; display:block; margin-bottom:6px;">💰 Total Cash In Hand</span>
-            <b class="${totalCashInHand >= 0 ? 'positive' : 'negative'}" style="font-size:25px; display:block; letter-spacing:-0.02em;">₹${totalCashInHand.toLocaleString('en-IN')}</b>
-            <span style="font-size:11px; color:#047857; font-weight:600; display:block; margin-top:6px;">Available Liquidity (CF + Net)</span>
+        <div style="background:#ecfdf5; padding:14px; border-radius:14px; border:1.5px solid #10b981;">
+            <span style="font-size:10px; font-weight:800; color:#065f46; text-transform:uppercase; display:block; margin-bottom:4px;">💰 Cash In Hand</span>
+            <b class="${totalCashInHand >= 0 ? 'positive' : 'negative'}" style="font-size:21px; display:block;">₹${totalCashInHand.toLocaleString('en-IN')}</b>
         </div>
     </div>`;
 
@@ -1410,11 +1364,11 @@ function setEntryType(t) {
         }
     });
     if(t==='income' && i) { 
-        i.className=''; i.style.background='#ffffff'; i.style.color='#059669'; i.style.border='1px solid #a7f3d0'; i.style.boxShadow='0 2px 8px rgba(0,0,0,0.06)'; 
+        i.className=''; i.style.background='#ffffff'; i.style.color='#059669'; i.style.border='1px solid #a7f3d0'; i.style.boxShadow='0 2px 6px rgba(0,0,0,0.05)'; 
     } else if(t==='expense' && e) { 
-        e.className=''; e.style.background='#ffffff'; e.style.color='#e11d48'; e.style.border='1px solid #fecdd3'; e.style.boxShadow='0 2px 8px rgba(0,0,0,0.06)'; 
+        e.className=''; e.style.background='#ffffff'; e.style.color='#e11d48'; i.style.border='none'; e.style.border='1px solid #fecdd3'; e.style.boxShadow='0 2px 6px rgba(0,0,0,0.05)'; 
     } else if(t==='profit' && p) { 
-        p.className=''; p.style.background='#ffffff'; p.style.color='#7c3aed'; p.style.border='1px solid #ddd6fe'; p.style.boxShadow='0 2px 8px rgba(0,0,0,0.06)'; 
+        p.className=''; p.style.background='#ffffff'; p.style.color='#7c3aed'; p.style.border='1px solid #ddd6fe'; p.style.boxShadow='0 2px 6px rgba(0,0,0,0.05)'; 
     }
 
     let tc = document.getElementById('transferCheckboxDiv'), qv = document.getElementById('quickVehicleDiv'), bn = document.getElementById('billNoDiv');
@@ -1422,7 +1376,6 @@ function setEntryType(t) {
     if(qv) { if(t === 'expense') qv.style.display = 'block'; else { qv.style.display = 'none'; if(document.getElementById('isVehicleExpense')) { document.getElementById('isVehicleExpense').checked = false; document.getElementById('vehicleOptions').style.display = 'none'; } } }
     if(bn) { if(t === 'income') bn.style.display = 'block'; else { bn.style.display = 'none'; if(document.getElementById('entryBillNo')) document.getElementById('entryBillNo').value = ''; } }
     
-    // SMART TOGGLE: Profit table only shows when Profit button is clicked.
     let grid = document.getElementById('recordsGrid'), profTable = document.getElementById('profTable');
     if(grid && profTable) { 
         if(t === 'profit') { 
@@ -1456,7 +1409,7 @@ async function savePartnerEntry(name) {
     }
 
     let isDuplicate = getArray(appData.records[name]).some(r => String(r.id) !== String(currentEditId) && r.date === date && r.amount === amt && (r.details||'').toLowerCase() === partnerDesc.toLowerCase() && r.type === currentEntryType);
-    if(isDuplicate) return alert("❌ DUPLICATE ENTRY! Yeh entry is date par pehle se maujood hai. Agar doosri entry add karni hai, toh Details mein thoda change karein (e.g. 'Toll 2').");
+    if(isDuplicate) return alert("❌ DUPLICATE ENTRY! Yeh entry is date par pehle se maujood hai.");
 
     if(currentEntryType === 'income' && billNo) { let allRecs = [ ...getArray(appData.records['Tanmoy']), ...getArray(appData.records['Tapabrata']) ]; let isBillUsed = allRecs.some(r => String(r.id) !== String(currentEditId) && r.billNo && r.billNo.toLowerCase() === billNo.toLowerCase()); if(isBillUsed) return alert(`❌ DUPLICATE BILL!`); }
 
@@ -1533,7 +1486,7 @@ function editEntry(id, type, name) {
                 let vehCheck = document.getElementById('isVehicleExpense');
                 if(vehCheck) {
                     vehCheck.checked = true;
-                    document.getElementById('vehicleOptions').style.display = 'flex';
+                    document.getElementById('vehicleOptions').style.display = 'grid';
                     document.getElementById('qvCar').value = v.car || 'Tcl car';
                     document.getElementById('qvCategory').value = v.category || '';
                 }
