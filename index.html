@@ -223,8 +223,6 @@ td {
     padding: 14px 20px !important;
 }
 .part-row-box { background: #f8fafc; padding: 12px; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 10px; }
-.b-qty, .b-rate, .b-desc { margin: 0; padding: 8px; border-radius: 8px; }
-.bill-table th { background: #ecfdf5; color: #065f46; font-size: 12px; }
 
 /* STRICT GRID WRAPPERS (PREVENTS RIGHT OVERFLOW) */
 .dual-records-grid {
@@ -298,7 +296,7 @@ td {
     .top { padding: 10px 14px !important; border-radius: 14px; margin-top: 4px; }
     .top h1 { font-size: 15.5px !important; }
 
-    /* Compact 4-Column Nav on Mobile (Only 3 neat rows) */
+    /* Compact 4-Column Nav on Mobile */
     .admin-hero { padding: 14px 12px !important; }
     .admin-hero h2 { font-size: 17px !important; }
     .admin-nav {
@@ -348,7 +346,7 @@ td {
     .recon-cell { padding: 2px !important; font-size: 13px !important; width: 24px !important; }
 
     /* Search & Export Bar on Mobile */
-    #partnerSearchInput, #vehSearchInput, #poSearchInput, #sbSearchInput {
+    #partnerSearchInput, #vehSearchInput, #poSearchInput, #sbSearchInput, #invSearchInput {
         max-width: 100% !important;
         width: 100% !important;
     }
@@ -416,8 +414,6 @@ let defaultData = {
     poRecords: [],
     vehicles: [],
     signature: '',
-    privateVault: [],
-    privateSalary: [],
     config: { cfStartMonth: '2026-08', enablePastCF: false }
 };
 
@@ -425,7 +421,7 @@ let appData = JSON.parse(JSON.stringify(defaultData));
 let isFirstLoad = true, currentEditId = null, currentEntryType = 'income';
 let currentInvoiceEditId = null, currentTechEditId = null, currentTechEditPhoto = '';
 let currentSubmittedBillEditId = null, currentPOEditId = null;
-let currentVehicleEditId = null, currentSalaryEditId = null, currentActiveTab = 'tab-overview';
+let currentVehicleEditId = null, currentActiveTab = 'tab-overview';
 
 function getArray(data) { if (!data) return []; if (Array.isArray(data)) return data; return Object.values(data); }
 function getUniqueOptions(arr1, key1, arr2 = [], key2 = '') {
@@ -556,8 +552,6 @@ function startDatabaseListener() {
             appData.computerJobs = getArray(appData.computerJobs);
             appData.waterJobs = getArray(appData.waterJobs);
             appData.vehicles = getArray(appData.vehicles);
-            appData.privateVault = getArray(appData.privateVault);
-            appData.privateSalary = getArray(appData.privateSalary);
             for (let p in appData.records) appData.records[p] = getArray(appData.records[p]);
             if (!appData.passwords) appData.passwords = { 'Tanmoy': '2196', 'Tapabrata': '2026', 'Technician': 'tech329' };
             if (!appData.passwords['Technician']) appData.passwords['Technician'] = 'tech329';
@@ -657,7 +651,6 @@ function handleGlobalMonthChange() {
     else if (currentActiveTab === 'tab-tapabrata') partnerProfile('Tapabrata');
     else if (currentActiveTab === 'tab-carry') showCarryForward();
     else if (currentActiveTab === 'tab-vehicles') showVehicles();
-    else if (currentActiveTab === 'tab-private') showPrivateVault();
 }
 
 window.changeMonthBy = function(step) {
@@ -757,8 +750,6 @@ function generateMiniMonthDropdown(currentValue) {
 }
 
 function admin() {
-    let currentUser = localStorage.getItem('st_user');
-    let privateBtn = (currentUser === 'Tanmoy') ? `<button id="tab-private" onclick="showPrivateVault()">🔒 Private</button>` : '';
     return `
     <div class="card admin-hero">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
@@ -780,7 +771,6 @@ function admin() {
             <button id="tab-carry" onclick="showCarryForward()">🔄 CF Bal</button>
             <button id="tab-tech" onclick="showTechDashboard()">👷 Tech</button>
             <button id="tab-settings" onclick="showSettings()">⚙️ Set</button>
-            ${privateBtn}
         </div>
     </div>
     <div id="adminArea"><div id="profileArea"></div></div>`;
@@ -788,7 +778,7 @@ function admin() {
 
 function setActiveAdminTab(activeId) {
     currentActiveTab = activeId;
-    let tabs = ['tab-overview', 'tab-invoice', 'tab-sub-bills', 'tab-po', 'tab-vehicles', 'tab-tanmoy', 'tab-tapabrata', 'tab-carry', 'tab-tech', 'tab-settings', 'tab-stock', 'tab-private'];
+    let tabs = ['tab-overview', 'tab-invoice', 'tab-sub-bills', 'tab-po', 'tab-vehicles', 'tab-tanmoy', 'tab-tapabrata', 'tab-carry', 'tab-tech', 'tab-settings', 'tab-stock'];
     tabs.forEach(id => {
         let btn = document.getElementById(id);
         if (btn) {
@@ -808,7 +798,7 @@ function setActiveAdminTab(activeId) {
     if (typeof updatePOTabBadge === 'function') updatePOTabBadge();
 }
 
-// ====== OVERVIEW (ALL-TIME PROFIT + PO & CIVIL PO ALERTS) ======
+// ====== OVERVIEW (ALL-TIME PROFIT + PO & PETTY CASH PIPELINE) ======
 function showAdminOverview() {
     setActiveAdminTab('tab-overview');
     const hmEl = document.getElementById('headerMonthSelect');
@@ -1086,263 +1076,7 @@ function showAdminOverview() {
 
     if (typeof injectPOAlertBanner === 'function') injectPOAlertBanner();
 }// =========================================================================
-// ====== PART 2: PRIVATE VAULT & EMPLOYEE SALARY ======
-// =========================================================================
-
-function showPrivateVault() {
-    if (localStorage.getItem('st_user') !== 'Tanmoy') return;
-    setActiveAdminTab('tab-private');
-    let todayDate = new Date().toISOString().split('T')[0];
-    let empNames = getUniqueOptions(appData.privateSalary, 'name');
-
-    document.getElementById('profileArea').innerHTML = `
-    <div style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap;">
-        <button id="sub-pv-notes" onclick="switchPvTab('notes')" style="background:#34495e; color:white; flex:1; font-size:16px;">📝 Secret Notes</button>
-        <button id="sub-pv-salary" onclick="switchPvTab('salary')" style="background:#bdc3c7; color:#333; flex:1; font-size:16px;">💸 Employee Salary</button>
-    </div>
-
-    <div id="pvNotesArea">
-        <div class="card" style="border:2px solid #34495e;">
-            <h2 style="color:#34495e; margin-top:0;">🔒 Personal Vault</h2>
-            <div style="background:#f4f6f6; padding:15px; border-radius:10px;">
-                <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-                    <div style="flex:1;"><label>Date</label><input type="date" id="pvDate" value="${todayDate}"></div>
-                    <div style="flex:1;"><label>Amount (Optional)</label><input type="number" id="pvAmount" placeholder="0.00"></div>
-                </div>
-                <label>Secret Note / Details</label>
-                <input id="pvDetails" placeholder="Type notes here...">
-                <button id="pvSaveBtn" onclick="savePrivateVault()" style="width:100%; background:#34495e; font-size:16px;">💾 Save Secret Entry</button>
-            </div>
-        </div>
-        <div class="card">
-            <h2 style="margin-top:0;">📂 Secret History</h2>
-            <div style="overflow-x:auto;">
-                <table style="min-width:600px;">
-                    <thead><tr><th>Date</th><th>Details / Note</th><th>Amount</th><th style="text-align:center;">Action</th></tr></thead>
-                    <tbody id="pvTableBody"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <div id="pvSalaryArea" style="display:none;">
-        <datalist id="dlEmpNames">${empNames}</datalist>
-        <div class="card" style="border:2px solid #27ae60;">
-            <h2 style="color:#27ae60; margin-top:0;">💸 Employee Salary & Advance</h2>
-            <div id="advanceSummaryDiv" style="display:none; background:#fcf3cf; padding:12px; border-radius:8px; margin-bottom:15px;">
-                <strong style="color:#d35400;">⚠️ Advance Pending:</strong>
-                <div id="advanceSummaryList" style="margin-top:5px; font-size:14px; color:#333; display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:10px;"></div>
-            </div>
-            <div style="background:#eaeded; padding:15px; border-radius:10px;">
-                <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-                    <div style="flex:1;"><label>Date</label><input type="date" id="psDate" value="${todayDate}"></div>
-                    <div style="flex:1;"><label>Employee Name</label><input id="psName" list="dlEmpNames" placeholder="e.g. Rahul"></div>
-                    <div style="flex:1;"><label>Salary Month</label><input type="month" id="psMonth" required></div>
-                </div>
-                <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-                    <div style="flex:1;"><label>Entry Type</label><select id="psType"><option value="Salary">💰 Regular Salary</option><option value="Advance Given">↗️ Advance Given</option><option value="Advance Deducted">↙️ Advance Deducted</option><option value="T.A">🏍️ T.A</option></select></div>
-                    <div style="flex:1;"><label>Amount (₹)</label><input type="number" id="psAmount" placeholder="0"></div>
-                    <div style="flex:2;"><label>Remarks (Optional)</label><input id="psRemarks" placeholder="Notes..."></div>
-                </div>
-                <button id="psSaveBtn" onclick="savePrivateSalary()" style="width:100%; background:#27ae60; font-size:16px;">💾 Save Salary Record</button>
-            </div>
-        </div>
-        <div class="card">
-            <h2 style="margin-top:0;">📂 Salary History</h2>
-            <div style="overflow-x:auto;">
-                <table style="min-width:800px;">
-                    <thead><tr><th>Date</th><th>Employee Name</th><th>Month</th><th>Type</th><th>Amount</th><th>Remarks</th><th style="text-align:center;">Action</th></tr></thead>
-                    <tbody id="psTableBody"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>`;
-
-    renderPrivateVault();
-    renderPrivateSalary();
-}
-
-function switchPvTab(tab) {
-    document.getElementById('pvNotesArea').style.display = (tab === 'notes') ? 'block' : 'none';
-    document.getElementById('pvSalaryArea').style.display = (tab === 'salary') ? 'block' : 'none';
-    let btnN = document.getElementById('sub-pv-notes'), btnS = document.getElementById('sub-pv-salary');
-    if (tab === 'notes') {
-        btnN.style.background = '#34495e'; btnN.style.color = 'white';
-        btnS.style.background = '#bdc3c7'; btnS.style.color = '#333';
-    } else {
-        btnS.style.background = '#27ae60'; btnS.style.color = 'white';
-        btnN.style.background = '#bdc3c7'; btnN.style.color = '#333';
-    }
-}
-
-function renderPrivateVault() {
-    let tbody = document.getElementById('pvTableBody'); if (!tbody) return;
-    let list = [...getArray(appData.privateVault)].sort((a, b) => new Date(b.date) - new Date(a.date));
-    let rows = list.map(v => `<tr><td>${formatDate(v.date)}</td><td><strong>${v.details}</strong></td><td style="font-weight:bold; color:#34495e;">${v.amount ? '₹' + v.amount : '-'}</td><td style="display:flex; gap:5px; justify-content:center;"><button type="button" onclick="window.pushToPartnerForm('${v.id}')" style="background:#2980b9; color:white; border:none; border-radius:6px; padding:4px 8px; cursor:pointer;">📤 Push</button><button type="button" onclick="window.deletePrivateVault('${v.id}')" style="background:#e21d4f; color:white; border:none; border-radius:6px; padding:4px 8px; cursor:pointer;">🗑️ Delete</button></td></tr>`).join('');
-    tbody.innerHTML = rows || `<tr><td colspan="4" style="text-align:center; color:#888;">No secret entries yet!</td></tr>`;
-}
-
-async function savePrivateVault() {
-    let date = document.getElementById('pvDate').value, amount = document.getElementById('pvAmount').value, details = document.getElementById('pvDetails').value.trim();
-    if (!details) return alert("Secret Note / Details is required!");
-    let btn = document.getElementById('pvSaveBtn'); let origText = btn.innerText; btn.innerText = "⏳ Saving..."; btn.disabled = true;
-    try {
-        appData.privateVault = getArray(appData.privateVault);
-        appData.privateVault.unshift({ id: Date.now(), date, amount, details });
-        await saveDataToLocal();
-        showPrivateVault();
-    } catch (e) { alert("Error saving."); btn.innerText = origText; btn.disabled = false; }
-}
-
-function renderPrivateSalary() {
-    let tbody = document.getElementById('psTableBody'); if (!tbody) return;
-    let list = [...getArray(appData.privateSalary)].sort((a, b) => new Date(b.date) - new Date(a.date));
-    let advances = {};
-    list.forEach(r => {
-        let emp = (r.name || '').trim().toUpperCase();
-        if (!emp) return;
-        if (!advances[emp]) advances[emp] = { name: r.name, amt: 0 };
-        let amt = parseFloat(r.amount) || 0;
-        if (r.entryType === 'Advance Given') advances[emp].amt += amt;
-        if (r.entryType === 'Advance Deducted') advances[emp].amt -= amt;
-    });
-
-    let advDiv = document.getElementById('advanceSummaryDiv'), advList = document.getElementById('advanceSummaryList');
-    let hasAdvance = false, advHtml = '';
-    for (let key in advances) {
-        if (advances[key].amt > 0) {
-            hasAdvance = true;
-            advHtml += `<div style="background:white; padding:6px 10px; border-radius:6px; border:1px solid #f5cba7;"><b>${advances[key].name}</b>: ₹${advances[key].amt.toLocaleString('en-IN')}</div>`;
-        }
-    }
-    if (advDiv && advList) { advDiv.style.display = hasAdvance ? 'block' : 'none'; advList.innerHTML = advHtml; }
-
-    let rows = list.map(v => {
-        let pushBtn = v.isPushed
-            ? `<button onclick="pushSalaryToPartnerForm('${v.id}')" style="background:#07865b; color:white; border:none; border-radius:6px; padding:4px 8px; cursor:pointer;">✅ Pushed</button>`
-            : `<button onclick="pushSalaryToPartnerForm('${v.id}')" style="background:#2980b9; color:white; border:none; border-radius:6px; padding:4px 8px; cursor:pointer;">📤 Push</button>`;
-        let typeColor = v.entryType === 'Advance Given' ? '#e67e22' : (v.entryType === 'Advance Deducted' ? '#c0392b' : (v.entryType === 'T.A' ? '#2980b9' : '#27ae60'));
-        let monthDisp = v.month || '-';
-        if (v.month && v.month.includes('-')) {
-            let p = v.month.split('-');
-            let mNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-            if (p.length === 2 && !isNaN(p[1])) monthDisp = mNames[parseInt(p[1]) - 1] + ' ' + p[0];
-        }
-        return `<tr><td>${formatDate(v.date)}</td><td><strong>${v.name}</strong></td><td>${monthDisp}</td><td><span style="font-size:11px; background:${typeColor}22; color:${typeColor}; padding:4px 6px; border-radius:4px;">${v.entryType || 'Salary'}</span></td><td style="font-weight:bold; color:${typeColor};">₹${v.amount}</td><td>${v.remarks || '-'}</td><td style="display:flex; gap:2px; justify-content:center;">${pushBtn}<button onclick="editPrivateSalary('${v.id}')" style="background:#f39c12; color:white; border:none; border-radius:4px; padding:4px 6px; cursor:pointer; margin-left:4px;">✏️</button><button onclick="deletePrivateSalary('${v.id}')" style="background:#e21d4f; color:white; border:none; border-radius:4px; padding:4px 6px; cursor:pointer; margin-left:4px;">🗑️</button></td></tr>`;
-    }).join('');
-    tbody.innerHTML = rows || `<tr><td colspan="7" style="text-align:center; color:#888;">No salary records!</td></tr>`;
-}
-
-async function savePrivateSalary() {
-    let date = document.getElementById('psDate').value, name = document.getElementById('psName').value.trim(), month = document.getElementById('psMonth').value, entryType = document.getElementById('psType').value, amount = document.getElementById('psAmount').value, remarks = document.getElementById('psRemarks').value.trim();
-    if (!name || !amount || !month) return alert("Required fields missing!");
-    let btn = document.getElementById('psSaveBtn'); let origText = btn.innerText; btn.innerText = "⏳ Saving..."; btn.disabled = true;
-    try {
-        appData.privateSalary = getArray(appData.privateSalary);
-        let isPushedExisting = false;
-        if (currentSalaryEditId) {
-            let existing = appData.privateSalary.find(x => String(x.id) === String(currentSalaryEditId));
-            if (existing) isPushedExisting = existing.isPushed || false;
-        }
-        let entry = { id: currentSalaryEditId || Date.now().toString(), date, name, month, entryType, amount, remarks, isPushed: isPushedExisting };
-        if (currentSalaryEditId) {
-            let idx = appData.privateSalary.findIndex(x => String(x.id) === String(currentSalaryEditId));
-            appData.privateSalary[idx] = entry;
-            currentSalaryEditId = null;
-        } else {
-            appData.privateSalary.unshift(entry);
-        }
-        await saveDataToLocal();
-        showPrivateVault();
-        switchPvTab('salary');
-    } catch (e) { alert("Error saving."); btn.innerText = origText; btn.disabled = false; }
-}
-
-function deletePrivateSalary(id) {
-    if (confirm("Are you sure you want to delete this salary record?")) {
-        appData.privateSalary = getArray(appData.privateSalary).filter(x => String(x.id) !== String(id));
-        saveDataToLocal().then(() => renderPrivateSalary());
-    }
-}
-
-function editPrivateSalary(id) {
-    let v = getArray(appData.privateSalary).find(x => String(x.id) === String(id));
-    if (v) {
-        currentSalaryEditId = id;
-        document.getElementById('psDate').value = v.date || '';
-        document.getElementById('psName').value = v.name || '';
-        document.getElementById('psMonth').value = v.month || '';
-        document.getElementById('psType').value = v.entryType || 'Salary';
-        document.getElementById('psAmount').value = v.amount || '';
-        document.getElementById('psRemarks').value = v.remarks || '';
-        let btn = document.getElementById('psSaveBtn');
-        btn.innerText = "✏️ Update Salary Record";
-        btn.style.background = "#f39c12";
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-}
-
-function pushSalaryToPartnerForm(id) {
-    let v = getArray(appData.privateSalary).find(x => String(x.id) === String(id));
-    if (v) {
-        v.isPushed = true;
-        saveDataToLocal().then(() => renderPrivateSalary());
-        partnerProfile('Tanmoy');
-        setTimeout(() => {
-            let dateEl = document.getElementById('entryDate'), amountEl = document.getElementById('entryAmount'), detailsEl = document.getElementById('entryDetails');
-            if (dateEl && v.date) dateEl.value = v.date;
-            if (amountEl && v.amount) amountEl.value = v.amount;
-            if (detailsEl) {
-                let monthDisp = v.month || '';
-                if (monthDisp.includes('-')) {
-                    let p = monthDisp.split('-');
-                    let mNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-                    if (p.length === 2 && !isNaN(p[1])) monthDisp = mNames[parseInt(p[1]) - 1] + ' ' + p[0];
-                }
-                let typeText = v.entryType === 'Salary' ? `Salary: ${monthDisp}` : (v.entryType === 'T.A' ? `T.A: ${monthDisp}` : v.entryType);
-                let remarkText = v.remarks ? ` - ${v.remarks}` : '';
-                detailsEl.value = `${v.name} (${typeText})${remarkText}`;
-            }
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            setTimeout(() => { alert("✅ Salary Entry loaded! Select 'Expenditure' and Save."); }, 400);
-        }, 150);
-    }
-}
-
-window.deletePrivateVault = function(id) {
-    if (confirm("Are you sure you want to delete this secret entry?")) {
-        appData.privateVault = getArray(appData.privateVault).filter(x => String(x.id) !== String(id));
-        saveDataToLocal().then(() => renderPrivateVault());
-    }
-};
-
-window.pushToPartnerForm = function(id) {
-    try {
-        let vaultList = getArray(appData.privateVault);
-        let v = vaultList.find(x => String(x.id) === String(id));
-        if (!v) return alert("Entry not found!");
-        partnerProfile('Tanmoy');
-        setTimeout(() => {
-            let dateEl = document.getElementById('entryDate'), amountEl = document.getElementById('entryAmount'), detailsEl = document.getElementById('entryDetails');
-            if (dateEl && v.date) dateEl.value = v.date;
-            if (amountEl && v.amount) amountEl.value = v.amount;
-            if (detailsEl) {
-                let cleanText = v.details || '';
-                if (cleanText.includes('🤖')) cleanText = cleanText.replace(/🤖\s*/g, '').trim();
-                detailsEl.value = cleanText;
-            }
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            setTimeout(() => {
-                let c = confirm("✅ Entry loaded! Delete from Private Vault now?");
-                if (c) {
-                    appData.privateVault = getArray(appData.privateVault).filter(x => String(x.id) !== String(id));
-                    saveDataToLocal();
-                }
-            }, 400);
-        }, 150);
-    } catch (err) { alert("Error: " + err.message); }
-};// =========================================================================
-// ====== PART 3: PARTNER PROFILE & MONTHLY LEDGER ======
+// ====== PART 3: PARTNER PROFILE, MONTHLY LEDGER & TECHNICIAN VIEW ======
 // =========================================================================
 
 let currentPartnerDateFilter = '';
@@ -1841,8 +1575,15 @@ async function savePartnerEntry(name) {
 
     let btn = document.getElementById('entrySaveBtn'); let origText = btn.innerText; btn.innerText = "⏳ Saving..."; btn.disabled = true;
     try {
-        appData.records[name] = getArray(appData.records[name]); let existingRecord = currentEditId ? appData.records[name].find(r => String(r.id) === String(currentEditId)) : null; let photoUrl = existingRecord && existingRecord.photo ? existingRecord.photo : ''; let oldLink = existingRecord && existingRecord.link ? existingRecord.link : ''; let oldReconState = existingRecord && existingRecord.reconState !== undefined ? existingRecord.reconState : 0;
-        if (file) { let b64 = await compressImage(file); photoUrl = await uploadToImgBB(b64); } if (!appData.balances[name]) appData.balances[name] = 0;
+        appData.records[name] = getArray(appData.records[name]);
+        let existingRecord = currentEditId ? appData.records[name].find(r => String(r.id) === String(currentEditId)) : null;
+        let baseRec = existingRecord || oldR;
+        let photoUrl = baseRec && baseRec.photo ? baseRec.photo : '';
+        let oldLink = baseRec && baseRec.link ? baseRec.link : '';
+        let oldReconState = baseRec && baseRec.reconState !== undefined ? baseRec.reconState : 0;
+
+        if (file) { let b64 = await compressImage(file); photoUrl = await uploadToImgBB(b64); }
+        if (!appData.balances[name]) appData.balances[name] = 0;
         let newEntryId = currentEditId || Date.now(), linkedEntryId = newEntryId + "_linked";
 
         if (currentEditId !== null) {
@@ -1853,9 +1594,9 @@ async function savePartnerEntry(name) {
             if (isVehicle) {
                 let finalDetails = det || '-';
                 appData.vehicles = getArray(appData.vehicles); appData.vehicles.unshift({ id: newEntryId, date, car: qvCar, category: qvCat, details: finalDetails, amount: amt, photo: photoUrl || '', paidBy: name });
-                appData.records[name].unshift({ id: newEntryId, date, details: partnerDesc, amount: amt, type: 'expense', photo: photoUrl || '', link: oldLink || '', isAuto: true, reconState: 0 }); appData.balances[name] -= amt;
+                appData.records[name].unshift({ id: newEntryId, date, details: partnerDesc, amount: amt, type: 'expense', photo: photoUrl || '', link: oldLink || '', isAuto: true, reconState: oldReconState }); appData.balances[name] -= amt;
             } else {
-                appData.records[name].unshift({ id: newEntryId, date, details: partnerDesc, amount: amt, type: currentEntryType, photo: photoUrl || '', link: oldLink || '', isAuto: false, linkedId: isTransfer ? linkedEntryId : null, billNo, reconState: 0 }); appData.balances[name] += (currentEntryType === 'income' ? amt : -amt);
+                appData.records[name].unshift({ id: newEntryId, date, details: partnerDesc, amount: amt, type: currentEntryType, photo: photoUrl || '', link: oldLink || '', isAuto: false, linkedId: isTransfer ? linkedEntryId : null, billNo, reconState: oldReconState }); appData.balances[name] += (currentEntryType === 'income' ? amt : -amt);
                 if (isTransfer) {
                     let otherType = currentEntryType === 'expense' ? 'income' : 'expense', otherDesc = `${det} (From ${name})`; appData.records[otherName] = getArray(appData.records[otherName]); appData.records[otherName].unshift({ id: linkedEntryId, date, details: otherDesc, amount: amt, type: otherType, photo: photoUrl || '', link: '', isAuto: true, linkedId: newEntryId, reconState: 0 }); if (!appData.balances[otherName]) appData.balances[otherName] = 0; appData.balances[otherName] += (otherType === 'income' ? amt : -amt);
                 }
@@ -1937,11 +1678,24 @@ function downloadPartnerCSV(name) {
     if (query) recs = recs.filter(r => (r.details && r.details.toLowerCase().includes(query)) || (r.amount && r.amount.toString().includes(query)) || (r.date && r.date.includes(query)) || (r.billNo && r.billNo.toLowerCase().includes(query)));
     let csv = "Date,Details,Type,Amount (Rs),Bill No\n"; recs.forEach(r => { let det = r.details ? r.details.replace(/,/g, ' ') : ''; let bNo = r.billNo ? r.billNo : ''; let type = r.type === 'income' ? 'Income' : (r.type === 'expense' ? 'Expense' : 'Profit Booked'); csv += `${formatDate(r.date)},${det},${type},${r.amount},${bNo}\n`; });
     let a = document.createElement('a'); let fileSuffix = (globalMonth && globalMonth !== 'All Time') ? globalMonth.replace(' ', '_') : 'All_Time'; a.href = encodeURI("data:text/csv;charset=utf-8," + csv); a.download = `${name}_Records_${fileSuffix}.csv`; a.click();
+}
+
+// ====== TECHNICIAN LOGIN VIEW ======
+function user() {
+    return `<div class="card"><h2>👤 Select Technician Profile</h2><div class="grid"><div class="role" onclick="tech('computer')" style="cursor:pointer; background:#f8fafc; padding:20px; border-radius:14px; border:1px solid #e2e8f0; text-align:center; font-size:16px;">💻 <b>Computer</b></div><div class="role" onclick="tech('water')" style="cursor:pointer; background:#f8fafc; padding:20px; border-radius:14px; border:1px solid #e2e8f0; text-align:center; font-size:16px;">💧 <b>Water Purifier</b></div></div></div><div id="techArea"></div>`;
 }// =========================================================================
-// ====== PART 4: PO TRACKER (WITH CIVIL PO OPTION & 6-MONTH ALERT), BILLS, INVOICE, CF, SETTINGS, TECH & VEHICLES ======
+// ====== PART 4: PO TRACKER, BILLS, PETTY CASH (TRACKING ONLY), CF, SETTINGS, TECH & VEHICLES ======
 // =========================================================================
 
-// ====== PO DEADLINE & CIVIL PO 6-MONTH ALERT HELPERS ======
+// ====== PO DEADLINE & CUSTOM MONTH ALERT HELPERS ======
+function getEffectiveAlertMonths(po) {
+    if (!po) return 0;
+    if (po.alertMonths !== undefined && po.alertMonths !== null && po.alertMonths !== '') {
+        return parseInt(po.alertMonths, 10) || 0;
+    }
+    return po.poType === 'Civil PO' ? 6 : 0;
+}
+
 function getPODeadlineStatus(deadlineStr, isCompleted) {
     if (isCompleted || !deadlineStr) return null;
     let parts = deadlineStr.split('-');
@@ -1967,8 +1721,11 @@ function getPODeadlineStatus(deadlineStr, isCompleted) {
     return { level: 'safe', days: diffDays, text: `🟢 ${diffDays}d Left`, bg: '#ecfdf5', color: '#047857', border: '#a7f3d0' };
 }
 
-function getCivilPO6MonthStatus(po) {
-    if (!po || po.isCompleted || po.poType !== 'Civil PO' || !po.date) return null;
+function getPOMonthAlertStatus(po) {
+    if (!po || po.isCompleted || !po.date) return null;
+    let alertMonths = getEffectiveAlertMonths(po);
+    if (alertMonths <= 0) return null;
+
     let parts = po.date.split('-');
     if (parts.length !== 3) return null;
 
@@ -1979,8 +1736,8 @@ function getCivilPO6MonthStatus(po) {
     let issueDate = new Date(yr, mo, dy);
     issueDate.setHours(0, 0, 0, 0);
 
-    let sixMonthDate = new Date(yr, mo + 6, dy);
-    sixMonthDate.setHours(0, 0, 0, 0);
+    let targetDate = new Date(yr, mo + alertMonths, dy);
+    targetDate.setHours(0, 0, 0, 0);
 
     let today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -1988,12 +1745,13 @@ function getCivilPO6MonthStatus(po) {
     let monthsElapsed = (today.getFullYear() - issueDate.getFullYear()) * 12 + (today.getMonth() - issueDate.getMonth());
     if (today.getDate() < issueDate.getDate()) monthsElapsed--;
 
-    if (today >= sixMonthDate) {
-        let extraDays = Math.max(0, Math.round((today - sixMonthDate) / (1000 * 60 * 60 * 24)));
+    if (today >= targetDate) {
+        let extraDays = Math.max(0, Math.round((today - targetDate) / (1000 * 60 * 60 * 24)));
         return {
-            reached6M: true,
-            monthsElapsed: Math.max(6, monthsElapsed),
-            text: extraDays > 0 ? `🔔 6M+ (${extraDays}d)` : `🔔 6 Months!`,
+            reached: true,
+            alertMonths,
+            monthsElapsed: Math.max(alertMonths, monthsElapsed),
+            text: extraDays > 0 ? `🔔 ${alertMonths}M+ (${extraDays}d)` : `🔔 ${alertMonths}M Alert!`,
             bg: '#fef2f2',
             color: '#b91c1c',
             border: '#fca5a5'
@@ -2001,9 +1759,10 @@ function getCivilPO6MonthStatus(po) {
     }
 
     return {
-        reached6M: false,
+        reached: false,
+        alertMonths,
         monthsElapsed: Math.max(0, monthsElapsed),
-        text: `🕒 ${Math.max(0, monthsElapsed)}m old`,
+        text: `🕒 ${Math.max(0, monthsElapsed)}m / ${alertMonths}m`,
         bg: '#f0f9ff',
         color: '#0369a1',
         border: '#bae6fd'
@@ -2015,7 +1774,7 @@ function getAlertPOItems() {
     getArray(appData.poRecords).forEach(p => {
         if (p.isCompleted) return;
         let dlStatus = getPODeadlineStatus(p.deadline, p.isCompleted);
-        let civil6M = getCivilPO6MonthStatus(p);
+        let monthAlert = getPOMonthAlertStatus(p);
 
         if (dlStatus && dlStatus.days <= 7) {
             alerts.push({
@@ -2030,14 +1789,14 @@ function getAlertPOItems() {
             });
         }
 
-        if (civil6M && civil6M.reached6M) {
+        if (monthAlert && monthAlert.reached) {
             alerts.push({
                 po: p,
-                kind: 'CIVIL PO (6M+)',
-                badgeText: civil6M.text,
-                bg: civil6M.bg,
-                color: civil6M.color,
-                border: civil6M.border,
+                kind: `${p.poType === 'Civil PO' ? 'CIVIL PO' : 'PO'} (${monthAlert.alertMonths}M+)`,
+                badgeText: monthAlert.text,
+                bg: monthAlert.bg,
+                color: monthAlert.color,
+                border: monthAlert.border,
                 dateText: `PO Date: ${formatDate(p.date)}`,
                 priority: 8
             });
@@ -2103,7 +1862,15 @@ function injectPOAlertBanner() {
     profileArea.prepend(banner);
 }
 
-// ====== PO TRACKER (SINGLE FORM WITH GENERAL PO / CIVIL PO OPTION) ======
+// ====== PO TRACKER ======
+function handlePOTypeChange() {
+    let typeEl = document.getElementById('poType');
+    let alertEl = document.getElementById('poAlertMonths');
+    if (typeEl && alertEl && typeEl.value === 'Civil PO' && alertEl.value === '0') {
+        alertEl.value = '6';
+    }
+}
+
 function showPOTracker() {
     setActiveAdminTab('tab-po'); currentPOEditId = null; let todayDate = new Date().toISOString().split('T')[0];
     let authOptions = getUniqueOptions(appData.poRecords, 'authority'); let poOptions = getUniqueOptions(appData.poRecords, 'poNo');
@@ -2113,15 +1880,25 @@ function showPOTracker() {
         <h2>📄 Purchase Order (PO) Tracker</h2>
         <div style="background:#fafcfb; padding:15px; border-radius:10px; border:1px solid #ccd8d4; margin-bottom:20px;">
             <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-                <div style="flex:1; min-width:150px;"><label>Issue Date</label><input type="date" id="poDate" value="${todayDate}"></div>
-                <div style="flex:1; min-width:150px;">
+                <div style="flex:1; min-width:140px;"><label>Issue Date</label><input type="date" id="poDate" value="${todayDate}"></div>
+                <div style="flex:1; min-width:140px;">
                     <label>PO Type</label>
-                    <select id="poType" style="margin:0; background:#fff;">
+                    <select id="poType" onchange="handlePOTypeChange()" style="margin:0; background:#fff;">
                         <option value="General PO">📄 General PO</option>
-                        <option value="Civil PO">🏗️ Civil PO (6M Alert)</option>
+                        <option value="Civil PO">🏗️ Civil PO</option>
                     </select>
                 </div>
-                <div style="flex:2; min-width:200px;"><label>Issuing Authority</label><input id="poAuthority" list="dlAuth" placeholder="e.g. WBSETCL"></div>
+                <div style="flex:1; min-width:140px;">
+                    <label>Month Alert</label>
+                    <select id="poAlertMonths" style="margin:0; background:#fff;">
+                        <option value="0">🔕 No Alert</option>
+                        <option value="1">🔔 1 Month</option>
+                        <option value="3">🔔 3 Months</option>
+                        <option value="6">🔔 6 Months</option>
+                        <option value="12">🔔 12 Months</option>
+                    </select>
+                </div>
+                <div style="flex:2; min-width:180px;"><label>Issuing Authority</label><input id="poAuthority" list="dlAuth" placeholder="e.g. WBSETCL"></div>
             </div>
             <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
                 <div style="flex:1; min-width:150px;"><label>PO Number</label><input id="poNumber" list="dlPoNum" placeholder="PO No."></div>
@@ -2179,12 +1956,12 @@ function renderPOTableRows() {
 
     let historyRows = poList.map(p => {
         let status = getPODeadlineStatus(p.deadline, p.isCompleted);
-        let civil6M = getCivilPO6MonthStatus(p);
+        let monthAlert = getPOMonthAlertStatus(p);
         let isCivil = (p.poType === 'Civil PO');
 
         let rowBg = p.isCompleted
             ? 'background:#eefdf6; color:#555;'
-            : ((status && status.level === 'overdue') || (civil6M && civil6M.reached6M) ? 'background:#fff5f5;' : 'background:#fff;');
+            : ((status && status.level === 'overdue') || (monthAlert && monthAlert.reached) ? 'background:#fff5f5;' : 'background:#fff;');
 
         let statusBtn = p.isCompleted
             ? `<button onclick="togglePOStatus('${p.id}')" style="background:#07865b; padding:4px 8px; border-radius:4px; font-size:11px; color:white; border:none; cursor:pointer; width:80px;">✅ Completed</button>`
@@ -2198,8 +1975,8 @@ function renderPOTableRows() {
             ? `<span style="font-size:10px; background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; padding:1px 6px; border-radius:4px; font-weight:700; margin-left:4px;">🏗️ Civil PO</span>`
             : '';
 
-        let ageBadge = civil6M
-            ? `<br><span style="display:inline-block; margin-top:3px; background:${civil6M.bg}; color:${civil6M.color}; border:1px solid ${civil6M.border}; padding:1px 6px; border-radius:99px; font-size:10px; font-weight:700; white-space:nowrap;">${civil6M.text}</span>`
+        let ageBadge = monthAlert
+            ? `<br><span style="display:inline-block; margin-top:3px; background:${monthAlert.bg}; color:${monthAlert.color}; border:1px solid ${monthAlert.border}; padding:1px 6px; border-radius:99px; font-size:10px; font-weight:700; white-space:nowrap;">${monthAlert.text}</span>`
             : '';
 
         let deadlineBadge = status
@@ -2225,6 +2002,8 @@ async function savePO() {
     let date = document.getElementById('poDate').value;
     let poTypeEl = document.getElementById('poType');
     let poType = poTypeEl ? poTypeEl.value : 'General PO';
+    let alertEl = document.getElementById('poAlertMonths');
+    let alertMonths = alertEl ? parseInt(alertEl.value, 10) || 0 : 0;
     let authority = document.getElementById('poAuthority').value.trim();
     let poNo = document.getElementById('poNumber').value.trim();
     let workDesc = document.getElementById('poWorkDesc').value.trim();
@@ -2250,6 +2029,7 @@ async function savePO() {
             id: currentPOEditId || Date.now(),
             date,
             poType,
+            alertMonths,
             authority,
             poNo,
             workDesc,
@@ -2274,6 +2054,8 @@ function editPO(id) {
         document.getElementById('poDate').value = p.date || '';
         let poTypeEl = document.getElementById('poType');
         if (poTypeEl) poTypeEl.value = p.poType || 'General PO';
+        let alertEl = document.getElementById('poAlertMonths');
+        if (alertEl) alertEl.value = String(getEffectiveAlertMonths(p));
         document.getElementById('poAuthority').value = p.authority || '';
         document.getElementById('poNumber').value = p.poNo || '';
         document.getElementById('poWorkDesc').value = p.workDesc || '';
@@ -2320,70 +2102,276 @@ function toggleSubBillStatus(id) { let b = getArray(appData.submittedBills).find
 function deleteSubBill(id) { if (confirm("Are you sure you want to delete this Bill?")) { appData.submittedBills = getArray(appData.submittedBills).filter(x => String(x.id) !== String(id)); saveDataToLocal().then(() => renderSubBillRows()); } }
 function editSubBill(id) { let b = getArray(appData.submittedBills).find(x => String(x.id) === String(id)); if (b) { currentSubmittedBillEditId = id; document.getElementById('sbDate').value = b.date || ''; document.getElementById('sbLocation').value = b.location || ''; document.getElementById('sbBillNo').value = b.billNo || ''; document.getElementById('sbPoNo').value = b.poNo || ''; document.getElementById('sbPeriod').value = b.period || ''; document.getElementById('sbAmount').value = b.amount || ''; let btn = document.getElementById('sbSaveBtn'); if (btn) { btn.innerText = "✏️ Update Record"; btn.style.background = "#f39c12"; } window.scrollTo({ top: 0 }); } }
 
-// ====== INVOICE GENERATOR ======
+// ====== PETTY CASH TRACKER (DATA ENTRY & PAYMENT TRACKING ONLY - NO PRINT) ======
 function showInvoice() {
-    setActiveAdminTab('tab-invoice'); currentInvoiceEditId = null; let invoiceCount = appData.invoiceCount || 314; let defaultInv = "TD/24-25/" + invoiceCount;
-    let buyerOptions = getUniqueOptions(appData.invoices, 'bName'); let addOptions = getUniqueOptions(appData.invoices, 'bAdd'); let allDesc = []; getArray(appData.invoices).forEach(inv => { getArray(inv.items).forEach(it => { if (it.desc) allDesc.push(it.desc); }); }); let descOptions = [...new Set(allDesc)].sort().map(v => "<option value=\"" + v + "\">").join('');
+    setActiveAdminTab('tab-invoice');
+    currentInvoiceEditId = null;
+    let invoiceCount = appData.invoiceCount || 314;
+    let defaultInv = "TD/24-25/" + invoiceCount;
+    let now = new Date();
+    let todayStr = String(now.getDate()).padStart(2, '0') + '/' + String(now.getMonth() + 1).padStart(2, '0') + '/' + now.getFullYear();
+
+    let buyerOptions = getUniqueOptions(appData.invoices, 'bName');
+    let addOptions = getUniqueOptions(appData.invoices, 'bAdd');
+    let allDesc = [];
+    getArray(appData.invoices).forEach(inv => {
+        getArray(inv.items).forEach(it => { if (it.desc) allDesc.push(it.desc); });
+    });
+    let descOptions = [...new Set(allDesc)].sort().map(v => `<option value="${v}">`).join('');
+
+    let invList = getArray(appData.invoices);
+    let pendingList = invList.filter(i => !i.isPaid);
+    let paidList = invList.filter(i => i.isPaid);
+    let pendingSum = pendingList.reduce((acc, i) => acc + (parseFloat(i.gTotal) || 0), 0);
+    let paidSum = paidList.reduce((acc, i) => acc + (parseFloat(i.gTotal) || 0), 0);
 
     document.getElementById('profileArea').innerHTML = `
-    <datalist id="dlBuyers">${buyerOptions}</datalist><datalist id="dlAdds">${addOptions}</datalist><datalist id="dlDescs">${descOptions}</datalist>
-    <div class="card"><h2>🧾 Add Petty Cash</h2>
-        <div style="background:#fafcfb; padding:15px; border-radius:10px; border:1px solid #ccd8d4; margin-bottom:20px;">
-            <label style="font-weight:bold; display:flex; align-items:center;"><input type="checkbox" id="includeMyGST" checked style="width:auto; margin:0 8px 0 0;"> Include My GSTIN & PAN</label>
-            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;"><input id="invBuyerName" list="dlBuyers" placeholder="Name / Party" style="flex:1;"><input id="invBuyerGST" placeholder="Party GST (Optional)" style="flex:1;"></div>
-            <div style="display:flex; gap:10px; flex-wrap:wrap;"><input id="invAddress" list="dlAdds" placeholder="Address" style="flex:2;"><input id="invPin" placeholder="PIN" style="flex:1;"></div>
-            <div style="display:flex; gap:10px; flex-wrap:wrap;"><input id="invNumber" value="${defaultInv}" style="flex:1;"><input id="invDate" placeholder="Date" style="flex:1;"></div>
+    <datalist id="dlBuyers">${buyerOptions}</datalist>
+    <datalist id="dlAdds">${addOptions}</datalist>
+    <datalist id="dlDescs">${descOptions}</datalist>
+
+    <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
+            <h2 style="margin:0;">🧾 Petty Cash Entry & Tracker</h2>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <span style="background:#fff1f2; border:1px solid #fecdd3; color:#be123c; padding:5px 10px; border-radius:8px; font-size:12px; font-weight:700;">⏳ Pending: ${pendingList.length} (₹${pendingSum.toLocaleString('en-IN')})</span>
+                <span style="background:#ecfdf5; border:1px solid #a7f3d0; color:#047857; padding:5px 10px; border-radius:8px; font-size:12px; font-weight:700;">✅ Paid: ${paidList.length} (₹${paidSum.toLocaleString('en-IN')})</span>
+            </div>
         </div>
-        <div style="overflow-x:auto;"><table class="bill-table" style="min-width:600px;"><thead><tr><th style="text-align:left;">Description</th><th style="width:80px;">Qty</th><th style="width:120px;">Rate (₹)</th><th style="width:120px;">Total (₹)</th><th style="width:50px;"></th></tr></thead><tbody id="billItemsContainer"></tbody></table></div>
-        <button onclick="addBillItem()" style="background:#2980b9; margin:10px 0 20px;">＋ Add Item</button>
-        <div style="background:#eff7f3; padding:15px; border-radius:10px; text-align:right; font-size:18px;"><b>Total: <span style="color:#e21d4f; font-size:24px;">₹<span id="billGrandTotal">0</span></span></b></div>
-        <button id="invoiceSaveBtn" onclick="printBill()" style="width:100%; background:#07865b; margin-top:10px;">🖨️ Save & Print Petty Cash</button>
+
+        <div style="background:#fafcfb; padding:15px; border-radius:10px; border:1px solid #ccd8d4; margin-bottom:16px;">
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:6px;">
+                <div style="flex:1; min-width:150px;"><label>Voucher / Bill No.</label><input id="invNumber" value="${defaultInv}"></div>
+                <div style="flex:1; min-width:150px;"><label>Date</label><input id="invDate" value="${todayStr}" placeholder="DD/MM/YYYY"></div>
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <div style="flex:1; min-width:180px;"><label>Name / Party</label><input id="invBuyerName" list="dlBuyers" placeholder="Name / Party"></div>
+                <div style="flex:1; min-width:180px;"><label>Location / Address (Optional)</label><input id="invAddress" list="dlAdds" placeholder="Location or Address"></div>
+            </div>
+        </div>
+
+        <div style="overflow-x:auto;">
+            <table style="min-width:560px;">
+                <thead>
+                    <tr style="background:#ecfdf5; color:#065f46;">
+                        <th style="text-align:left;">Description</th>
+                        <th style="width:75px;">Qty</th>
+                        <th style="width:110px;">Rate (₹)</th>
+                        <th style="width:110px;">Total (₹)</th>
+                        <th style="width:45px;"></th>
+                    </tr>
+                </thead>
+                <tbody id="billItemsContainer"></tbody>
+            </table>
+        </div>
+        <button onclick="addBillItem()" style="background:#2980b9; margin:10px 0 16px;">＋ Add Item</button>
+        <div style="background:#eff7f3; padding:14px; border-radius:10px; text-align:right; font-size:17px;">
+            <b>Total: <span style="color:#e11d48; font-size:22px;">₹<span id="billGrandTotal">0.00</span></span></b>
+        </div>
+        <button id="invoiceSaveBtn" onclick="savePettyCash()" style="width:100%; background:#07865b; margin-top:10px; padding:12px; font-size:15px;">💾 Save Petty Cash Entry</button>
     </div>
-    <div class="card"><h2>📜 Petty Cash History</h2><div style="overflow-x:auto;"><table style="min-width:700px;"><thead><tr><th>Voucher No.</th><th>Date</th><th>Name & Details</th><th>Amount</th><th style="text-align:center;">Action & Status</th></tr></thead><tbody id="invTableBody"></tbody></table></div></div>`;
-    addBillItem(); renderInvTable();
+
+    <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
+            <h2 style="margin:0;">📜 Petty Cash Tracking History</h2>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                <select id="invStatusFilter" onchange="renderInvTable()" style="width:auto; margin:0; padding:8px 10px; font-size:13px;">
+                    <option value="all">All Status</option>
+                    <option value="pending">⏳ Pending Only</option>
+                    <option value="paid">✅ Paid Only</option>
+                </select>
+                <input type="text" id="invSearchInput" placeholder="🔍 Search Voucher, Name, Item..." oninput="renderInvTable()" style="max-width:240px; margin:0; padding:8px 12px;">
+            </div>
+        </div>
+        <div style="overflow-x:auto;">
+            <table style="min-width:700px;">
+                <thead>
+                    <tr><th>Voucher No.</th><th>Date</th><th>Name & Details</th><th>Amount</th><th style="text-align:center;">Status & Action</th></tr>
+                </thead>
+                <tbody id="invTableBody"></tbody>
+            </table>
+        </div>
+    </div>`;
+
+    addBillItem();
+    renderInvTable();
 }
 
 function renderInvTable() {
-    let tbody = document.getElementById('invTableBody'); if (!tbody) return; let invs = [...getArray(appData.invoices)].sort((a, b) => a.isPaid - b.isPaid);
+    let tbody = document.getElementById('invTableBody'); if (!tbody) return;
+    let searchEl = document.getElementById('invSearchInput');
+    let query = searchEl ? searchEl.value.toLowerCase() : '';
+    let filterEl = document.getElementById('invStatusFilter');
+    let statusFilter = filterEl ? filterEl.value : 'all';
+
+    let invs = [...getArray(appData.invoices)];
+    if (statusFilter === 'pending') invs = invs.filter(i => !i.isPaid);
+    else if (statusFilter === 'paid') invs = invs.filter(i => i.isPaid);
+
+    if (query) {
+        invs = invs.filter(inv => {
+            let itemsText = getArray(inv.items).map(it => it.desc || '').join(' ').toLowerCase();
+            return (inv.invNo && inv.invNo.toLowerCase().includes(query)) ||
+                   (inv.bName && inv.bName.toLowerCase().includes(query)) ||
+                   (inv.bAdd && inv.bAdd.toLowerCase().includes(query)) ||
+                   (inv.date && inv.date.toLowerCase().includes(query)) ||
+                   itemsText.includes(query);
+        });
+    }
+
+    invs.sort((a, b) => Number(!!a.isPaid) - Number(!!b.isPaid));
+
     let rows = invs.map(inv => {
         let rowBg = inv.isPaid ? 'background:#eefdf6; color:#555;' : 'background:#fff;';
-        let statusBtn = inv.isPaid ? `<button onclick="togglePayStatus('${inv.id}')" style="background:#07865b; padding:4px 8px; border-radius:4px; font-size:11px; color:white; border:none; cursor:pointer;">✅ Paid</button>` : `<button onclick="togglePayStatus('${inv.id}')" style="background:#e21d4f; padding:4px 8px; border-radius:4px; font-size:11px; color:white; border:none; cursor:pointer;">⏳ Pending</button>`;
-        let itemSummary = inv.items && inv.items.length > 0 ? inv.items[0].desc : 'No items'; if (inv.items && inv.items.length > 1) itemSummary += ` (+${inv.items.length - 1} more)`;
-        return `<tr style="${rowBg}"><td>${inv.invNo}</td><td>${inv.date || '-'}</td><td><b>${inv.bName}</b><br><span style="font-size:11px;color:#555;">${itemSummary}</span></td><td style="font-weight:bold;">₹${inv.gTotal}</td><td style="display:flex; gap:2px; justify-content:center;">${statusBtn}<button onclick="reprintBill('${inv.id}')" style="background:#2980b9; padding:4px 6px; border-radius:4px; font-size:12px; color:white; border:none; cursor:pointer; margin-left:4px;">🖨️</button><button onclick="editInvoice('${inv.id}')" style="background:#f39c12; padding:4px 6px; border-radius:4px; font-size:12px; color:white; border:none; cursor:pointer; margin-left:4px;">✏️</button><button onclick="deleteInvoice('${inv.id}')" style="background:#444; padding:4px 6px; border-radius:4px; font-size:12px; color:white; border:none; cursor:pointer; margin-left:4px;">🗑️</button></td></tr>`;
-    }).join(''); tbody.innerHTML = rows || `<tr><td colspan="5" style="text-align:center;">No records yet</td></tr>`;
+        let statusBtn = inv.isPaid
+            ? `<button onclick="togglePayStatus('${inv.id}')" style="background:#07865b; padding:4px 8px; border-radius:4px; font-size:11px; color:white; border:none; cursor:pointer; min-width:76px;">✅ Paid</button>`
+            : `<button onclick="togglePayStatus('${inv.id}')" style="background:#e21d4f; padding:4px 8px; border-radius:4px; font-size:11px; color:white; border:none; cursor:pointer; min-width:76px;">⏳ Pending</button>`;
+        let itemsArr = getArray(inv.items);
+        let itemSummary = itemsArr.length > 0 ? itemsArr[0].desc : 'No items';
+        if (itemsArr.length > 1) itemSummary += ` (+${itemsArr.length - 1} more)`;
+        let locSub = inv.bAdd ? `<span style="font-size:11px; color:#64748b;"> (${inv.bAdd})</span>` : '';
+
+        return `<tr style="${rowBg}">
+            <td><b>${inv.invNo || '-'}</b></td>
+            <td style="white-space:nowrap;">${inv.date || '-'}</td>
+            <td><b>${inv.bName || '-'}</b>${locSub}<br><span style="font-size:11px;color:#555;">${itemSummary}</span></td>
+            <td style="font-weight:bold; white-space:nowrap;">₹${parseFloat(inv.gTotal || 0).toLocaleString('en-IN')}</td>
+            <td style="display:flex; gap:3px; justify-content:center; align-items:center;">
+                ${statusBtn}
+                <button onclick="editInvoice('${inv.id}')" style="background:#f39c12; padding:4px 6px; border-radius:4px; font-size:12px; color:white; border:none; cursor:pointer;">✏️</button>
+                <button onclick="deleteInvoice('${inv.id}')" style="background:#444; padding:4px 6px; border-radius:4px; font-size:12px; color:white; border:none; cursor:pointer;">🗑️</button>
+            </td>
+        </tr>`;
+    }).join('');
+
+    tbody.innerHTML = rows || `<tr><td colspan="5" style="text-align:center; color:#888; padding:16px;">No petty cash records found</td></tr>`;
 }
 
 function addBillItem(desc = '', qty = 1, rate = 0) {
-    let tbody = document.getElementById('billItemsContainer'); let rowId = 'b-item-' + Date.now() + Math.floor(Math.random() * 100); let tr = document.createElement('tr'); tr.id = rowId;
-    tr.innerHTML = `<td><input class="b-desc" list="dlDescs" value="${desc}" oninput="calcBill()"></td><td><input class="b-qty" type="number" value="${qty}" oninput="calcBill()"></td><td><input class="b-rate" type="number" value="${rate}" oninput="calcBill()"></td><td class="b-total" style="text-align:center;font-weight:bold;">0</td><td style="text-align:center;"><button onclick="document.getElementById('${rowId}').remove();calcBill();" style="background:#e21d4f;color:white;border:none;border-radius:5px;padding:5px;">✖</button></td>`;
-    tbody.appendChild(tr); calcBill();
+    let tbody = document.getElementById('billItemsContainer');
+    if (!tbody) return;
+    let rowId = 'b-item-' + Date.now() + Math.floor(Math.random() * 1000);
+    let tr = document.createElement('tr');
+    tr.id = rowId;
+    tr.innerHTML = `
+        <td><input class="b-desc" list="dlDescs" value="${desc}" placeholder="Item / Work details..." oninput="calcBill()" style="margin:0; padding:8px;"></td>
+        <td><input class="b-qty" type="number" value="${qty}" oninput="calcBill()" style="margin:0; padding:8px;"></td>
+        <td><input class="b-rate" type="number" value="${rate}" oninput="calcBill()" style="margin:0; padding:8px;"></td>
+        <td class="b-total" style="text-align:center; font-weight:bold;">0.00</td>
+        <td style="text-align:center;"><button onclick="document.getElementById('${rowId}').remove(); calcBill();" style="background:#e21d4f; color:white; border:none; border-radius:5px; padding:5px 8px;">✖</button></td>`;
+    tbody.appendChild(tr);
+    calcBill();
 }
 
-function calcBill() { let total = 0; document.querySelectorAll('#billItemsContainer tr').forEach(row => { let q = parseFloat(row.querySelector('.b-qty').value) || 0; let r = parseFloat(row.querySelector('.b-rate').value) || 0; let t = q * r; row.querySelector('.b-total').innerText = t.toFixed(2); total += t; }); document.getElementById('billGrandTotal').innerText = total.toFixed(2); }
-function numberToWords(num) { let a = ['', 'ONE ', 'TWO ', 'THREE ', 'FOUR ', 'FIVE ', 'SIX ', 'SEVEN ', 'EIGHT ', 'NINE ', 'TEN ', 'ELEVEN ', 'TWELVE ', 'THIRTEEN ', 'FOURTEEN ', 'FIFTEEN ', 'SIXTEEN ', 'SEVENTEEN ', 'EIGHTEEN ', 'NINETEEN ']; let b = ['', '', 'TWENTY ', 'THIRTY ', 'FORTY ', 'FIFTY ', 'SIXTY ', 'SEVENTY ', 'EIGHTY ', 'NINETY ']; let n = parseInt(num, 10); if (n === 0) return 'ZERO ONLY'; let nArray = ('000000000' + n).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/); if (!nArray) return ''; let str = ''; str += (nArray[1] != 0) ? (a[Number(nArray[1])] || b[nArray[1][0]] + a[nArray[1][1]]) + 'CRORE ' : ''; str += (nArray[2] != 0) ? (a[Number(nArray[2])] || b[nArray[2][0]] + a[nArray[2][1]]) + 'LAKH ' : ''; str += (nArray[3] != 0) ? (a[Number(nArray[3])] || b[nArray[3][0]] + a[nArray[3][1]]) + 'THOUSAND ' : ''; str += (nArray[4] != 0) ? (a[Number(nArray[4])] || b[nArray[4][0]] + a[nArray[4][1]]) + 'HUNDRED ' : ''; str += (nArray[5] != 0) ? ((str != '') ? '& ' : '') + (a[Number(nArray[5])] || b[nArray[5][0]] + a[nArray[5][1]]) + 'ONLY' : 'ONLY'; return str; }
-
-async function printBill() {
-    let bName = document.getElementById('invBuyerName').value, bGST = document.getElementById('invBuyerGST').value, bAdd = document.getElementById('invAddress').value, bPin = document.getElementById('invPin').value, invNo = document.getElementById('invNumber').value, date = document.getElementById('invDate').value, incGST = document.getElementById('includeMyGST').checked;
-    let gTotal = parseFloat(document.getElementById('billGrandTotal').innerText).toFixed(2); let itemsToSave = [];
-    document.querySelectorAll('#billItemsContainer tr').forEach(r => { let d = r.querySelector('.b-desc').value.trim(); let q = r.querySelector('.b-qty').value; let ra = parseFloat(r.querySelector('.b-rate').value || 0).toFixed(2); let t = parseFloat(r.querySelector('.b-total').innerText || 0).toFixed(2); if (d) itemsToSave.push({ desc: d, qty: q, rate: ra, total: t }); });
-    if (!itemsToSave.length) return alert('Add items!'); appData.invoices = getArray(appData.invoices);
-    let isDuplicateInv = appData.invoices.some(i => String(i.id) !== String(currentInvoiceEditId) && i.invNo.toLowerCase() === invNo.toLowerCase()); if (isDuplicateInv) return alert(`❌ DUPLICATE VOUCHER!`);
-    let invData = { id: currentInvoiceEditId || Date.now(), invNo, date, bName, bGST, bAdd, bPin, gTotal, amountWords: numberToWords(gTotal), items: itemsToSave, includeMyGST: incGST, isPaid: false };
-    if (currentInvoiceEditId) { let idx = appData.invoices.findIndex(i => String(i.id) === String(currentInvoiceEditId)); invData.isPaid = appData.invoices[idx].isPaid; appData.invoices[idx] = invData; } else { appData.invoices.unshift(invData); appData.invoiceCount = (appData.invoiceCount || 314) + 1; }
-    await saveDataToLocal(); showInvoice(); generateInvoiceHTML(invData);
+function calcBill() {
+    let total = 0;
+    document.querySelectorAll('#billItemsContainer tr').forEach(row => {
+        let q = parseFloat(row.querySelector('.b-qty').value) || 0;
+        let r = parseFloat(row.querySelector('.b-rate').value) || 0;
+        let t = q * r;
+        row.querySelector('.b-total').innerText = t.toFixed(2);
+        total += t;
+    });
+    let gtEl = document.getElementById('billGrandTotal');
+    if (gtEl) gtEl.innerText = total.toFixed(2);
 }
 
-function reprintBill(id) { let i = getArray(appData.invoices).find(x => String(x.id) === String(id)); if (i) generateInvoiceHTML(i); }
-function togglePayStatus(id) { let i = getArray(appData.invoices).find(x => String(x.id) === String(id)); if (i) { i.isPaid = !i.isPaid; saveDataToLocal().then(() => renderInvTable()); } }
-function deleteInvoice(id) { if (confirm("Delete this Petty Cash?")) { appData.invoices = getArray(appData.invoices).filter(x => String(x.id) !== String(id)); saveDataToLocal().then(() => renderInvTable()); } }
-function editInvoice(id) { let i = getArray(appData.invoices).find(x => String(x.id) === String(id)); if (i) { currentInvoiceEditId = id; document.getElementById('invBuyerName').value = i.bName || ''; document.getElementById('invBuyerGST').value = i.bGST || ''; document.getElementById('invAddress').value = i.bAdd || ''; document.getElementById('invPin').value = i.bPin || ''; document.getElementById('invNumber').value = i.invNo || ''; document.getElementById('invDate').value = i.date || ''; document.getElementById('includeMyGST').checked = i.includeMyGST; document.getElementById('billItemsContainer').innerHTML = ''; i.items.forEach(x => addBillItem(x.desc, x.qty, x.rate)); let btn = document.getElementById('invoiceSaveBtn'); if (btn) { btn.innerText = "🖨️ Update Petty Cash"; btn.style.background = "#f39c12"; } window.scrollTo({ top: 0 }); } }
+async function savePettyCash() {
+    let bName = document.getElementById('invBuyerName').value.trim();
+    let bAdd = document.getElementById('invAddress').value.trim();
+    let invNo = document.getElementById('invNumber').value.trim();
+    let date = document.getElementById('invDate').value.trim();
+    let gTotal = parseFloat(document.getElementById('billGrandTotal').innerText || 0).toFixed(2);
 
-function generateInvoiceHTML(inv) {
-    let rowsHTML = inv.items.map((it, idx) => `<tr><td class="text-center">${idx + 1}</td><td>${it.desc}</td><td class="text-center">${it.qty < 10 ? '0' + it.qty : it.qty}</td><td class="text-right">${it.rate}</td><td class="text-center">1</td><td class="text-right">${it.total}</td></tr>`).join('');
-    let myGST = inv.includeMyGST ? `GSTIN- 19CEEPD8412F1ZP<br>PAN- CEEPD8412F1ZP<br><br><br>` : `<br><br><br><br><br>`;
-    let upiStr = `upi://pay?pa=7583972716@ybl&pn=TANMOY%20DUTTA&am=${inv.gTotal}&cu=INR`; let qrUrl = `https://chart.googleapis.com/chart?chs=150x150&cht=qr&chl=${encodeURIComponent(upiStr)}`;
-    let w = window.open('', '_blank'); if (!w) return alert("Popup Blocked!");
-    w.document.write(`<html><head><title>Inv-${inv.invNo}</title><style>@page { size: A4; margin: 15mm; } body { font-family: 'Arial', sans-serif; font-size: 14px; padding: 20px; } .invoice-box { width: 100%; max-width: 210mm; margin: auto; } table { width: 100%; border-collapse: collapse; margin-bottom: 20px; } th, td { border: 1px solid #333; padding: 8px 10px; text-align: left; } .no-border, .no-border th, .no-border td { border: none !important; } .text-center { text-align: center; } .text-right { text-align: right; } h2 { text-align: center; font-size: 24px; border-bottom: 2px solid #000; padding-bottom: 10px; } </style></head><body><div class="invoice-box"><h2>Invoice</h2><table class="no-border"><tr class="no-border"><td class="no-border" style="width:40%; padding:0 10px 10px 0; vertical-align:top;"><b>TANMOY DUTTA</b><br>DUBRAJPUR ROAD, SURI<br>BIRBHUM, WEST BENGAL<br>PH No.: 7583972716</td><td class="no-border" style="width:30%; padding:0 10px 10px 0; vertical-align:top;">${myGST}<b>Buyer GST:</b> ${inv.bGST || 'N/A'}</td><td class="no-border" style="width:30%; padding:0 0 10px 0; vertical-align:top;"><b>Date:</b> ${inv.date}<br><b>Inv No:</b> ${inv.invNo}<br><b>Buyer:</b> ${inv.bName}<br>${inv.bAdd}</td></tr></table><table><tr><th style="width:5%;" class="text-center">SL</th><th style="width:45%;">Description</th><th style="width:10%;" class="text-center">Qty</th><th style="width:15%;" class="text-right">Rate</th><th style="width:10%;" class="text-center">Per</th><th style="width:15%;" class="text-right">Amount</th></tr>${rowsHTML}<tr><td colspan="5" class="text-right"><b>Total</b></td><td class="text-right"><b>₹${inv.gTotal}</b></td></tr></table><p style="border:1px solid #333; padding:10px; font-weight:bold;">Amount in words: ${inv.amountWords}</p><table class="no-border" style="margin-top:40px;"><tr class="no-border"><td class="no-border" style="width:60%; vertical-align:top;"><b>Bank Details:</b><br>TANMOY DUTTA<br>Canara Bank, A/C: 3715101001134<br>IFSC: CNRB0003715</td><td class="no-border text-center" style="width:40%; vertical-align:top;"><img src="${qrUrl}" width="100" style="display:block; margin:auto;"><br><span style="font-size:12px;">Scan to Pay</span></td></tr></table></div><script>var imgs = document.images, len = imgs.length, counter = 0; if(len === 0) { setTimeout(window.print, 800); } else { for(var i=0; i<len; i++) { if(imgs[i].complete) counter++; else { imgs[i].onload = ()=>counter++; imgs[i].onerror = ()=>counter++; } } } setInterval(()=>{if(counter>=len) {setTimeout(window.print, 800); counter=-999;}}, 200);<\/script></body></html>`); w.document.close();
+    let itemsToSave = [];
+    document.querySelectorAll('#billItemsContainer tr').forEach(r => {
+        let d = r.querySelector('.b-desc').value.trim();
+        let q = r.querySelector('.b-qty').value;
+        let ra = parseFloat(r.querySelector('.b-rate').value || 0).toFixed(2);
+        let t = parseFloat(r.querySelector('.b-total').innerText || 0).toFixed(2);
+        if (d) itemsToSave.push({ desc: d, qty: q, rate: ra, total: t });
+    });
+
+    if (!bName) return alert("Name / Party is required!");
+    if (!invNo) return alert("Voucher / Bill No. is required!");
+    if (!itemsToSave.length) return alert("Add at least 1 item!");
+
+    appData.invoices = getArray(appData.invoices);
+    let isDuplicateInv = appData.invoices.some(i => String(i.id) !== String(currentInvoiceEditId) && i.invNo && i.invNo.toLowerCase() === invNo.toLowerCase());
+    if (isDuplicateInv) return alert("❌ DUPLICATE VOUCHER NO!");
+
+    let btn = document.getElementById('invoiceSaveBtn');
+    let origText = btn.innerText;
+    btn.innerText = "⏳ Saving...";
+    btn.disabled = true;
+
+    try {
+        let existing = currentInvoiceEditId ? appData.invoices.find(i => String(i.id) === String(currentInvoiceEditId)) : null;
+        let invData = {
+            id: currentInvoiceEditId || Date.now(),
+            invNo,
+            date,
+            bName,
+            bAdd,
+            bGST: existing ? (existing.bGST || '') : '',
+            bPin: existing ? (existing.bPin || '') : '',
+            gTotal,
+            items: itemsToSave,
+            isPaid: existing ? !!existing.isPaid : false
+        };
+
+        if (currentInvoiceEditId) {
+            let idx = appData.invoices.findIndex(i => String(i.id) === String(currentInvoiceEditId));
+            appData.invoices[idx] = invData;
+            currentInvoiceEditId = null;
+        } else {
+            appData.invoices.unshift(invData);
+            appData.invoiceCount = (appData.invoiceCount || 314) + 1;
+        }
+
+        await saveDataToLocal();
+        showInvoice();
+    } catch (e) {
+        alert("Error saving: " + e.message);
+        btn.innerText = origText;
+        btn.disabled = false;
+    }
+}
+
+function togglePayStatus(id) {
+    let i = getArray(appData.invoices).find(x => String(x.id) === String(id));
+    if (i) {
+        i.isPaid = !i.isPaid;
+        saveDataToLocal().then(() => showInvoice());
+    }
+}
+
+function deleteInvoice(id) {
+    if (confirm("Delete this Petty Cash record?")) {
+        appData.invoices = getArray(appData.invoices).filter(x => String(x.id) !== String(id));
+        saveDataToLocal().then(() => showInvoice());
+    }
+}
+
+function editInvoice(id) {
+    let i = getArray(appData.invoices).find(x => String(x.id) === String(id));
+    if (i) {
+        currentInvoiceEditId = id;
+        document.getElementById('invBuyerName').value = i.bName || '';
+        document.getElementById('invAddress').value = i.bAdd || '';
+        document.getElementById('invNumber').value = i.invNo || '';
+        document.getElementById('invDate').value = i.date || '';
+        document.getElementById('billItemsContainer').innerHTML = '';
+        let itemsArr = getArray(i.items);
+        if (itemsArr.length > 0) itemsArr.forEach(x => addBillItem(x.desc, x.qty, x.rate));
+        else addBillItem();
+        let btn = document.getElementById('invoiceSaveBtn');
+        if (btn) {
+            btn.innerText = "✏️ Update Petty Cash Entry";
+            btn.style.background = "#f39c12";
+        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 }
 
 // ====== CF BAL ======
