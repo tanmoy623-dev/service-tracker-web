@@ -1850,7 +1850,7 @@ function downloadPartnerCSV(name) {
 function user() {
     return `<div class="card"><h2>👤 Select Technician Profile</h2><div class="grid"><div class="role" onclick="tech('computer')" style="cursor:pointer; background:#f8fafc; padding:20px; border-radius:14px; border:1px solid #e2e8f0; text-align:center; font-size:16px;">💻 <b>Computer</b></div><div class="role" onclick="tech('water')" style="cursor:pointer; background:#f8fafc; padding:20px; border-radius:14px; border:1px solid #e2e8f0; text-align:center; font-size:16px;">💧 <b>Water Purifier</b></div></div></div><div id="techArea"></div>`;
 }// =========================================================================
-// ====== PART 4: PO TRACKER (MULTI-CYCLE CLAIM + UNDO, SD REFUND, BG UPLOAD, DOWNLOAD, 5-DAY ALERT & AUTO-DELETE), BILLS, PETTY CASH, CF, SETTINGS, TECH & VEHICLES ======
+// ====== PART 4: PO TRACKER (RED CLAIM BILL/SD BUTTONS, MULTI-CYCLE + UNDO, SD REFUND, BG UPLOAD, DOWNLOAD, 5-DAY ALERT & AUTO-DELETE), BILLS, PETTY CASH, CF, SETTINGS, TECH & VEHICLES ======
 // =========================================================================
 
 // ====== PO DATE, DEADLINE, MULTI-CYCLE AMC & SD REFUND HELPERS ======
@@ -1940,7 +1940,6 @@ function getPOMonthAlertStatus(po) {
     let dueDateObj = addMonthsSafe(po.date, alertMonths * billNo);
     if (!dueDateObj) return null;
 
-    // Stop creating extra alerts beyond PO deadline (+15d grace for exact 1-year AMC end)
     if (deadlineLimitMs && dueDateObj.getTime() > deadlineLimitMs) {
         return {
             isAlert: false, reached: false, allCyclesDone: true, diffDays: Infinity,
@@ -1955,7 +1954,6 @@ function getPOMonthAlertStatus(po) {
     let dueISO = dateObjToISO(dueDateObj);
     let isAlert = diffDays <= 5;
 
-    // Count consecutive due cycles (e.g. 2 cycles = 6M combined claim)
     let dueCyclesCount = 0;
     let lastDueISO = dueISO;
     if (isAlert) {
@@ -2025,6 +2023,7 @@ function getPOSDStatus(po) {
     if (sdAmt <= 0) return null;
 
     let holdMonths = parseInt(po.sdHoldMonths, 10) || 6;
+    let sdAmtText = sdAmt.toLocaleString('en-IN', { maximumFractionDigits: 2 });
 
     if (po.sdReceived) {
         return {
@@ -2033,7 +2032,7 @@ function getPOSDStatus(po) {
             sdAmt,
             holdMonths,
             diffDays: Infinity,
-            text: `✅ SD Refunded (₹${sdAmt.toLocaleString('en-IN')})`,
+            text: `✅ SD Refunded (₹${sdAmtText})`,
             bg: '#ecfdf5',
             color: '#047857',
             border: '#a7f3d0'
@@ -2048,8 +2047,8 @@ function getPOSDStatus(po) {
             holdMonths,
             diffDays: Infinity,
             text: po.isCompleted
-                ? `🔒 SD ₹${sdAmt.toLocaleString('en-IN')} (Set Done Date)`
-                : `🔒 SD ₹${sdAmt.toLocaleString('en-IN')} (${holdMonths}M after done)`,
+                ? `🔒 SD ₹${sdAmtText} (Set Done Date)`
+                : `🔒 SD ₹${sdAmtText} (${holdMonths}M after done)`,
             bg: '#eef2ff',
             color: '#3730a3',
             border: '#c7d2fe'
@@ -2069,28 +2068,28 @@ function getPOSDStatus(po) {
     if (diffDays < 0) {
         return {
             state: 'due', isAlert: true, sdAmt, holdMonths, diffDays, dueISO,
-            text: `💰 SD Overdue (${Math.abs(diffDays)}d) • ₹${sdAmt.toLocaleString('en-IN')}`,
+            text: `💰 SD Overdue (${Math.abs(diffDays)}d) • ₹${sdAmtText}`,
             bg: '#fef2f2', color: '#b91c1c', border: '#fca5a5'
         };
     }
     if (diffDays === 0) {
         return {
             state: 'due', isAlert: true, sdAmt, holdMonths, diffDays: 0, dueISO,
-            text: `💰 SD Refund Today! • ₹${sdAmt.toLocaleString('en-IN')}`,
+            text: `💰 SD Refund Today! • ₹${sdAmtText}`,
             bg: '#ffedd5', color: '#c2410c', border: '#fdba74'
         };
     }
     if (diffDays <= 5) {
         return {
             state: 'due', isAlert: true, sdAmt, holdMonths, diffDays, dueISO,
-            text: `💰 SD Refund in ${diffDays}d • ₹${sdAmt.toLocaleString('en-IN')}`,
+            text: `💰 SD Refund in ${diffDays}d • ₹${sdAmtText}`,
             bg: '#fef9c3', color: '#a16207', border: '#fde047'
         };
     }
 
     return {
         state: 'waiting', isAlert: false, sdAmt, holdMonths, diffDays, dueISO,
-        text: `🔒 SD ₹${sdAmt.toLocaleString('en-IN')} • Due: ${formatDate(dueISO)}`,
+        text: `🔒 SD ₹${sdAmtText} • Due: ${formatDate(dueISO)}`,
         bg: '#eef2ff', color: '#3730a3', border: '#c7d2fe'
     };
 }
@@ -2100,7 +2099,6 @@ function getAlertPOItems() {
     getArray(appData.poRecords).forEach(p => {
         let typeLabel = p.poType === 'Civil PO' ? 'CIVIL PO' : (p.poType === 'AMC PO' ? 'AMC PO' : 'PO');
 
-        // Ongoing PO alerts (Deadline & Recurring Bill Cycle)
         if (!p.isCompleted) {
             let dlStatus = getPODeadlineStatus(p.deadline, p.isCompleted);
             let monthAlert = getPOMonthAlertStatus(p);
@@ -2134,7 +2132,6 @@ function getAlertPOItems() {
             }
         }
 
-        // Security Deposit Refund Alert (stays active even AFTER PO is Completed)
         let sdStatus = getPOSDStatus(p);
         if (sdStatus && sdStatus.isAlert) {
             alerts.push({
@@ -2188,8 +2185,8 @@ function injectPOAlertBanner() {
             <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                 <span style="background:${bg}; color:${color}; border:1px solid ${border}; padding:3px 8px; border-radius:99px; font-size:11.5px; font-weight:800; white-space:nowrap;">${badgeText}</span>
                 <span style="font-size:11px; color:#64748b; white-space:nowrap;">${dateText}</span>
-                ${isBillCycle ? `<button onclick="markPOBillDone('${po.id}')" style="background:#7c3aed; color:#fff; padding:4px 9px; font-size:11px; border-radius:6px; white-space:nowrap;">${claimLabel}</button>` : ''}
-                ${isSDRefund ? `<button onclick="togglePOSDReceived('${po.id}')" style="background:#4f46e5; color:#fff; padding:4px 9px; font-size:11px; border-radius:6px; white-space:nowrap;">💰 SD Received</button>` : ''}
+                ${isBillCycle ? `<button onclick="markPOBillDone('${po.id}')" style="background:#dc2626; color:#fff; padding:4px 9px; font-size:11px; border-radius:6px; white-space:nowrap;">${claimLabel}</button>` : ''}
+                ${isSDRefund ? `<button onclick="togglePOSDReceived('${po.id}')" style="background:#dc2626; color:#fff; padding:4px 9px; font-size:11px; border-radius:6px; white-space:nowrap;">💰 Claim SD</button>` : ''}
             </div>
         </div>`;
     }).join('');
@@ -2299,12 +2296,13 @@ async function togglePOSDReceived(id) {
     let sdAmt = parseFloat(p.sdAmount) || 0;
     if (sdAmt <= 0) return;
 
+    let sdAmtText = sdAmt.toLocaleString('en-IN', { maximumFractionDigits: 2 });
     if (!p.sdReceived) {
-        if (!confirm(`💰 Security Deposit ₹${sdAmt.toLocaleString('en-IN')} (${p.authority} - ${p.poNo}) wapas mil gaya?\n\nOK dabate hi SD Refund alert band ho jayega.`)) return;
+        if (!confirm(`💰 Security Deposit ₹${sdAmtText} (${p.authority} - ${p.poNo}) wapas mil gaya?\n\nOK dabate hi SD Refunded mark ho jayega aur alert band ho jayega.`)) return;
         p.sdReceived = true;
         p.sdReceivedDate = new Date().toISOString().split('T')[0];
     } else {
-        if (!confirm(`Kya is PO ka Security Deposit (₹${sdAmt.toLocaleString('en-IN')}) wapas Pending mark karna hai?`)) return;
+        if (!confirm(`Kya is PO ka Security Deposit (₹${sdAmtText}) wapas Pending mark karna hai?`)) return;
         p.sdReceived = false;
         p.sdReceivedDate = '';
     }
@@ -2507,14 +2505,13 @@ function renderPOTableRows() {
     let filterEl = document.getElementById('poFilterMode'); let filterMode = filterEl ? filterEl.value : 'all';
     let allPOs = [...getArray(appData.poRecords)];
 
-    // Update Pending SD summary bar
     let sdBar = document.getElementById('poSDSummaryBar');
     if (sdBar) {
         let pendingSDList = allPOs.filter(p => (parseFloat(p.sdAmount) || 0) > 0 && !p.sdReceived);
         let pendingSDTotal = pendingSDList.reduce((acc, p) => acc + (parseFloat(p.sdAmount) || 0), 0);
         let dueSDCount = pendingSDList.filter(p => { let s = getPOSDStatus(p); return s && s.isAlert; }).length;
         if (pendingSDList.length > 0) {
-            sdBar.innerHTML = `<span style="background:#eef2ff; border:1px solid #c7d2fe; color:#3730a3; padding:4px 10px; border-radius:8px; font-size:12px; font-weight:700;">🔒 Pending SD: ₹${pendingSDTotal.toLocaleString('en-IN')} (${pendingSDList.length} PO${pendingSDList.length > 1 ? 's' : ''})</span>` +
+            sdBar.innerHTML = `<span style="background:#eef2ff; border:1px solid #c7d2fe; color:#3730a3; padding:4px 10px; border-radius:8px; font-size:12px; font-weight:700;">🔒 Pending SD: ₹${pendingSDTotal.toLocaleString('en-IN', { maximumFractionDigits: 2 })} (${pendingSDList.length} PO${pendingSDList.length > 1 ? 's' : ''})</span>` +
                 (dueSDCount > 0 ? `<span style="background:#fef2f2; border:1px solid #fca5a5; color:#b91c1c; padding:4px 10px; border-radius:8px; font-size:12px; font-weight:700;">💰 ${dueSDCount} SD Refund Due Now!</span>` : '');
         } else {
             sdBar.innerHTML = '';
@@ -2579,12 +2576,13 @@ function renderPOTableRows() {
             : `🧾 Claim Bill`;
 
         let billDoneBtn = (!p.isCompleted && monthAlert && monthAlert.isAlert)
-            ? `<button onclick="markPOBillDone('${p.id}')" style="background:#7c3aed; padding:4px 8px; border-radius:4px; font-size:11px; color:white; border:none; cursor:pointer; white-space:nowrap;" title="Click karke 1 ya multiple cycles (3M / 6M) claim mark karein">${claimBtnLabel}</button>`
+            ? `<button onclick="markPOBillDone('${p.id}')" style="background:#dc2626; padding:4px 8px; border-radius:4px; font-size:11px; color:white; border:none; cursor:pointer; white-space:nowrap;" title="Click karke 1 ya multiple cycles (3M / 6M) claim mark karein">${claimBtnLabel}</button>`
             : '';
 
         let sdBtn = '';
         if (sdStatus && !p.sdReceived && (sdStatus.isAlert || p.isCompleted)) {
-            sdBtn = `<button onclick="togglePOSDReceived('${p.id}')" style="background:#4f46e5; padding:4px 8px; border-radius:4px; font-size:11px; color:white; border:none; cursor:pointer; white-space:nowrap;" title="Security Deposit wapas mil gaya mark karein">💰 SD Received</button>`;
+            let sdBtnBg = sdStatus.isAlert ? '#dc2626' : '#d97706';
+            sdBtn = `<button onclick="togglePOSDReceived('${p.id}')" style="background:${sdBtnBg}; padding:4px 8px; border-radius:4px; font-size:11px; color:white; border:none; cursor:pointer; white-space:nowrap;" title="Security Deposit wapas milne par click karein">💰 Claim SD</button>`;
         }
 
         let proofHTML = '-';
@@ -2750,7 +2748,7 @@ function togglePOStatus(id) {
             let holdM = parseInt(p.sdHoldMonths, 10) || 6;
             let defaultDate = p.completedDate || new Date().toISOString().split('T')[0];
             let entered = prompt(
-                `🔒 Is PO mein ₹${sdAmt.toLocaleString('en-IN')} Security Money hai.\n\nWork Completion Date confirm karein (YYYY-MM-DD):\n(Is date se ${holdM} mahine baad SD Refund alert aayega)`,
+                `🔒 Is PO mein ₹${sdAmt.toLocaleString('en-IN', { maximumFractionDigits: 2 })} Security Money hai.\n\nWork Completion Date confirm karein (YYYY-MM-DD):\n(Is date se ${holdM} mahine baad SD Refund alert aayega)`,
                 defaultDate
             );
             if (entered === null) return;
