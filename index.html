@@ -1850,10 +1850,10 @@ function downloadPartnerCSV(name) {
 function user() {
     return `<div class="card"><h2>👤 Select Technician Profile</h2><div class="grid"><div class="role" onclick="tech('computer')" style="cursor:pointer; background:#f8fafc; padding:20px; border-radius:14px; border:1px solid #e2e8f0; text-align:center; font-size:16px;">💻 <b>Computer</b></div><div class="role" onclick="tech('water')" style="cursor:pointer; background:#f8fafc; padding:20px; border-radius:14px; border:1px solid #e2e8f0; text-align:center; font-size:16px;">💧 <b>Water Purifier</b></div></div></div><div id="techArea"></div>`;
 }// =========================================================================
-// ====== PART 4: PO TRACKER (SD REFUND TRACKER, BG UPLOAD, DOWNLOAD, 5-DAY ALERT, AMC SCHEDULE & AUTO-DELETE), BILLS, PETTY CASH, CF, SETTINGS, TECH & VEHICLES ======
+// ====== PART 4: PO TRACKER (MULTI-CYCLE CLAIM + UNDO, SD REFUND, BG UPLOAD, DOWNLOAD, 5-DAY ALERT & AUTO-DELETE), BILLS, PETTY CASH, CF, SETTINGS, TECH & VEHICLES ======
 // =========================================================================
 
-// ====== PO DATE, DEADLINE, AMC CYCLE & SD REFUND HELPERS ======
+// ====== PO DATE, DEADLINE, MULTI-CYCLE AMC & SD REFUND HELPERS ======
 function addMonthsSafe(dateStr, monthsToAdd) {
     if (!dateStr) return null;
     let parts = dateStr.split('-');
@@ -1924,57 +1924,96 @@ function getPODeadlineStatus(deadlineStr, isCompleted) {
 }
 
 function getPOMonthAlertStatus(po) {
-    if (!po || po.isCompleted) return null;
+    if (!po || po.isCompleted || !po.date) return null;
     let alertMonths = getEffectiveAlertMonths(po);
-    let hasManualDate = !!(po.nextAlertDate && po.nextAlertDate.trim());
-    if (alertMonths <= 0 && !hasManualDate) return null;
+    if (alertMonths <= 0) return null;
 
     let cyclesDone = parseInt(po.completedCycles, 10) || 0;
     let billNo = cyclesDone + 1;
 
-    let dueDateObj = null;
-    let isManual = false;
-
-    if (hasManualDate) {
-        dueDateObj = parseISODateLocal(po.nextAlertDate.trim());
-        isManual = true;
-    } else if (alertMonths > 0 && po.date) {
-        dueDateObj = addMonthsSafe(po.date, alertMonths * billNo);
-    }
-
-    if (!dueDateObj) return null;
-
     let today = new Date();
     today.setHours(0, 0, 0, 0);
+
+    let deadlineObj = po.deadline ? parseISODateLocal(po.deadline) : null;
+    let deadlineLimitMs = deadlineObj ? (deadlineObj.getTime() + 15 * 24 * 60 * 60 * 1000) : null;
+
+    let dueDateObj = addMonthsSafe(po.date, alertMonths * billNo);
+    if (!dueDateObj) return null;
+
+    // Stop creating extra alerts beyond PO deadline (+15d grace for exact 1-year AMC end)
+    if (deadlineLimitMs && dueDateObj.getTime() > deadlineLimitMs) {
+        return {
+            isAlert: false, reached: false, allCyclesDone: true, diffDays: Infinity,
+            alertMonths, cyclesDone, billNo, dueCyclesCount: 0, totalDueMonths: 0,
+            dueISO: '',
+            text: `✓ All Cycles Claimed`,
+            bg: '#ecfdf5', color: '#047857', border: '#a7f3d0'
+        };
+    }
 
     let diffDays = Math.round((dueDateObj - today) / (1000 * 60 * 60 * 24));
     let dueISO = dateObjToISO(dueDateObj);
     let isAlert = diffDays <= 5;
 
+    // Count consecutive due cycles (e.g. 2 cycles = 6M combined claim)
+    let dueCyclesCount = 0;
+    let lastDueISO = dueISO;
+    if (isAlert) {
+        dueCyclesCount = 1;
+        for (let step = 1; step < 24; step++) {
+            let nextObj = addMonthsSafe(po.date, alertMonths * (billNo + step));
+            if (!nextObj) break;
+            if (deadlineLimitMs && nextObj.getTime() > deadlineLimitMs) break;
+            let nextDiff = Math.round((nextObj - today) / (1000 * 60 * 60 * 24));
+            if (nextDiff <= 5) {
+                dueCyclesCount++;
+                lastDueISO = dateObjToISO(nextObj);
+            } else {
+                break;
+            }
+        }
+    }
+
+    let totalDueMonths = dueCyclesCount * alertMonths;
+    let toBillNo = billNo + Math.max(0, dueCyclesCount - 1);
+
+    if (dueCyclesCount > 1) {
+        return {
+            isAlert: true, reached: true, diffDays, alertMonths, cyclesDone,
+            billNo, toBillNo, dueCyclesCount, totalDueMonths, dueISO, lastDueISO,
+            text: `🔔 ${dueCyclesCount} Bills Due (${totalDueMonths}M)`,
+            bg: '#fef2f2', color: '#b91c1c', border: '#fca5a5'
+        };
+    }
+
     if (diffDays < 0) {
         return {
-            isAlert: true, reached: true, diffDays, alertMonths, cyclesDone, billNo, dueISO, isManual,
+            isAlert: true, reached: true, diffDays, alertMonths, cyclesDone,
+            billNo, toBillNo, dueCyclesCount: 1, totalDueMonths, dueISO, lastDueISO,
             text: `🔔 Bill #${billNo} Overdue (${Math.abs(diffDays)}d)`,
             bg: '#fef2f2', color: '#b91c1c', border: '#fca5a5'
         };
     }
     if (diffDays === 0) {
         return {
-            isAlert: true, reached: true, diffDays: 0, alertMonths, cyclesDone, billNo, dueISO, isManual,
+            isAlert: true, reached: true, diffDays: 0, alertMonths, cyclesDone,
+            billNo, toBillNo, dueCyclesCount: 1, totalDueMonths, dueISO, lastDueISO,
             text: `🔔 Bill #${billNo} Due Today!`,
             bg: '#ffedd5', color: '#c2410c', border: '#fdba74'
         };
     }
     if (diffDays <= 5) {
         return {
-            isAlert: true, reached: true, diffDays, alertMonths, cyclesDone, billNo, dueISO, isManual,
+            isAlert: true, reached: true, diffDays, alertMonths, cyclesDone,
+            billNo, toBillNo, dueCyclesCount: 1, totalDueMonths, dueISO, lastDueISO,
             text: `🔔 Bill #${billNo} in ${diffDays}d`,
             bg: '#fef9c3', color: '#a16207', border: '#fde047'
         };
     }
 
     return {
-        isAlert: false, reached: false, diffDays, alertMonths, cyclesDone, billNo, dueISO, isManual,
+        isAlert: false, reached: false, diffDays, alertMonths, cyclesDone,
+        billNo, toBillNo: billNo, dueCyclesCount: 0, totalDueMonths: 0, dueISO, lastDueISO: dueISO,
         text: `🕒 Bill #${billNo}: ${formatDate(dueISO)}`,
         bg: '#f0f9ff', color: '#0369a1', border: '#bae6fd'
     };
@@ -2068,32 +2107,28 @@ function getAlertPOItems() {
 
             if (dlStatus && dlStatus.isAlert) {
                 alerts.push({
-                    po: p,
-                    isBillCycle: false,
-                    isSDRefund: false,
+                    po: p, isBillCycle: false, isSDRefund: false,
                     kind: `${typeLabel} DEADLINE`,
                     badgeText: dlStatus.text,
-                    bg: dlStatus.bg,
-                    color: dlStatus.color,
-                    border: dlStatus.border,
+                    bg: dlStatus.bg, color: dlStatus.color, border: dlStatus.border,
                     dateText: `Due: ${formatDate(p.deadline)}`,
                     priority: dlStatus.days
                 });
             }
 
             if (monthAlert && monthAlert.isAlert) {
-                let cycleTag = monthAlert.isManual ? 'CUSTOM ALERT' : `${monthAlert.alertMonths}M CYCLE`;
+                let dueDateInfo = monthAlert.dueCyclesCount > 1
+                    ? `Due: ${formatDate(monthAlert.dueISO)} → ${formatDate(monthAlert.lastDueISO)}`
+                    : `Bill Due: ${formatDate(monthAlert.dueISO)}`;
                 alerts.push({
-                    po: p,
-                    isBillCycle: true,
-                    isSDRefund: false,
+                    po: p, isBillCycle: true, isSDRefund: false,
                     billNo: monthAlert.billNo,
-                    kind: `${typeLabel} • ${cycleTag}`,
+                    dueCyclesCount: monthAlert.dueCyclesCount,
+                    totalDueMonths: monthAlert.totalDueMonths,
+                    kind: `${typeLabel} • ${monthAlert.alertMonths}M CYCLE`,
                     badgeText: monthAlert.text,
-                    bg: monthAlert.bg,
-                    color: monthAlert.color,
-                    border: monthAlert.border,
-                    dateText: `Bill Due: ${formatDate(monthAlert.dueISO)}`,
+                    bg: monthAlert.bg, color: monthAlert.color, border: monthAlert.border,
+                    dateText: dueDateInfo,
                     priority: monthAlert.diffDays
                 });
             }
@@ -2103,15 +2138,11 @@ function getAlertPOItems() {
         let sdStatus = getPOSDStatus(p);
         if (sdStatus && sdStatus.isAlert) {
             alerts.push({
-                po: p,
-                isBillCycle: false,
-                isSDRefund: true,
+                po: p, isBillCycle: false, isSDRefund: true,
                 sdAmt: sdStatus.sdAmt,
                 kind: `${typeLabel} • SD REFUND (${sdStatus.holdMonths}M)`,
                 badgeText: sdStatus.text,
-                bg: sdStatus.bg,
-                color: sdStatus.color,
-                border: sdStatus.border,
+                bg: sdStatus.bg, color: sdStatus.color, border: sdStatus.border,
                 dateText: `Refund Due: ${formatDate(sdStatus.dueISO)}`,
                 priority: sdStatus.diffDays
             });
@@ -2142,7 +2173,11 @@ function injectPOAlertBanner() {
     let profileArea = document.getElementById('profileArea');
     if (!profileArea) return;
 
-    let cardsHTML = alertList.map(({ po, isBillCycle, isSDRefund, billNo, kind, badgeText, bg, color, border, dateText }) => `
+    let cardsHTML = alertList.map(({ po, isBillCycle, isSDRefund, dueCyclesCount, totalDueMonths, kind, badgeText, bg, color, border, dateText }) => {
+        let claimLabel = (dueCyclesCount > 1 && totalDueMonths > 0)
+            ? `🧾 Claim (${totalDueMonths}M)`
+            : `🧾 Claim Bill`;
+        return `
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; background:#ffffff; padding:10px 12px; border-radius:10px; border:1px solid ${border};">
             <div>
                 <span style="font-size:10px; font-weight:800; background:${isSDRefund ? '#eef2ff' : '#f1f5f9'}; color:${isSDRefund ? '#3730a3' : '#334155'}; padding:1px 6px; border-radius:4px; margin-right:4px;">${kind}</span>
@@ -2153,11 +2188,11 @@ function injectPOAlertBanner() {
             <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                 <span style="background:${bg}; color:${color}; border:1px solid ${border}; padding:3px 8px; border-radius:99px; font-size:11.5px; font-weight:800; white-space:nowrap;">${badgeText}</span>
                 <span style="font-size:11px; color:#64748b; white-space:nowrap;">${dateText}</span>
-                ${isBillCycle ? `<button onclick="markPOBillDone('${po.id}')" style="background:#059669; color:#fff; padding:4px 9px; font-size:11px; border-radius:6px; white-space:nowrap;">✅ Bill #${billNo} Done</button>` : ''}
+                ${isBillCycle ? `<button onclick="markPOBillDone('${po.id}')" style="background:#7c3aed; color:#fff; padding:4px 9px; font-size:11px; border-radius:6px; white-space:nowrap;">${claimLabel}</button>` : ''}
                 ${isSDRefund ? `<button onclick="togglePOSDReceived('${po.id}')" style="background:#4f46e5; color:#fff; padding:4px 9px; font-size:11px; border-radius:6px; white-space:nowrap;">💰 SD Received</button>` : ''}
             </div>
-        </div>
-    `).join('');
+        </div>`;
+    }).join('');
 
     let banner = document.createElement('div');
     banner.id = 'poAlertBanner';
@@ -2184,24 +2219,70 @@ async function markPOBillDone(id) {
     if (!p) return;
 
     let currentCycles = parseInt(p.completedCycles, 10) || 0;
-    let doneBillNo = currentCycles + 1;
     let alertMonths = getEffectiveAlertMonths(p);
+    let monthAlert = getPOMonthAlertStatus(p);
+    let dueCount = (monthAlert && monthAlert.dueCyclesCount) ? monthAlert.dueCyclesCount : 1;
+    let claimCycles = 1;
 
-    let msg = `Bill #${doneBillNo} (${p.authority} - ${p.poNo}) ko Done mark karein?`;
     if (alertMonths > 0 && p.date) {
-        let nextDueObj = addMonthsSafe(p.date, alertMonths * (doneBillNo + 1));
-        if (nextDueObj) {
-            msg += `\n\nAgla alert (Bill #${doneBillNo + 1}) ${formatDate(dateObjToISO(nextDueObj))} se 5 din pehle aayega (Fixed PO Schedule).`;
+        let lines = [];
+        for (let k = 1; k <= Math.max(dueCount, 2); k++) {
+            let mTotal = k * alertMonths;
+            let bFrom = currentCycles + 1;
+            let bTo = currentCycles + k;
+            let tag = k === 1 ? `Bill #${bFrom}` : `Bill #${bFrom}–#${bTo}`;
+            lines.push(`${k} = ${mTotal} Months (${tag})`);
+        }
+        let headerInfo = dueCount > 1
+            ? `Abhi ${dueCount} cycles (${dueCount * alertMonths} Months) due hain.`
+            : `Abhi Bill #${currentCycles + 1} (${alertMonths}M) due hai.`;
+
+        let input = prompt(
+            `🧾 Claim Bill: ${p.authority} (${p.poNo})\n${headerInfo}\n\nKitne cycles ek saath claim kar rahe hain?\n${lines.join('\n')}`,
+            String(dueCount)
+        );
+        if (input === null) return;
+        claimCycles = parseInt(input.trim(), 10);
+        if (isNaN(claimCycles) || claimCycles < 1 || claimCycles > 24) {
+            return alert("⚠️ Valid cycle number daalein (jaise 1 ya 2).");
         }
     } else {
-        msg += `\n\nCurrent alert band ho jayega.`;
+        if (!confirm(`🧾 Bill #${currentCycles + 1} (${p.authority} - ${p.poNo}) claim mark karein?`)) return;
     }
 
-    if (!confirm(msg)) return;
+    p.completedCycles = currentCycles + claimCycles;
+    delete p.nextAlertDate;
 
-    p.completedCycles = doneBillNo;
-    p.nextAlertDate = '';
+    await saveDataToLocal();
+    updatePOTabBadge();
 
+    if (document.getElementById('poTableBody')) {
+        renderPOTableRows();
+    } else if (currentActiveTab === 'tab-overview') {
+        injectPOAlertBanner();
+    }
+}
+
+async function undoPOBillClaim(id) {
+    let p = getArray(appData.poRecords).find(x => String(x.id) === String(id));
+    if (!p) return;
+
+    let currentCycles = parseInt(p.completedCycles, 10) || 0;
+    if (currentCycles <= 0) return;
+
+    let alertM = getEffectiveAlertMonths(p);
+    let input = prompt(
+        `↩️ Undo Claimed Bill: ${p.authority} (${p.poNo})\nAbhi ${currentCycles} bill${currentCycles > 1 ? 's' : ''}${alertM > 0 ? ` (${currentCycles * alertM}M)` : ''} claimed hain.\n\nKitne claimed bills rakhne hain?\n• ${currentCycles - 1} = Last 1 bill undo\n• 0 = Sabhi undo (reset)`,
+        String(currentCycles - 1)
+    );
+    if (input === null) return;
+
+    let newCount = parseInt(input.trim(), 10);
+    if (isNaN(newCount) || newCount < 0 || newCount > 24) {
+        return alert("⚠️ Valid number daalein (0 ya usse zyada).");
+    }
+
+    p.completedCycles = newCount;
     await saveDataToLocal();
     updatePOTabBadge();
 
@@ -2364,12 +2445,8 @@ function showPOTracker() {
                 <div style="flex:2; min-width:200px;"><label>Work Details</label><input id="poWorkDesc" placeholder="e.g. Civil Work / AMC of ACs"></div>
             </div>
             <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-                <div style="flex:1; min-width:140px;"><label>Total Amount (₹)</label><input type="number" id="poAmount"></div>
-                <div style="flex:1; min-width:140px;"><label>Final Deadline</label><input type="date" id="poDeadline"></div>
-                <div style="flex:1; min-width:170px;">
-                    <label>Next Alert Date <span style="font-weight:500; color:#64748b; font-size:11px;">(Optional Override)</span></label>
-                    <input type="date" id="poNextAlertDate" title="Khali chhodne par PO Date se fixed schedule auto-calculate hoga">
-                </div>
+                <div style="flex:1; min-width:150px;"><label>Total Amount (₹)</label><input type="number" id="poAmount"></div>
+                <div style="flex:1; min-width:150px;"><label>Final Deadline</label><input type="date" id="poDeadline"></div>
             </div>
 
             <div style="background:#eef2ff; border:1px dashed #a5b4fc; border-radius:10px; padding:12px; margin-bottom:12px;">
@@ -2486,6 +2563,7 @@ function renderPOTableRows() {
         let isCivil = (p.poType === 'Civil PO');
         let isAMC = (p.poType === 'AMC PO');
         let cyclesDone = parseInt(p.completedCycles, 10) || 0;
+        let alertM = getEffectiveAlertMonths(p);
 
         let isUrgent = (status && status.isAlert) || (monthAlert && monthAlert.isAlert) || (sdStatus && sdStatus.isAlert);
         let rowBg = isUrgent
@@ -2496,8 +2574,12 @@ function renderPOTableRows() {
             ? `<button onclick="togglePOStatus('${p.id}')" style="background:#07865b; padding:4px 8px; border-radius:4px; font-size:11px; color:white; border:none; cursor:pointer; width:82px;">✅ Completed</button>`
             : `<button onclick="togglePOStatus('${p.id}')" style="background:#f39c12; padding:4px 8px; border-radius:4px; font-size:11px; color:white; border:none; cursor:pointer; width:82px;">⏳ Ongoing</button>`;
 
+        let claimBtnLabel = (monthAlert && monthAlert.dueCyclesCount > 1 && monthAlert.totalDueMonths > 0)
+            ? `🧾 Claim (${monthAlert.totalDueMonths}M)`
+            : `🧾 Claim Bill`;
+
         let billDoneBtn = (!p.isCompleted && monthAlert && monthAlert.isAlert)
-            ? `<button onclick="markPOBillDone('${p.id}')" style="background:#059669; padding:4px 8px; border-radius:4px; font-size:11px; color:white; border:none; cursor:pointer; white-space:nowrap;" title="Current bill cycle close karein aur agla alert shift karein">✅ Bill #${monthAlert.billNo} Done</button>`
+            ? `<button onclick="markPOBillDone('${p.id}')" style="background:#7c3aed; padding:4px 8px; border-radius:4px; font-size:11px; color:white; border:none; cursor:pointer; white-space:nowrap;" title="Click karke 1 ya multiple cycles (3M / 6M) claim mark karein">${claimBtnLabel}</button>`
             : '';
 
         let sdBtn = '';
@@ -2530,7 +2612,7 @@ function renderPOTableRows() {
             : '';
 
         let cyclesNote = (!p.isCompleted && cyclesDone > 0)
-            ? `<br><span style="font-size:10px; color:#047857; font-weight:700;">✓ ${cyclesDone} Bill${cyclesDone > 1 ? 's' : ''} Done</span>`
+            ? `<br><span onclick="undoPOBillClaim('${p.id}')" title="Click karke claimed bill undo / adjust karein" style="cursor:pointer; display:inline-block; margin-top:3px; font-size:10px; color:#047857; background:#ecfdf5; border:1px dashed #6ee7b7; padding:1px 6px; border-radius:99px; font-weight:700;">✓ ${cyclesDone} Bill${cyclesDone > 1 ? 's' : ''} Claimed${alertM > 0 ? ` (${cyclesDone * alertM}M)` : ''} ↩️</span>`
             : '';
 
         let compNote = p.completedDate
@@ -2574,8 +2656,6 @@ async function savePO() {
     let poType = poTypeEl ? poTypeEl.value : 'General PO';
     let alertEl = document.getElementById('poAlertMonths');
     let alertMonths = alertEl ? parseInt(alertEl.value, 10) || 0 : 0;
-    let nextAlertEl = document.getElementById('poNextAlertDate');
-    let nextAlertDate = nextAlertEl ? nextAlertEl.value.trim() : '';
     let sdAmtEl = document.getElementById('poSDAmount');
     let sdAmount = sdAmtEl ? sdAmtEl.value.trim() : '';
     let sdMonthsEl = document.getElementById('poSDMonths');
@@ -2618,7 +2698,6 @@ async function savePO() {
             date,
             poType,
             alertMonths,
-            nextAlertDate,
             completedCycles: existingPO ? (parseInt(existingPO.completedCycles, 10) || 0) : 0,
             sdAmount: hasSD ? sdAmount : '',
             sdHoldMonths,
@@ -2718,8 +2797,6 @@ function editPO(id) {
         if (poTypeEl) poTypeEl.value = p.poType || 'General PO';
         let alertEl = document.getElementById('poAlertMonths');
         if (alertEl) alertEl.value = String(getEffectiveAlertMonths(p));
-        let nextAlertEl = document.getElementById('poNextAlertDate');
-        if (nextAlertEl) nextAlertEl.value = p.nextAlertDate || '';
         let sdAmtEl = document.getElementById('poSDAmount');
         if (sdAmtEl) sdAmtEl.value = p.sdAmount || '';
         let sdMonthsEl = document.getElementById('poSDMonths');
