@@ -387,7 +387,7 @@ td {
 </div>
 
 <script>
-// --- FIREBASE CONFIGURATION ---
+// --- FIREBASE & GOOGLE DRIVE CONFIGURATION ---
 const firebaseConfig = {
     apiKey: "AIzaSyCAhAQcsnGqPTiScGJVbNR57Mbnn9jdfdU",
     authDomain: "servicetracker-e4887.firebaseapp.com",
@@ -400,7 +400,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const auth = firebase.auth();
-const IMGBB_API_KEY = "2291e363544930c9291f5bf04d9e9432";
+const GOOGLE_DRIVE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxw5ktR5bI7C9fi_HfTlTSejorhwoSqorOZumHL0WGDmAPO6YgYP1NenaMlJxJBVBLB/exec";
 
 let defaultData = {
     records: { 'Tanmoy': [], 'Tapabrata': [] },
@@ -436,9 +436,30 @@ function formatDate(dateStr) {
     return dateStr;
 }
 
+// ====== IMAGE COMPRESSION + PDF SUPPORT (UP TO 10 MB) ======
 function compressImage(file) {
     return new Promise((resolve) => {
         if (!file) return resolve('');
+
+        const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+        if (isPDF) {
+            if (file.size > 10 * 1024 * 1024) {
+                alert("⚠️ PDF file 10 MB se chhoti honi chahiye!");
+                return resolve('');
+            }
+            let pdfReader = new FileReader();
+            pdfReader.onload = (e) => {
+                let res = e.target.result || '';
+                if (res && !res.startsWith('data:application/pdf')) {
+                    res = 'data:application/pdf;base64,' + res.split(',')[1];
+                }
+                resolve(res);
+            };
+            pdfReader.onerror = () => resolve('');
+            pdfReader.readAsDataURL(file);
+            return;
+        }
+
         let reader = new FileReader();
         reader.onload = function(event) {
             let img = new Image();
@@ -459,21 +480,141 @@ function compressImage(file) {
     });
 }
 
-async function uploadToImgBB(base64Str) {
-    if (!base64Str || !base64Str.startsWith('data:image')) return '';
+// ====== GOOGLE DRIVE UPLOAD, DELETE & LIVE PROGRESS BAR ======
+let activeUploadController = null;
+
+function updateUploadBar(percent, statusText, titleText) {
+    let overlay = document.getElementById('uploadProgressOverlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'uploadProgressOverlay';
+        overlay.style.cssText = 'position:fixed; inset:0; background:rgba(15,23,42,0.55); backdrop-filter:blur(3px); z-index:99999; display:flex; align-items:center; justify-content:center; padding:20px;';
+        overlay.innerHTML = `
+            <div style="background:#ffffff; width:100%; max-width:340px; padding:22px; border-radius:18px; box-shadow:0 20px 50px rgba(0,0,0,0.25); text-align:center; font-family:inherit;">
+                <div style="font-size:28px; margin-bottom:6px;">☁️</div>
+                <div id="uploadBarTitle" style="font-weight:800; color:#0f172a; font-size:15px; margin-bottom:4px;">Uploading to Google Drive...</div>
+                <div id="uploadBarSub" style="font-size:12px; color:#64748b; margin-bottom:14px;">Preparing...</div>
+                <div style="width:100%; height:12px; background:#e2e8f0; border-radius:99px; overflow:hidden; margin-bottom:8px;">
+                    <div id="uploadBarFill" style="height:100%; width:0%; background:linear-gradient(90deg, #10b981, #059669); border-radius:99px; transition:width 0.25s ease;"></div>
+                </div>
+                <div id="uploadBarPct" style="font-weight:800; color:#059669; font-size:14px; margin-bottom:12px;">0%</div>
+                <button type="button" onclick="cancelActiveUpload()" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:6px 14px; font-size:12px; border-radius:8px;">✖ Cancel</button>
+            </div>`;
+        document.body.appendChild(overlay);
+    }
+    overlay.style.display = 'flex';
+    document.getElementById('uploadBarTitle').innerText = titleText || 'Uploading to Google Drive...';
+    document.getElementById('uploadBarFill').style.width = percent + '%';
+    document.getElementById('uploadBarPct').innerText = percent + '%';
+    if (statusText) document.getElementById('uploadBarSub').innerText = statusText;
+}
+
+function hideUploadBar() {
+    let overlay = document.getElementById('uploadProgressOverlay');
+    if (overlay) overlay.style.display = 'none';
+}
+
+function cancelActiveUpload() {
+    if (activeUploadController) {
+        activeUploadController.abort();
+        activeUploadController = null;
+    }
+    hideUploadBar();
+}
+
+async function uploadToImgBB(base64Str, customFileName) {
+    if (!base64Str || !base64Str.startsWith('data:')) return '';
+
+    const mimeString = base64Str.split(',')[0].split(':')[1].split(';')[0];
+    const base64Data = base64Str.split(',')[1];
+    const fileKB = Math.max(1, Math.round((base64Data.length * 3 / 4) / 1024));
+    const ext = mimeString === 'application/pdf' ? 'pdf' : (mimeString.split('/')[1] || 'jpg');
+
+    let pct = 10;
+    updateUploadBar(pct, `Uploading ${fileKB} KB to Google Drive...`);
+
+    let progressTimer = setInterval(() => {
+        if (pct < 88) {
+            pct += Math.max(2, Math.round((90 - pct) * 0.18));
+            updateUploadBar(pct, pct < 60 ? `Uploading ${fileKB} KB to Google Drive...` : 'Saving file in Drive...');
+        }
+    }, 350);
+
+    activeUploadController = new AbortController();
+    let timeoutId = setTimeout(() => {
+        if (activeUploadController) activeUploadController.abort();
+    }, 30000);
+
     try {
-        let byteString = atob(base64Str.split(',')[1]);
-        let mimeString = base64Str.split(',')[0].split(':')[1].split(';')[0];
-        let ab = new ArrayBuffer(byteString.length);
-        let ia = new Uint8Array(ab);
-        for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
-        let blob = new Blob([ab], { type: mimeString });
-        let formData = new FormData();
-        formData.append("image", blob, "photo.jpg");
-        let response = await fetch('https://api.imgbb.com/1/upload?key=' + IMGBB_API_KEY, { method: 'POST', body: formData });
-        let data = await response.json();
-        return (data && data.success) ? data.data.url : '';
-    } catch (error) { return ''; }
+        const payload = JSON.stringify({
+            base64: base64Data,
+            mimeType: mimeString,
+            fileName: customFileName || ('ST_' + Date.now() + '.' + ext)
+        });
+
+        const response = await fetch(GOOGLE_DRIVE_SCRIPT_URL, {
+            method: 'POST',
+            redirect: 'follow',
+            body: payload,
+            signal: activeUploadController.signal
+        });
+
+        clearInterval(progressTimer);
+        clearTimeout(timeoutId);
+        activeUploadController = null;
+
+        const text = await response.text();
+        let data = null;
+        try { data = JSON.parse(text); } catch (e) {}
+
+        if (data && data.success && data.url) {
+            updateUploadBar(100, '✅ Saved to Google Drive!');
+            await new Promise(r => setTimeout(r, 350));
+            hideUploadBar();
+            return data.url;
+        } else {
+            hideUploadBar();
+            alert('⚠️ Google Drive Error: ' + (data && data.error ? data.error : 'Apps Script mein "Who has access: Anyone" check karein.'));
+            return '';
+        }
+    } catch (err) {
+        clearInterval(progressTimer);
+        clearTimeout(timeoutId);
+        activeUploadController = null;
+        hideUploadBar();
+        if (err && err.name === 'AbortError') {
+            alert('⏱️ Upload cancelled or timed out. Dobara try karein.');
+        } else {
+            alert('⚠️ Google Drive upload error! Apps Script mein "Who has access: Anyone" check karein.');
+        }
+        return '';
+    }
+}
+
+function extractDriveFileId(url) {
+    if (!url || typeof url !== 'string') return '';
+    let m1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (m1 && m1[1]) return m1[1];
+    let m2 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    if (m2 && m2[1]) return m2[1];
+    return '';
+}
+
+async function deleteFromGoogleDrive(fileUrl) {
+    const fileId = extractDriveFileId(fileUrl);
+    if (!fileId) return { success: true, skipped: true };
+
+    try {
+        const res = await fetch(GOOGLE_DRIVE_SCRIPT_URL, {
+            method: 'POST',
+            redirect: 'follow',
+            body: JSON.stringify({ action: 'delete', fileId: fileId })
+        });
+        const text = await res.text();
+        return JSON.parse(text);
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
 }
 
 async function handlePartImage(input, rowId) {
@@ -1684,85 +1825,168 @@ function downloadPartnerCSV(name) {
 function user() {
     return `<div class="card"><h2>👤 Select Technician Profile</h2><div class="grid"><div class="role" onclick="tech('computer')" style="cursor:pointer; background:#f8fafc; padding:20px; border-radius:14px; border:1px solid #e2e8f0; text-align:center; font-size:16px;">💻 <b>Computer</b></div><div class="role" onclick="tech('water')" style="cursor:pointer; background:#f8fafc; padding:20px; border-radius:14px; border:1px solid #e2e8f0; text-align:center; font-size:16px;">💧 <b>Water Purifier</b></div></div></div><div id="techArea"></div>`;
 }// =========================================================================
-// ====== PART 4: PO TRACKER, BILLS, PETTY CASH (TRACKING ONLY), CF, SETTINGS, TECH & VEHICLES ======
+// ====== PART 4: PO TRACKER (5-DAY ALERT, FIXED AMC SCHEDULE, PDF & AUTO-DELETE), BILLS, PETTY CASH, CF, SETTINGS, TECH & VEHICLES ======
 // =========================================================================
 
-// ====== PO DEADLINE & CUSTOM MONTH ALERT HELPERS ======
-function getEffectiveAlertMonths(po) {
-    if (!po) return 0;
-    if (po.alertMonths !== undefined && po.alertMonths !== null && po.alertMonths !== '') {
-        return parseInt(po.alertMonths, 10) || 0;
-    }
-    return po.poType === 'Civil PO' ? 6 : 0;
-}
-
-function getPODeadlineStatus(deadlineStr, isCompleted) {
-    if (isCompleted || !deadlineStr) return null;
-    let parts = deadlineStr.split('-');
-    if (parts.length !== 3) return null;
-
-    let today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    let due = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-    due.setHours(0, 0, 0, 0);
-
-    let diffDays = Math.round((due - today) / (1000 * 60 * 60 * 24));
-
-    if (diffDays < 0) {
-        return { level: 'overdue', days: diffDays, text: `🔴 ${Math.abs(diffDays)}d Overdue`, bg: '#ffe4e6', color: '#be123c', border: '#fda4af' };
-    }
-    if (diffDays === 0) {
-        return { level: 'today', days: 0, text: `🟠 Due Today!`, bg: '#ffedd5', color: '#c2410c', border: '#fdba74' };
-    }
-    if (diffDays <= 7) {
-        return { level: 'soon', days: diffDays, text: `🟡 ${diffDays}d Left`, bg: '#fef9c3', color: '#a16207', border: '#fde047' };
-    }
-    return { level: 'safe', days: diffDays, text: `🟢 ${diffDays}d Left`, bg: '#ecfdf5', color: '#047857', border: '#a7f3d0' };
-}
-
-function getPOMonthAlertStatus(po) {
-    if (!po || po.isCompleted || !po.date) return null;
-    let alertMonths = getEffectiveAlertMonths(po);
-    if (alertMonths <= 0) return null;
-
-    let parts = po.date.split('-');
+// ====== PO DATE, DEADLINE & FIXED SCHEDULE ALERT HELPERS ======
+function addMonthsSafe(dateStr, monthsToAdd) {
+    if (!dateStr) return null;
+    let parts = dateStr.split('-');
     if (parts.length !== 3) return null;
 
     let yr = parseInt(parts[0], 10);
     let mo = parseInt(parts[1], 10) - 1;
     let dy = parseInt(parts[2], 10);
 
-    let issueDate = new Date(yr, mo, dy);
-    issueDate.setHours(0, 0, 0, 0);
+    let totalMonths = mo + monthsToAdd;
+    let targetYear = yr + Math.floor(totalMonths / 12);
+    let normMonth = ((totalMonths % 12) + 12) % 12;
+    let maxDay = new Date(targetYear, normMonth + 1, 0).getDate();
+    let clampedDay = Math.min(dy, maxDay);
 
-    let targetDate = new Date(yr, mo + alertMonths, dy);
-    targetDate.setHours(0, 0, 0, 0);
+    let dt = new Date(targetYear, normMonth, clampedDay);
+    dt.setHours(0, 0, 0, 0);
+    return dt;
+}
+
+function parseISODateLocal(dateStr) {
+    if (!dateStr) return null;
+    let parts = dateStr.split('-');
+    if (parts.length !== 3) return null;
+    let dt = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    dt.setHours(0, 0, 0, 0);
+    return isNaN(dt.getTime()) ? null : dt;
+}
+
+function dateObjToISO(dt) {
+    if (!dt) return '';
+    let y = dt.getFullYear();
+    let m = String(dt.getMonth() + 1).padStart(2, '0');
+    let d = String(dt.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
+function getEffectiveAlertMonths(po) {
+    if (!po) return 0;
+    if (po.alertMonths !== undefined && po.alertMonths !== null && po.alertMonths !== '') {
+        return parseInt(po.alertMonths, 10) || 0;
+    }
+    if (po.poType === 'Civil PO') return 6;
+    if (po.poType === 'AMC PO') return 3;
+    return 0;
+}
+
+function getPODeadlineStatus(deadlineStr, isCompleted) {
+    if (isCompleted || !deadlineStr) return null;
+    let due = parseISODateLocal(deadlineStr);
+    if (!due) return null;
 
     let today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    let monthsElapsed = (today.getFullYear() - issueDate.getFullYear()) * 12 + (today.getMonth() - issueDate.getMonth());
-    if (today.getDate() < issueDate.getDate()) monthsElapsed--;
+    let diffDays = Math.round((due - today) / (1000 * 60 * 60 * 24));
 
-    if (today >= targetDate) {
-        let extraDays = Math.max(0, Math.round((today - targetDate) / (1000 * 60 * 60 * 24)));
+    if (diffDays < 0) {
+        return { level: 'overdue', days: diffDays, isAlert: true, text: `🔴 ${Math.abs(diffDays)}d Overdue`, bg: '#ffe4e6', color: '#be123c', border: '#fda4af' };
+    }
+    if (diffDays === 0) {
+        return { level: 'today', days: 0, isAlert: true, text: `🟠 Due Today!`, bg: '#ffedd5', color: '#c2410c', border: '#fdba74' };
+    }
+    if (diffDays <= 5) {
+        return { level: 'soon', days: diffDays, isAlert: true, text: `🟡 ${diffDays}d Left`, bg: '#fef9c3', color: '#a16207', border: '#fde047' };
+    }
+    return { level: 'safe', days: diffDays, isAlert: false, text: `🟢 ${diffDays}d Left`, bg: '#ecfdf5', color: '#047857', border: '#a7f3d0' };
+}
+
+function getPOMonthAlertStatus(po) {
+    if (!po || po.isCompleted) return null;
+    let alertMonths = getEffectiveAlertMonths(po);
+    let hasManualDate = !!(po.nextAlertDate && po.nextAlertDate.trim());
+    if (alertMonths <= 0 && !hasManualDate) return null;
+
+    let cyclesDone = parseInt(po.completedCycles, 10) || 0;
+    let billNo = cyclesDone + 1;
+
+    let dueDateObj = null;
+    let isManual = false;
+
+    if (hasManualDate) {
+        dueDateObj = parseISODateLocal(po.nextAlertDate.trim());
+        isManual = true;
+    } else if (alertMonths > 0 && po.date) {
+        dueDateObj = addMonthsSafe(po.date, alertMonths * billNo);
+    }
+
+    if (!dueDateObj) return null;
+
+    let today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let diffDays = Math.round((dueDateObj - today) / (1000 * 60 * 60 * 24));
+    let dueISO = dateObjToISO(dueDateObj);
+    let isAlert = diffDays <= 5;
+
+    if (diffDays < 0) {
         return {
+            isAlert: true,
             reached: true,
+            diffDays,
             alertMonths,
-            monthsElapsed: Math.max(alertMonths, monthsElapsed),
-            text: extraDays > 0 ? `🔔 ${alertMonths}M+ (${extraDays}d)` : `🔔 ${alertMonths}M Alert!`,
+            cyclesDone,
+            billNo,
+            dueISO,
+            isManual,
+            text: `🔔 Bill #${billNo} Overdue (${Math.abs(diffDays)}d)`,
             bg: '#fef2f2',
             color: '#b91c1c',
             border: '#fca5a5'
         };
     }
 
+    if (diffDays === 0) {
+        return {
+            isAlert: true,
+            reached: true,
+            diffDays: 0,
+            alertMonths,
+            cyclesDone,
+            billNo,
+            dueISO,
+            isManual,
+            text: `🔔 Bill #${billNo} Due Today!`,
+            bg: '#ffedd5',
+            color: '#c2410c',
+            border: '#fdba74'
+        };
+    }
+
+    if (diffDays <= 5) {
+        return {
+            isAlert: true,
+            reached: true,
+            diffDays,
+            alertMonths,
+            cyclesDone,
+            billNo,
+            dueISO,
+            isManual,
+            text: `🔔 Bill #${billNo} in ${diffDays}d`,
+            bg: '#fef9c3',
+            color: '#a16207',
+            border: '#fde047'
+        };
+    }
+
     return {
+        isAlert: false,
         reached: false,
+        diffDays,
         alertMonths,
-        monthsElapsed: Math.max(0, monthsElapsed),
-        text: `🕒 ${Math.max(0, monthsElapsed)}m / ${alertMonths}m`,
+        cyclesDone,
+        billNo,
+        dueISO,
+        isManual,
+        text: `🕒 Bill #${billNo}: ${formatDate(dueISO)}`,
         bg: '#f0f9ff',
         color: '#0369a1',
         border: '#bae6fd'
@@ -1775,11 +1999,13 @@ function getAlertPOItems() {
         if (p.isCompleted) return;
         let dlStatus = getPODeadlineStatus(p.deadline, p.isCompleted);
         let monthAlert = getPOMonthAlertStatus(p);
+        let typeLabel = p.poType === 'Civil PO' ? 'CIVIL PO' : (p.poType === 'AMC PO' ? 'AMC PO' : 'PO');
 
-        if (dlStatus && dlStatus.days <= 7) {
+        if (dlStatus && dlStatus.isAlert) {
             alerts.push({
                 po: p,
-                kind: p.poType === 'Civil PO' ? 'CIVIL PO DEADLINE' : 'PO DEADLINE',
+                isBillCycle: false,
+                kind: `${typeLabel} DEADLINE`,
                 badgeText: dlStatus.text,
                 bg: dlStatus.bg,
                 color: dlStatus.color,
@@ -1789,16 +2015,19 @@ function getAlertPOItems() {
             });
         }
 
-        if (monthAlert && monthAlert.reached) {
+        if (monthAlert && monthAlert.isAlert) {
+            let cycleTag = monthAlert.isManual ? 'CUSTOM ALERT' : `${monthAlert.alertMonths}M CYCLE`;
             alerts.push({
                 po: p,
-                kind: `${p.poType === 'Civil PO' ? 'CIVIL PO' : 'PO'} (${monthAlert.alertMonths}M+)`,
+                isBillCycle: true,
+                billNo: monthAlert.billNo,
+                kind: `${typeLabel} • ${cycleTag}`,
                 badgeText: monthAlert.text,
                 bg: monthAlert.bg,
                 color: monthAlert.color,
                 border: monthAlert.border,
-                dateText: `PO Date: ${formatDate(p.date)}`,
-                priority: 8
+                dateText: `Bill Due: ${formatDate(monthAlert.dueISO)}`,
+                priority: monthAlert.diffDays
             });
         }
     });
@@ -1827,7 +2056,7 @@ function injectPOAlertBanner() {
     let profileArea = document.getElementById('profileArea');
     if (!profileArea) return;
 
-    let cardsHTML = alertList.map(({ po, kind, badgeText, bg, color, border, dateText }) => `
+    let cardsHTML = alertList.map(({ po, isBillCycle, billNo, kind, badgeText, bg, color, border, dateText }) => `
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; background:#ffffff; padding:10px 12px; border-radius:10px; border:1px solid ${border};">
             <div>
                 <span style="font-size:10px; font-weight:800; background:#f1f5f9; color:#334155; padding:1px 6px; border-radius:4px; margin-right:4px;">${kind}</span>
@@ -1835,9 +2064,10 @@ function injectPOAlertBanner() {
                 <span style="font-size:12px; color:#475569;"> (${po.poNo})</span>
                 <div style="font-size:11.5px; color:#64748b; margin-top:2px;">${po.workDesc || 'No work details'} • ₹${parseFloat(po.amount || 0).toLocaleString('en-IN')}</div>
             </div>
-            <div style="display:flex; align-items:center; gap:8px;">
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                 <span style="background:${bg}; color:${color}; border:1px solid ${border}; padding:3px 8px; border-radius:99px; font-size:11.5px; font-weight:800; white-space:nowrap;">${badgeText}</span>
                 <span style="font-size:11px; color:#64748b; white-space:nowrap;">${dateText}</span>
+                ${isBillCycle ? `<button onclick="markPOBillDone('${po.id}')" style="background:#059669; color:#fff; padding:4px 9px; font-size:11px; border-radius:6px; white-space:nowrap;">✅ Bill #${billNo} Done</button>` : ''}
             </div>
         </div>
     `).join('');
@@ -1862,11 +2092,47 @@ function injectPOAlertBanner() {
     profileArea.prepend(banner);
 }
 
-// ====== PO TRACKER ======
+async function markPOBillDone(id) {
+    let p = getArray(appData.poRecords).find(x => String(x.id) === String(id));
+    if (!p) return;
+
+    let currentCycles = parseInt(p.completedCycles, 10) || 0;
+    let doneBillNo = currentCycles + 1;
+    let alertMonths = getEffectiveAlertMonths(p);
+
+    let msg = `Bill #${doneBillNo} (${p.authority} - ${p.poNo}) ko Done mark karein?`;
+    if (alertMonths > 0 && p.date) {
+        let nextDueObj = addMonthsSafe(p.date, alertMonths * (doneBillNo + 1));
+        if (nextDueObj) {
+            msg += `\n\nAgla alert (Bill #${doneBillNo + 1}) ${formatDate(dateObjToISO(nextDueObj))} se 5 din pehle aayega (Fixed PO Schedule).`;
+        }
+    } else {
+        msg += `\n\nCurrent alert band ho jayega.`;
+    }
+
+    if (!confirm(msg)) return;
+
+    p.completedCycles = doneBillNo;
+    p.nextAlertDate = '';
+
+    await saveDataToLocal();
+    updatePOTabBadge();
+
+    if (document.getElementById('poTableBody')) {
+        renderPOTableRows();
+    } else if (currentActiveTab === 'tab-overview') {
+        injectPOAlertBanner();
+    }
+}
+
+// ====== PO TRACKER (IMAGE + PDF UPLOAD + DRIVE AUTO-DELETE + AMC CYCLE) ======
 function handlePOTypeChange() {
     let typeEl = document.getElementById('poType');
     let alertEl = document.getElementById('poAlertMonths');
-    if (typeEl && alertEl && typeEl.value === 'Civil PO' && alertEl.value === '0') {
+    if (!typeEl || !alertEl) return;
+    if (typeEl.value === 'AMC PO') {
+        alertEl.value = '3';
+    } else if (typeEl.value === 'Civil PO') {
         alertEl.value = '6';
     }
 }
@@ -1885,15 +2151,16 @@ function showPOTracker() {
                     <label>PO Type</label>
                     <select id="poType" onchange="handlePOTypeChange()" style="margin:0; background:#fff;">
                         <option value="General PO">📄 General PO</option>
+                        <option value="AMC PO">🔧 AMC PO</option>
                         <option value="Civil PO">🏗️ Civil PO</option>
                     </select>
                 </div>
                 <div style="flex:1; min-width:140px;">
-                    <label>Month Alert</label>
+                    <label>Bill Cycle Alert</label>
                     <select id="poAlertMonths" style="margin:0; background:#fff;">
                         <option value="0">🔕 No Alert</option>
                         <option value="1">🔔 1 Month</option>
-                        <option value="3">🔔 3 Months</option>
+                        <option value="3">🔔 3 Months (AMC)</option>
                         <option value="6">🔔 6 Months</option>
                         <option value="12">🔔 12 Months</option>
                     </select>
@@ -1905,23 +2172,27 @@ function showPOTracker() {
                 <div style="flex:2; min-width:200px;"><label>Work Details</label><input id="poWorkDesc" placeholder="e.g. AMC of ACs"></div>
             </div>
             <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-                <div style="flex:1; min-width:150px;"><label>Total Amount (₹)</label><input type="number" id="poAmount"></div>
-                <div style="flex:1; min-width:150px;"><label>Deadline</label><input type="date" id="poDeadline"></div>
+                <div style="flex:1; min-width:140px;"><label>Total Amount (₹)</label><input type="number" id="poAmount"></div>
+                <div style="flex:1; min-width:140px;"><label>Final Deadline</label><input type="date" id="poDeadline"></div>
+                <div style="flex:1; min-width:170px;">
+                    <label>Next Alert Date <span style="font-weight:500; color:#64748b; font-size:11px;">(Optional Override)</span></label>
+                    <input type="date" id="poNextAlertDate" title="Khali chhodne par PO Date se fixed schedule auto-calculate hoga">
+                </div>
             </div>
-            <label>Attach Screenshot</label>
-            <input type="file" id="poPhoto" accept="image/*" style="border:none; padding:0; margin-bottom:15px;">
+            <label>Attach PO Copy (Image / PDF)</label>
+            <input type="file" id="poPhoto" accept="image/*,application/pdf,.pdf" style="border:none; padding:0; margin-bottom:15px;">
             <button id="poSaveBtn" onclick="savePO()" style="width:100%; background:#16a085; font-size:16px; padding:12px;">💾 Save Purchase Order</button>
         </div>
     </div>
     <div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
             <h2 style="margin:0;">📂 PO Track Record</h2>
-            <input type="text" id="poSearchInput" placeholder="🔍 Search PO, Civil PO, Authority..." oninput="renderPOTableRows()" style="max-width:320px; margin:0; padding:8px 12px;">
+            <input type="text" id="poSearchInput" placeholder="🔍 Search PO, AMC, Civil PO, Authority..." oninput="renderPOTableRows()" style="max-width:320px; margin:0; padding:8px 12px;">
         </div>
         <div style="overflow-x:auto;">
-            <table style="min-width:800px;">
+            <table style="min-width:850px;">
                 <thead>
-                    <tr><th>Issue Date</th><th>Authority & Work</th><th>PO No.</th><th>Deadline</th><th>Amount</th><th style="text-align:center;">Copy</th><th style="text-align:center;">Status & Action</th></tr>
+                    <tr><th>Issue Date & Cycle</th><th>Authority & Work</th><th>PO No.</th><th>Deadline</th><th>Amount</th><th style="text-align:center;">Copy</th><th style="text-align:center;">Status & Action</th></tr>
                 </thead>
                 <tbody id="poTableBody"></tbody>
             </table>
@@ -1947,9 +2218,11 @@ function renderPOTableRows() {
     poList.sort((a, b) => {
         if (a.isCompleted !== b.isCompleted) return a.isCompleted ? 1 : -1;
         if (!a.isCompleted) {
-            let da = a.deadline ? new Date(a.deadline).getTime() : Infinity;
-            let db = b.deadline ? new Date(b.deadline).getTime() : Infinity;
-            return da - db;
+            let ma = getPOMonthAlertStatus(a), mb = getPOMonthAlertStatus(b);
+            let da = getPODeadlineStatus(a.deadline, a.isCompleted), db = getPODeadlineStatus(b.deadline, b.isCompleted);
+            let aScore = Math.min(ma ? ma.diffDays : Infinity, da ? da.days : Infinity);
+            let bScore = Math.min(mb ? mb.diffDays : Infinity, db ? db.days : Infinity);
+            if (aScore !== bScore) return aScore - bScore;
         }
         return 0;
     });
@@ -1958,25 +2231,43 @@ function renderPOTableRows() {
         let status = getPODeadlineStatus(p.deadline, p.isCompleted);
         let monthAlert = getPOMonthAlertStatus(p);
         let isCivil = (p.poType === 'Civil PO');
+        let isAMC = (p.poType === 'AMC PO');
+        let cyclesDone = parseInt(p.completedCycles, 10) || 0;
 
+        let isUrgent = (status && status.isAlert) || (monthAlert && monthAlert.isAlert);
         let rowBg = p.isCompleted
             ? 'background:#eefdf6; color:#555;'
-            : ((status && status.level === 'overdue') || (monthAlert && monthAlert.reached) ? 'background:#fff5f5;' : 'background:#fff;');
+            : (isUrgent ? 'background:#fff5f5;' : 'background:#fff;');
 
         let statusBtn = p.isCompleted
-            ? `<button onclick="togglePOStatus('${p.id}')" style="background:#07865b; padding:4px 8px; border-radius:4px; font-size:11px; color:white; border:none; cursor:pointer; width:80px;">✅ Completed</button>`
-            : `<button onclick="togglePOStatus('${p.id}')" style="background:#f39c12; padding:4px 8px; border-radius:4px; font-size:11px; color:white; border:none; cursor:pointer; width:80px;">⏳ Ongoing</button>`;
+            ? `<button onclick="togglePOStatus('${p.id}')" style="background:#07865b; padding:4px 8px; border-radius:4px; font-size:11px; color:white; border:none; cursor:pointer; width:82px;">✅ Completed</button>`
+            : `<button onclick="togglePOStatus('${p.id}')" style="background:#f39c12; padding:4px 8px; border-radius:4px; font-size:11px; color:white; border:none; cursor:pointer; width:82px;">⏳ Ongoing</button>`;
+
+        let billDoneBtn = (!p.isCompleted && monthAlert && monthAlert.isAlert)
+            ? `<button onclick="markPOBillDone('${p.id}')" style="background:#059669; padding:4px 8px; border-radius:4px; font-size:11px; color:white; border:none; cursor:pointer; white-space:nowrap;" title="Current bill cycle close karein aur agla alert shift karein">✅ Bill #${monthAlert.billNo} Done</button>`
+            : '';
 
         let proofHTML = '-';
-        if (p.photo && p.photo.length > 5) proofHTML = `<a href="${p.photo}" target="_blank" style="color:#2980b9; font-weight:bold; text-decoration:none; font-size:16px;">📷</a>`;
-        else if (p.link && p.link.length > 5) proofHTML = `<a href="${p.link}" target="_blank" style="color:#2980b9; font-weight:bold; text-decoration:none; font-size:16px;">🔗</a>`;
+        if (p.photo && p.photo.length > 5) {
+            let icon = p.photo.includes('/file/d/') ? '📄' : '📷';
+            proofHTML = `<a href="${p.photo}" target="_blank" style="color:#2980b9; font-weight:bold; text-decoration:none; font-size:16px;" title="Open Attachment">${icon}</a>`;
+        } else if (p.link && p.link.length > 5) {
+            proofHTML = `<a href="${p.link}" target="_blank" style="color:#2980b9; font-weight:bold; text-decoration:none; font-size:16px;">🔗</a>`;
+        }
 
-        let typeBadge = isCivil
-            ? `<span style="font-size:10px; background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; padding:1px 6px; border-radius:4px; font-weight:700; margin-left:4px;">🏗️ Civil PO</span>`
-            : '';
+        let typeBadge = '';
+        if (isCivil) {
+            typeBadge = `<span style="font-size:10px; background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; padding:1px 6px; border-radius:4px; font-weight:700; margin-left:4px;">🏗️ Civil PO</span>`;
+        } else if (isAMC) {
+            typeBadge = `<span style="font-size:10px; background:#ede9fe; color:#6d28d9; border:1px solid #ddd6fe; padding:1px 6px; border-radius:4px; font-weight:700; margin-left:4px;">🔧 AMC PO</span>`;
+        }
 
         let ageBadge = monthAlert
             ? `<br><span style="display:inline-block; margin-top:3px; background:${monthAlert.bg}; color:${monthAlert.color}; border:1px solid ${monthAlert.border}; padding:1px 6px; border-radius:99px; font-size:10px; font-weight:700; white-space:nowrap;">${monthAlert.text}</span>`
+            : '';
+
+        let cyclesNote = (!p.isCompleted && cyclesDone > 0)
+            ? `<br><span style="font-size:10px; color:#047857; font-weight:700;">✓ ${cyclesDone} Bill${cyclesDone > 1 ? 's' : ''} Done</span>`
             : '';
 
         let deadlineBadge = status
@@ -1984,13 +2275,20 @@ function renderPOTableRows() {
             : '';
 
         return `<tr style="${rowBg}">
-            <td style="white-space:nowrap;">${formatDate(p.date)}${ageBadge}</td>
+            <td style="white-space:nowrap;">${formatDate(p.date)}${ageBadge}${cyclesNote}</td>
             <td><b>${p.authority}</b>${typeBadge}<br><span style="font-size:11px;color:#555;">${p.workDesc}</span></td>
             <td>${p.poNo}</td>
             <td style="white-space:nowrap;">${p.deadline ? formatDate(p.deadline) : '-'}${deadlineBadge}</td>
             <td style="font-weight:bold;">₹${p.amount}</td>
             <td style="text-align:center;">${proofHTML}</td>
-            <td style="display:flex; gap:2px; justify-content:center; align-items:center;">${statusBtn}<button onclick="editPO('${p.id}')" style="background:#3498db; padding:4px 6px; border-radius:4px; font-size:12px; color:white; border:none; cursor:pointer; margin-left:4px;">✏️</button><button onclick="deletePO('${p.id}')" style="background:#e21d4f; padding:4px 6px; border-radius:4px; font-size:12px; color:white; border:none; cursor:pointer; margin-left:4px;">🗑️</button></td>
+            <td>
+                <div style="display:flex; gap:4px; justify-content:center; align-items:center; flex-wrap:wrap;">
+                    ${billDoneBtn}
+                    ${statusBtn}
+                    <button onclick="editPO('${p.id}')" style="background:#3498db; padding:4px 6px; border-radius:4px; font-size:12px; color:white; border:none; cursor:pointer;">✏️</button>
+                    <button onclick="deletePO('${p.id}')" style="background:#e21d4f; padding:4px 6px; border-radius:4px; font-size:12px; color:white; border:none; cursor:pointer;">🗑️</button>
+                </div>
+            </td>
         </tr>`;
     }).join('');
 
@@ -2004,6 +2302,8 @@ async function savePO() {
     let poType = poTypeEl ? poTypeEl.value : 'General PO';
     let alertEl = document.getElementById('poAlertMonths');
     let alertMonths = alertEl ? parseInt(alertEl.value, 10) || 0 : 0;
+    let nextAlertEl = document.getElementById('poNextAlertDate');
+    let nextAlertDate = nextAlertEl ? nextAlertEl.value.trim() : '';
     let authority = document.getElementById('poAuthority').value.trim();
     let poNo = document.getElementById('poNumber').value.trim();
     let workDesc = document.getElementById('poWorkDesc').value.trim();
@@ -2013,7 +2313,8 @@ async function savePO() {
     let file = photoInput.files[0];
 
     if (!authority || !poNo || !amount) return alert("Authority, PO Number and Amount required!");
-    if (file && !file.type.startsWith('image/')) return alert("⚠️ ERROR: Only image files are allowed!");
+    let isPDF = file && (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'));
+    if (file && !file.type.startsWith('image/') && !isPDF) return alert("⚠️ ERROR: Sirf Image ya PDF file upload karein!");
 
     let btn = document.getElementById('poSaveBtn'); let originalText = btn.innerText; btn.innerText = "⏳ Uploading..."; btn.disabled = true;
     try {
@@ -2023,13 +2324,25 @@ async function savePO() {
         let existingPO = currentPOEditId ? appData.poRecords.find(p => String(p.id) === String(currentPOEditId)) : null;
         let photoUrl = existingPO && existingPO.photo ? existingPO.photo : '';
         let oldLink = existingPO && existingPO.link ? existingPO.link : '';
-        if (file) { let b64 = await compressImage(file); if (b64) photoUrl = await uploadToImgBB(b64); }
+
+        if (file) {
+            let b64 = await compressImage(file);
+            if (!b64) { btn.innerText = originalText; btn.disabled = false; return; }
+            let safeName = 'PO_' + poNo.replace(/[^a-zA-Z0-9_-]/g, '_') + (isPDF ? '.pdf' : '.jpg');
+            photoUrl = await uploadToImgBB(b64, safeName);
+            if (!photoUrl) { btn.innerText = originalText; btn.disabled = false; return; }
+            if (existingPO && existingPO.photo && existingPO.photo !== photoUrl) {
+                deleteFromGoogleDrive(existingPO.photo);
+            }
+        }
 
         let newPO = {
             id: currentPOEditId || Date.now(),
             date,
             poType,
             alertMonths,
+            nextAlertDate,
+            completedCycles: existingPO ? (parseInt(existingPO.completedCycles, 10) || 0) : 0,
             authority,
             poNo,
             workDesc,
@@ -2046,7 +2359,24 @@ async function savePO() {
 }
 
 function togglePOStatus(id) { let p = getArray(appData.poRecords).find(x => String(x.id) === String(id)); if (p) { p.isCompleted = !p.isCompleted; saveDataToLocal().then(() => renderPOTableRows()); } }
-function deletePO(id) { if (confirm("Are you sure you want to delete this PO?")) { appData.poRecords = getArray(appData.poRecords).filter(p => String(p.id) !== String(id)); saveDataToLocal().then(() => renderPOTableRows()); } }
+
+async function deletePO(id) {
+    if (!confirm("Are you sure you want to delete this PO? (Drive se attached file bhi delete ho jayegi)")) return;
+    let targetPO = getArray(appData.poRecords).find(p => String(p.id) === String(id));
+
+    if (targetPO && targetPO.photo && typeof extractDriveFileId === 'function' && extractDriveFileId(targetPO.photo)) {
+        updateUploadBar(45, 'Deleting PO copy from Google Drive...', '🗑️ Deleting File...');
+        await deleteFromGoogleDrive(targetPO.photo);
+        updateUploadBar(100, '✅ File deleted from Drive!', '🗑️ Deleting File...');
+        await new Promise(r => setTimeout(r, 300));
+        hideUploadBar();
+    }
+
+    appData.poRecords = getArray(appData.poRecords).filter(p => String(p.id) !== String(id));
+    await saveDataToLocal();
+    renderPOTableRows();
+}
+
 function editPO(id) {
     let p = getArray(appData.poRecords).find(x => String(x.id) === String(id));
     if (p) {
@@ -2056,6 +2386,8 @@ function editPO(id) {
         if (poTypeEl) poTypeEl.value = p.poType || 'General PO';
         let alertEl = document.getElementById('poAlertMonths');
         if (alertEl) alertEl.value = String(getEffectiveAlertMonths(p));
+        let nextAlertEl = document.getElementById('poNextAlertDate');
+        if (nextAlertEl) nextAlertEl.value = p.nextAlertDate || '';
         document.getElementById('poAuthority').value = p.authority || '';
         document.getElementById('poNumber').value = p.poNo || '';
         document.getElementById('poWorkDesc').value = p.workDesc || '';
@@ -2400,14 +2732,14 @@ function showSettings() {
 }
 window.saveCFStart = function() { if (!appData.config) appData.config = {}; let val = document.getElementById('cfStartInput').value; if (!val) return alert("Select month!"); appData.config.cfStartMonth = val; saveDataToLocal().then(() => alert("✅ Start Month Updated!")); };
 window.togglePastCFLogic = function() { if (!appData.config) appData.config = {}; appData.config.enablePastCF = document.getElementById('togglePastCF').checked; saveDataToLocal().then(() => alert('Preference updated!')); };
-function saveSignature() { let input = document.getElementById('sigUpload'); if (input.files[0]) { if (!input.files[0].type.startsWith('image/')) return alert("Upload Image only!"); let r = new FileReader(); r.onload = async function(e) { let b64 = await compressImage(input.files[0]); appData.signature = await uploadToImgBB(b64); await saveDataToLocal(); alert("Signature Saved!"); showSettings(); }; r.readAsDataURL(input.files[0]); } else alert("Select an image first!"); }
+function saveSignature() { let input = document.getElementById('sigUpload'); if (input.files[0]) { if (!input.files[0].type.startsWith('image/')) return alert("Upload Image only!"); let r = new FileReader(); r.onload = async function(e) { let b64 = await compressImage(input.files[0]); appData.signature = await uploadToImgBB(b64, 'Signature_' + Date.now() + '.jpg'); await saveDataToLocal(); alert("Signature Saved!"); showSettings(); }; r.readAsDataURL(input.files[0]); } else alert("Select an image first!"); }
 function downloadJSON() { let a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(appData, null, 2)])); a.download = "Backup.json"; a.click(); }
 function downloadCSV() { let csv = "Partner,Date,Details,Amt,Type\n"; for (let p in appData.records) getArray(appData.records[p]).forEach(r => csv += `${p},${r.date},${r.details},${r.amount},${r.type}\n`); let a = document.createElement('a'); a.href = encodeURI("data:text/csv;charset=utf-8," + csv); a.download = "Data.csv"; a.click(); }
 function restoreData(e) { let f = e.target.files[0]; if (!f) return; let r = new FileReader(); r.onload = x => { try { appData = JSON.parse(x.target.result); saveDataToLocal().then(() => location.reload()); } catch (err) { alert("Invalid backup!"); } }; r.readAsText(f); }
 async function updatePartnerPassword() { let u = document.getElementById('sP').value; let o = document.getElementById('oP').value.trim(); let n = document.getElementById('nP').value.trim(); let st = appData.passwords[u] || defaultData.passwords[u]; let enteredOldHash = await hashPassword(o); let match = (st.length === 64) ? (enteredOldHash === st) : (o === st); if (match && n.length >= 4) { appData.passwords[u] = await hashPassword(n); saveDataToLocal().then(() => alert("Password Updated!")); } else alert("Incorrect password or new too short!"); }
 
 // ====== TECH ======
-function showTechDashboard() { setActiveAdminTab('tab-tech'); document.getElementById('profileArea').innerHTML = `<div class="card"><h2>👤 Select Technician Profile</h2><div class="grid"><div class="role" onclick="tech('computer')">💻 <b>Computer</b></div><div class="role" onclick="tech('water')">💧 <b>Water Purifier</b></div></div></div><div id="techArea"></div>`; }
+function showTechDashboard() { setActiveAdminTab('tab-tech'); document.getElementById('profileArea').innerHTML = `<div class="card"><h2>👤 Select Technician Profile</h2><div class="grid"><div class="role" onclick="tech('computer')" style="cursor:pointer; background:#f8fafc; padding:20px; border-radius:14px; border:1px solid #e2e8f0; text-align:center; font-size:16px;">💻 <b>Computer</b></div><div class="role" onclick="tech('water')" style="cursor:pointer; background:#f8fafc; padding:20px; border-radius:14px; border:1px solid #e2e8f0; text-align:center; font-size:16px;">💧 <b>Water Purifier</b></div></div></div><div id="techArea"></div>`; }
 function tech(type) {
     currentTechEditId = null; currentTechEditPhoto = ''; let todayDate = new Date().toISOString().split('T')[0];
     if (type === 'computer') {
@@ -2419,8 +2751,8 @@ function tech(type) {
     }
 }
 function addPartRow(part = '', serial = '', photoB64 = '') { let container = document.getElementById('partsContainer'); let rowId = 'part-row-' + Date.now(); let div = document.createElement('div'); div.id = rowId; div.className = 'part-row-box'; div.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;"><b style="font-size:14px;">📦 Part</b><button type="button" onclick="document.getElementById('${rowId}').remove()" style="background:#e21d4f; color:white; border:none; border-radius:6px; padding:4px 8px; font-size:11px;">✖</button></div><label>Part Name</label><input class="p-name" value="${part}"><label>Serial</label><input class="p-serial" value="${serial}"><label>Photo</label><input type="hidden" class="p-hidden-b64" value="${photoB64}"><input type="file" class="p-photo" accept="image/*" onchange="handlePartImage(this, '${rowId}')">${photoB64 ? '<div style="font-size:11px;color:#07865b;">✓ Old Photo</div>' : ''}`; container.appendChild(div); }
-async function saveComputerJob() { let loc = document.getElementById('cLoc').value.trim(), shop = document.getElementById('cShop').value.trim(), d = document.getElementById('cDate').value, rem = document.getElementById('cRemarks').value.trim(); if (!loc) return alert("Location is required!"); let btn = document.getElementById('cSaveBtn'); let orig = btn.innerText; btn.innerText = "⏳ Saving..."; btn.disabled = true; appData.computerJobs = getArray(appData.computerJobs); let partsList = []; let boxes = document.querySelectorAll('.part-row-box'); for (let i = 0; i < boxes.length; i++) { let n = boxes[i].querySelector('.p-name').value.trim(), s = boxes[i].querySelector('.p-serial').value.trim(), h = boxes[i].querySelector('.p-hidden-b64').value; let u = h; if (h.startsWith('data:image')) u = await uploadToImgBB(h); if (n) partsList.push({ part: n, serial: s, photo: u }); } if (!partsList.length) { btn.innerText = orig; btn.disabled = false; return alert("Add 1 part!"); } let j = { id: currentTechEditId || Date.now(), location: loc, shop, date: d, remarks: rem, parts: partsList }; if (currentTechEditId) { let idx = appData.computerJobs.findIndex(x => String(x.id) === String(currentTechEditId)); appData.computerJobs[idx] = j; currentTechEditId = null; } else appData.computerJobs.unshift(j); await saveDataToLocal(); tech('computer'); }
-async function saveWaterJob() { let c = document.getElementById('wCust').value.trim(), m = document.getElementById('wMob').value.trim(), mod = document.getElementById('wModel').value.trim(), p = document.getElementById('wPart').value.trim(), d = document.getElementById('wDate').value, file = document.getElementById('wPhoto').files[0]; if (!c || !m) return alert("Customer and Mobile required!"); if (file && !file.type.startsWith('image/')) return alert("Upload Image only!"); let btn = document.getElementById('wSaveBtn'); let orig = btn.innerText; btn.innerText = "⏳ Saving..."; btn.disabled = true; appData.waterJobs = getArray(appData.waterJobs); let url = currentTechEditId && appData.waterJobs.find(x => String(x.id) === String(currentTechEditId))?.photo ? appData.waterJobs.find(x => String(x.id) === String(currentTechEditId)).photo : ''; if (file) { let b64 = await compressImage(file); url = await uploadToImgBB(b64); } let j = { id: currentTechEditId || Date.now(), customer: c, mobile: m, model: mod, part: p, date: d, photo: url }; if (currentTechEditId) { let idx = appData.waterJobs.findIndex(x => String(x.id) === String(currentTechEditId)); appData.waterJobs[idx] = j; currentTechEditId = null; currentTechEditPhoto = ''; } else appData.waterJobs.unshift(j); await saveDataToLocal(); tech('water'); }
+async function saveComputerJob() { let loc = document.getElementById('cLoc').value.trim(), shop = document.getElementById('cShop').value.trim(), d = document.getElementById('cDate').value, rem = document.getElementById('cRemarks').value.trim(); if (!loc) return alert("Location is required!"); let btn = document.getElementById('cSaveBtn'); let orig = btn.innerText; btn.innerText = "⏳ Saving..."; btn.disabled = true; appData.computerJobs = getArray(appData.computerJobs); let partsList = []; let boxes = document.querySelectorAll('.part-row-box'); for (let i = 0; i < boxes.length; i++) { let n = boxes[i].querySelector('.p-name').value.trim(), s = boxes[i].querySelector('.p-serial').value.trim(), h = boxes[i].querySelector('.p-hidden-b64').value; let u = h; if (h.startsWith('data:image')) u = await uploadToImgBB(h, 'Comp_' + Date.now() + '.jpg'); if (n) partsList.push({ part: n, serial: s, photo: u }); } if (!partsList.length) { btn.innerText = orig; btn.disabled = false; return alert("Add 1 part!"); } let j = { id: currentTechEditId || Date.now(), location: loc, shop, date: d, remarks: rem, parts: partsList }; if (currentTechEditId) { let idx = appData.computerJobs.findIndex(x => String(x.id) === String(currentTechEditId)); appData.computerJobs[idx] = j; currentTechEditId = null; } else appData.computerJobs.unshift(j); await saveDataToLocal(); tech('computer'); }
+async function saveWaterJob() { let c = document.getElementById('wCust').value.trim(), m = document.getElementById('wMob').value.trim(), mod = document.getElementById('wModel').value.trim(), p = document.getElementById('wPart').value.trim(), d = document.getElementById('wDate').value, file = document.getElementById('wPhoto').files[0]; if (!c || !m) return alert("Customer and Mobile required!"); if (file && !file.type.startsWith('image/')) return alert("Upload Image only!"); let btn = document.getElementById('wSaveBtn'); let orig = btn.innerText; btn.innerText = "⏳ Saving..."; btn.disabled = true; appData.waterJobs = getArray(appData.waterJobs); let url = currentTechEditId && appData.waterJobs.find(x => String(x.id) === String(currentTechEditId))?.photo ? appData.waterJobs.find(x => String(x.id) === String(currentTechEditId)).photo : ''; if (file) { let b64 = await compressImage(file); url = await uploadToImgBB(b64, 'Water_' + Date.now() + '.jpg'); } let j = { id: currentTechEditId || Date.now(), customer: c, mobile: m, model: mod, part: p, date: d, photo: url }; if (currentTechEditId) { let idx = appData.waterJobs.findIndex(x => String(x.id) === String(currentTechEditId)); appData.waterJobs[idx] = j; currentTechEditId = null; currentTechEditPhoto = ''; } else appData.waterJobs.unshift(j); await saveDataToLocal(); tech('water'); }
 function deleteTechJob(id, t) { if (confirm("Delete this job?")) { t === 'computer' ? appData.computerJobs = getArray(appData.computerJobs).filter(x => String(x.id) !== String(id)) : appData.waterJobs = getArray(appData.waterJobs).filter(x => String(x.id) !== String(id)); saveDataToLocal().then(() => tech(t)); } }
 function editTechJob(id, t) { let arr = t === 'computer' ? getArray(appData.computerJobs) : getArray(appData.waterJobs); let j = arr.find(x => String(x.id) === String(id)); if (!j) return; currentTechEditId = id; if (t === 'computer') { document.getElementById('cLoc').value = j.location; document.getElementById('cShop').value = j.shop; document.getElementById('cDate').value = j.date; document.getElementById('cRemarks').value = j.remarks; document.getElementById('partsContainer').innerHTML = ''; getArray(j.parts).forEach(p => addPartRow(p.part, p.serial, p.photo)); let btn = document.getElementById('cSaveBtn'); if (btn) { btn.innerText = "✏️ Update Job"; btn.style.background = "#f39c12"; } } else { document.getElementById('wCust').value = j.customer; document.getElementById('wMob').value = j.mobile; document.getElementById('wModel').value = j.model; document.getElementById('wPart').value = j.part; document.getElementById('wDate').value = j.date; currentTechEditPhoto = j.photo; let btn = document.getElementById('wSaveBtn'); if (btn) { btn.innerText = "✏️ Update Job"; btn.style.background = "#f39c12"; } } window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
@@ -2550,7 +2882,7 @@ async function saveVehicle() {
     let btn = document.getElementById('vSaveBtn'); let originalText = btn.innerText; btn.innerText = "⏳ Saving..."; btn.disabled = true;
     try {
         appData.vehicles = getArray(appData.vehicles); appData.records[paidBy] = getArray(appData.records[paidBy]);
-        let existingVeh = currentVehicleEditId ? appData.vehicles.find(v => String(v.id) === String(currentVehicleEditId)) : null; let photoUrl = existingVeh && existingVeh.photo ? existingVeh.photo : ''; if (file) { let b64 = await compressImage(file); photoUrl = await uploadToImgBB(b64); } let finalDetails = details || '-';
+        let existingVeh = currentVehicleEditId ? appData.vehicles.find(v => String(v.id) === String(currentVehicleEditId)) : null; let photoUrl = existingVeh && existingVeh.photo ? existingVeh.photo : ''; if (file) { let b64 = await compressImage(file); photoUrl = await uploadToImgBB(b64, 'Veh_' + Date.now() + '.jpg'); } let finalDetails = details || '-';
 
         let isDuplicateVeh = appData.vehicles.some(v => String(v.id) !== String(currentVehicleEditId) && v.date === date && v.amount === amount && v.car === car && v.category === category && (v.details || '-') === finalDetails);
         if (isDuplicateVeh) { btn.innerText = originalText; btn.disabled = false; return alert("❌ DUPLICATE ENTRY! Same vehicle expense already exists on this date."); }
