@@ -1850,25 +1850,313 @@ function downloadPartnerCSV(name) {
 function user() {
     return `<div class="card"><h2>👤 Select Technician Profile</h2><div class="grid"><div class="role" onclick="tech('computer')" style="cursor:pointer; background:#f8fafc; padding:20px; border-radius:14px; border:1px solid #e2e8f0; text-align:center; font-size:16px;">💻 <b>Computer</b></div><div class="role" onclick="tech('water')" style="cursor:pointer; background:#f8fafc; padding:20px; border-radius:14px; border:1px solid #e2e8f0; text-align:center; font-size:16px;">💧 <b>Water Purifier</b></div></div></div><div id="techArea"></div>`;
 }// =========================================================================
-// ====== PART 4: PO TRACKER (MOBILE CARD VIEW + GROUPED BY CIVIL/AMC/OTHERS, RED CLAIM BILL/SD, MULTI-CYCLE + UNDO, SD REFUND, BG UPLOAD, DOWNLOAD, 5-DAY ALERT & AUTO-DELETE), BILLS, PETTY CASH, CF, SETTINGS, TECH & VEHICLES ======
+// ====== PART 4: PO TRACKER (CLEAN MODERN SAAS UI FOR PC & MOBILE, LIST-FIRST + NEW PO FORM, MANUAL GROUP ORDER, MULTI-CYCLE CLAIM + UNDO, SD REFUND, BG UPLOAD, DOWNLOAD & AUTO-DELETE), BILLS, PETTY CASH, CF, SETTINGS, TECH & VEHICLES ======
 // =========================================================================
 
-// ====== RESPONSIVE PO CSS (MOBILE CARDS + DESKTOP TABLE FIX) ======
+// ====== CLEAN MODERN PO UI STYLES & SVG ICONS ======
+let currentPOFilter = 'all';
+let isPOFormOpen = false;
+const collapsedPOGroups = new Set();
+
+const PO_ICONS = {
+    plus: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>`,
+    search: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>`,
+    file: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>`,
+    download: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`,
+    edit: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`,
+    trash: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`,
+    up: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>`,
+    down: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>`,
+    undo: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>`,
+    close: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>`
+};
+
 function injectPOResponsiveCSS() {
-    if (document.getElementById('poResponsiveCSS')) return;
+    let old = document.getElementById('poResponsiveCSS');
+    if (old) old.remove();
     let style = document.createElement('style');
     style.id = 'poResponsiveCSS';
     style.textContent = `
-        #poDesktopTableWrap { display: block; }
+        .po-shell { display: flex; flex-direction: column; gap: 14px; }
+        .po-header-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .po-title { margin: 0; font-size: 20px; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; }
+        .po-sub { font-size: 12.5px; color: #64748b; margin-top: 2px; }
+        .po-btn-primary {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: #0f172a; color: #ffffff; border: 1px solid #0f172a;
+            padding: 9px 15px; border-radius: 10px; font-size: 13px; font-weight: 700;
+            cursor: pointer; transition: background 0.15s ease;
+        }
+        .po-btn-primary:hover { background: #1e293b; }
+
+        /* KPI Summary Strip */
+        .po-kpi-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+        .po-kpi {
+            background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;
+            padding: 12px 14px; display: flex; flex-direction: column; gap: 3px;
+            transition: border-color 0.15s ease, background 0.15s ease;
+        }
+        .po-kpi.clickable { cursor: pointer; }
+        .po-kpi.clickable:hover { border-color: #cbd5e1; background: #ffffff; }
+        .po-kpi-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; }
+        .po-kpi-val { font-size: 18px; font-weight: 800; color: #0f172a; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+        .po-kpi-meta { font-size: 11.5px; color: #64748b; font-weight: 600; }
+
+        /* Toolbar: Segmented Tabs + Search */
+        .po-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .po-seg-tabs {
+            display: inline-flex; align-items: center; gap: 4px;
+            background: #f1f5f9; padding: 4px; border-radius: 10px;
+            max-width: 100%; overflow-x: auto; scrollbar-width: none;
+        }
+        .po-seg-tabs::-webkit-scrollbar { display: none; }
+        .po-seg-btn {
+            background: transparent; color: #475569; border: none; box-shadow: none;
+            padding: 6px 12px; border-radius: 7px; font-size: 12.5px; font-weight: 700;
+            white-space: nowrap; cursor: pointer; transition: all 0.15s ease;
+        }
+        .po-seg-btn.active { background: #ffffff; color: #0f172a; box-shadow: 0 1px 3px rgba(15,23,42,0.1); }
+        .po-search-box { position: relative; flex: 1; min-width: 200px; max-width: 280px; }
+        .po-search-box svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none; }
+        .po-search-box input {
+            width: 100%; margin: 0 !important; padding: 8px 12px 8px 32px !important;
+            border: 1px solid #cbd5e1 !important; border-radius: 9px !important;
+            background: #ffffff !important; font-size: 13px !important; color: #0f172a;
+        }
+
+        /* Collapsible Form Card */
+        .po-form-wrap {
+            background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 14px;
+            padding: 16px; display: none; flex-direction: column; gap: 12px;
+        }
+        .po-form-wrap.open { display: flex; }
+        .po-form-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+        .po-form-grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+        .po-form-grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+        .po-form-wrap input, .po-form-wrap select { margin-bottom: 0 !important; background: #ffffff !important; }
+        .po-sd-box { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; }
+
+        /* Desktop Table */
+        #poDesktopTableWrap { display: block; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #ffffff; }
         #poMobileCardsWrap { display: none; }
-        #poRecordTable td:nth-child(2) { white-space: normal !important; min-width: 170px; font-size: 13px !important; }
-        #poRecordTable td:nth-child(3), #poRecordTable td:nth-child(5) { white-space: nowrap !important; word-break: normal !important; }
+        #poRecordTable { width: 100%; border-collapse: collapse; min-width: 820px; }
+        #poRecordTable thead th {
+            background: #f8fafc; color: #64748b; font-size: 11px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.05em; padding: 11px 12px;
+            border-bottom: 1px solid #e2e8f0; white-space: nowrap;
+        }
+        #poRecordTable tbody tr.po-data-row { background: #ffffff; transition: background 0.12s ease; }
+        #poRecordTable tbody tr.po-data-row:hover { background: #f8fafc; }
+        #poRecordTable tbody tr.po-data-row td {
+            padding: 12px; border-bottom: 1px solid #f1f5f9; vertical-align: middle;
+            font-size: 13px; color: #0f172a;
+        }
+        #poRecordTable tbody tr.po-data-row td:nth-child(2) { white-space: nowrap !important; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px !important; color: #475569; }
+        #poRecordTable tbody tr.po-data-row.is-urgent td:first-child { box-shadow: inset 3px 0 0 #dc2626; }
+        #poRecordTable tbody tr.po-data-row.is-done td:first-child { box-shadow: inset 3px 0 0 #10b981; }
+        #poRecordTable tbody tr.po-data-row.is-done td { color: #64748b; }
+
+        /* Clean Group Header */
+        tr.po-group-row td {
+            background: #f8fafc; padding: 8px 12px !important;
+            border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;
+        }
+        .po-group-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .po-group-left { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
+        .po-group-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .po-group-name { font-size: 12.5px; font-weight: 800; color: #0f172a; letter-spacing: 0.01em; }
+        .po-group-count { font-size: 11px; font-weight: 700; color: #475569; background: #e2e8f0; padding: 1px 7px; border-radius: 99px; }
+        .po-group-right { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #475569; font-weight: 600; font-variant-numeric: tabular-nums; }
+        .po-order-btns { display: inline-flex; align-items: center; gap: 2px; }
+        .po-ghost-icon {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 28px; height: 28px; padding: 0 !important; margin: 0 !important;
+            background: transparent; color: #64748b; border: 1px solid transparent;
+            border-radius: 7px; cursor: pointer; box-shadow: none; text-decoration: none;
+            transition: all 0.14s ease;
+        }
+        .po-ghost-icon:hover:not(:disabled) { background: #f1f5f9; color: #0f172a; border-color: #e2e8f0; }
+        .po-ghost-icon.danger:hover { background: #fff1f2; color: #dc2626; border-color: #fecdd3; }
+        .po-ghost-icon:disabled { opacity: 0.25; cursor: default; background: transparent; }
+
+        /* Micro Pills & Crisp Buttons */
+        .po-pill {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 700;
+            white-space: nowrap; line-height: 1.5; border: 1px solid transparent;
+        }
+        .po-pill-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+        .po-pill.red { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+        .po-pill.amber { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+        .po-pill.green { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+        .po-pill.blue { background: #f0f9ff; color: #0369a1; border-color: #bae6fd; }
+        .po-pill.indigo { background: #eef2ff; color: #3730a3; border-color: #c7d2fe; }
+        .po-pill.clickable { cursor: pointer; }
+        .po-pill.clickable:hover { filter: brightness(0.95); }
+
+        .po-status-toggle {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 4px 10px !important; border-radius: 99px !important;
+            font-size: 11.5px !important; font-weight: 700 !important;
+            cursor: pointer; white-space: nowrap; box-shadow: none !important;
+            border: 1px solid transparent !important;
+        }
+        .po-status-toggle.ongoing { background: #fffbeb !important; color: #b45309 !important; border-color: #fde68a !important; }
+        .po-status-toggle.completed { background: #ecfdf5 !important; color: #047857 !important; border-color: #a7f3d0 !important; }
+
+        .po-claim-btn {
+            display: inline-flex; align-items: center; gap: 4px;
+            background: #dc2626 !important; color: #ffffff !important;
+            border: 1px solid #dc2626 !important; padding: 5px 10px !important;
+            border-radius: 7px !important; font-size: 11.5px !important; font-weight: 700 !important;
+            white-space: nowrap; cursor: pointer; box-shadow: none !important;
+        }
+        .po-claim-btn:hover { background: #b91c1c !important; }
+        .po-claim-btn.subtle-sd { background: #ffffff !important; color: #3730a3 !important; border-color: #c7d2fe !important; }
+        .po-claim-btn.subtle-sd:hover { background: #eef2ff !important; }
+
+        .po-actions-row { display: inline-flex; align-items: center; justify-content: flex-end; gap: 4px; flex-wrap: nowrap; white-space: nowrap; }
+        .po-divider-v { width: 1px; height: 16px; background: #e2e8f0; margin: 0 2px; }
+
+        /* Mobile Card Styles */
+        .po-m-group { display: flex; flex-direction: column; gap: 8px; }
+        .po-m-group-head {
+            display: flex; justify-content: space-between; align-items: center; gap: 8px;
+            padding: 8px 10px; background: #f8fafc; border: 1px solid #e2e8f0;
+            border-radius: 10px;
+        }
+        .po-m-card {
+            background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px;
+            padding: 13px 13px 10px 15px; position: relative; overflow: hidden;
+            display: flex; flex-direction: column; gap: 9px;
+            box-shadow: 0 1px 2px rgba(15,23,42,0.03);
+        }
+        .po-m-card::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3.5px;
+            background: #cbd5e1;
+        }
+        .po-m-card.is-urgent::before { background: #dc2626; }
+        .po-m-card.is-ongoing::before { background: #f59e0b; }
+        .po-m-card.is-done::before { background: #10b981; }
+        .po-m-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+        .po-m-auth { font-size: 14px; font-weight: 800; color: #0f172a; line-height: 1.3; }
+        .po-m-amt { font-size: 14.5px; font-weight: 800; color: #0f172a; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .po-m-desc { font-size: 12px; color: #64748b; line-height: 1.35; margin-top: 2px; }
+        .po-m-meta {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px;
+            font-size: 11.5px; color: #475569;
+        }
+        .po-m-mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 600; color: #334155; }
+        .po-m-badges { display: flex; flex-wrap: wrap; gap: 5px; }
+        .po-m-footer {
+            display: flex; justify-content: space-between; align-items: center; gap: 8px;
+            padding-top: 8px; border-top: 1px solid #f1f5f9; flex-wrap: wrap;
+        }
+
+        @media (max-width: 900px) {
+            .po-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .po-form-grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
         @media (max-width: 768px) {
             #poDesktopTableWrap { display: none !important; }
             #poMobileCardsWrap { display: flex !important; flex-direction: column; gap: 14px; }
+            .po-kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+            .po-kpi { padding: 9px 10px; }
+            .po-kpi-label { font-size: 9.5px; }
+            .po-kpi-val { font-size: 14px; }
+            .po-kpi-meta { font-size: 10px; }
+            .po-search-box { max-width: 100%; min-width: 100%; }
+            .po-seg-tabs { width: 100%; justify-content: space-between; }
+            .po-seg-btn { flex: 1; text-align: center; padding: 7px 6px; font-size: 11.5px; }
+            .po-form-grid, .po-form-grid-2, .po-form-grid-3 { grid-template-columns: 1fr; }
         }
     `;
     document.head.appendChild(style);
+}
+
+// ====== MANUAL PO GROUP ORDER & COLLAPSE HELPERS (SYNCED WITH FIREBASE) ======
+function getPOGroupOrder() {
+    const defaultOrder = ['AMC PO', 'General PO', 'Civil PO'];
+    let saved = (appData.config && appData.config.poGroupOrder) ? getArray(appData.config.poGroupOrder) : [];
+    if (saved.length !== defaultOrder.length) {
+        try {
+            let ls = JSON.parse(localStorage.getItem('st_po_group_order') || '[]');
+            if (Array.isArray(ls) && ls.length === defaultOrder.length) saved = ls;
+        } catch (e) {}
+    }
+    let cleaned = saved.filter(k => defaultOrder.includes(k));
+    defaultOrder.forEach(k => { if (!cleaned.includes(k)) cleaned.push(k); });
+    return cleaned;
+}
+
+function swapPOGroupOrder(keyA, keyB) {
+    let order = getPOGroupOrder();
+    let idxA = order.indexOf(keyA);
+    let idxB = order.indexOf(keyB);
+    if (idxA === -1 || idxB === -1) return;
+
+    [order[idxA], order[idxB]] = [order[idxB], order[idxA]];
+    if (!appData.config) appData.config = {};
+    appData.config.poGroupOrder = order;
+    try { localStorage.setItem('st_po_group_order', JSON.stringify(order)); } catch (e) {}
+
+    renderPOTableRows();
+    saveDataToLocal();
+}
+
+function togglePOGroupCollapse(groupKey) {
+    if (collapsedPOGroups.has(groupKey)) collapsedPOGroups.delete(groupKey);
+    else collapsedPOGroups.add(groupKey);
+    renderPOTableRows();
+}
+
+function setPOFilter(mode) {
+    currentPOFilter = mode;
+    document.querySelectorAll('.po-seg-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.filter === mode);
+    });
+    renderPOTableRows();
+}
+
+function togglePOFormPanel(forceState) {
+    let formWrap = document.getElementById('poFormWrap');
+    let toggleBtn = document.getElementById('poNewToggleBtn');
+    if (!formWrap) return;
+
+    if (typeof forceState === 'boolean') isPOFormOpen = forceState;
+    else isPOFormOpen = !isPOFormOpen;
+
+    if (!isPOFormOpen && currentPOEditId) {
+        resetPOFormInputs();
+    }
+
+    formWrap.classList.toggle('open', isPOFormOpen);
+    if (toggleBtn) {
+        toggleBtn.innerHTML = isPOFormOpen
+            ? `${PO_ICONS.close}<span>Close Form</span>`
+            : `${PO_ICONS.plus}<span>New PO</span>`;
+    }
+}
+
+function resetPOFormInputs() {
+    currentPOEditId = null;
+    let todayDate = new Date().toISOString().split('T')[0];
+    let setVal = (id, v) => { let el = document.getElementById(id); if (el) el.value = v; };
+    setVal('poDate', todayDate);
+    setVal('poType', 'General PO');
+    setVal('poAlertMonths', '0');
+    setVal('poAuthority', '');
+    setVal('poNumber', '');
+    setVal('poWorkDesc', '');
+    setVal('poAmount', '');
+    setVal('poDeadline', '');
+    setVal('poSDAmount', '');
+    setVal('poSDMonths', '6');
+    setVal('poCompletedDate', '');
+    let ph = document.getElementById('poPhoto'); if (ph) ph.value = '';
+    let hdr = document.getElementById('poFormHeading'); if (hdr) hdr.innerText = 'Add New Purchase Order';
+    let btn = document.getElementById('poSaveBtn');
+    if (btn) { btn.innerText = 'Save Purchase Order'; btn.style.background = '#0f172a'; }
 }
 
 // ====== PO DATE, DEADLINE, MULTI-CYCLE AMC & SD REFUND HELPERS ======
@@ -1930,15 +2218,15 @@ function getPODeadlineStatus(deadlineStr, isCompleted) {
     let diffDays = Math.round((due - today) / (1000 * 60 * 60 * 24));
 
     if (diffDays < 0) {
-        return { level: 'overdue', days: diffDays, isAlert: true, text: `🔴 ${Math.abs(diffDays)}d Overdue`, bg: '#ffe4e6', color: '#be123c', border: '#fda4af' };
+        return { level: 'overdue', days: diffDays, isAlert: true, tone: 'red', dot: '#dc2626', text: `${Math.abs(diffDays)}d overdue`, bg: '#fef2f2', color: '#b91c1c', border: '#fecaca' };
     }
     if (diffDays === 0) {
-        return { level: 'today', days: 0, isAlert: true, text: `🟠 Due Today!`, bg: '#ffedd5', color: '#c2410c', border: '#fdba74' };
+        return { level: 'today', days: 0, isAlert: true, tone: 'amber', dot: '#ea580c', text: `Due today`, bg: '#fff7ed', color: '#c2410c', border: '#fed7aa' };
     }
     if (diffDays <= 5) {
-        return { level: 'soon', days: diffDays, isAlert: true, text: `🟡 ${diffDays}d Left`, bg: '#fef9c3', color: '#a16207', border: '#fde047' };
+        return { level: 'soon', days: diffDays, isAlert: true, tone: 'amber', dot: '#d97706', text: `${diffDays}d left`, bg: '#fffbeb', color: '#b45309', border: '#fde68a' };
     }
-    return { level: 'safe', days: diffDays, isAlert: false, text: `🟢 ${diffDays}d Left`, bg: '#ecfdf5', color: '#047857', border: '#a7f3d0' };
+    return { level: 'safe', days: diffDays, isAlert: false, tone: 'green', dot: '#10b981', text: `${diffDays}d left`, bg: '#ecfdf5', color: '#047857', border: '#a7f3d0' };
 }
 
 function getPOMonthAlertStatus(po) {
@@ -1962,8 +2250,8 @@ function getPOMonthAlertStatus(po) {
         return {
             isAlert: false, reached: false, allCyclesDone: true, diffDays: Infinity,
             alertMonths, cyclesDone, billNo, dueCyclesCount: 0, totalDueMonths: 0,
-            dueISO: '',
-            text: `✓ All Cycles Claimed`,
+            dueISO: '', tone: 'green', dot: '#10b981',
+            text: `All cycles claimed`,
             bg: '#ecfdf5', color: '#047857', border: '#a7f3d0'
         };
     }
@@ -1997,8 +2285,9 @@ function getPOMonthAlertStatus(po) {
         return {
             isAlert: true, reached: true, diffDays, alertMonths, cyclesDone,
             billNo, toBillNo, dueCyclesCount, totalDueMonths, dueISO, lastDueISO,
-            text: `🔔 ${dueCyclesCount} Bills Due (${totalDueMonths}M)`,
-            bg: '#fef2f2', color: '#b91c1c', border: '#fca5a5'
+            tone: 'red', dot: '#dc2626',
+            text: `${dueCyclesCount} bills due (${totalDueMonths}M)`,
+            bg: '#fef2f2', color: '#b91c1c', border: '#fecaca'
         };
     }
 
@@ -2006,31 +2295,35 @@ function getPOMonthAlertStatus(po) {
         return {
             isAlert: true, reached: true, diffDays, alertMonths, cyclesDone,
             billNo, toBillNo, dueCyclesCount: 1, totalDueMonths, dueISO, lastDueISO,
-            text: `🔔 Bill #${billNo} Overdue (${Math.abs(diffDays)}d)`,
-            bg: '#fef2f2', color: '#b91c1c', border: '#fca5a5'
+            tone: 'red', dot: '#dc2626',
+            text: `Bill #${billNo} overdue (${Math.abs(diffDays)}d)`,
+            bg: '#fef2f2', color: '#b91c1c', border: '#fecaca'
         };
     }
     if (diffDays === 0) {
         return {
             isAlert: true, reached: true, diffDays: 0, alertMonths, cyclesDone,
             billNo, toBillNo, dueCyclesCount: 1, totalDueMonths, dueISO, lastDueISO,
-            text: `🔔 Bill #${billNo} Due Today!`,
-            bg: '#ffedd5', color: '#c2410c', border: '#fdba74'
+            tone: 'amber', dot: '#ea580c',
+            text: `Bill #${billNo} due today`,
+            bg: '#fff7ed', color: '#c2410c', border: '#fed7aa'
         };
     }
     if (diffDays <= 5) {
         return {
             isAlert: true, reached: true, diffDays, alertMonths, cyclesDone,
             billNo, toBillNo, dueCyclesCount: 1, totalDueMonths, dueISO, lastDueISO,
-            text: `🔔 Bill #${billNo} in ${diffDays}d`,
-            bg: '#fef9c3', color: '#a16207', border: '#fde047'
+            tone: 'amber', dot: '#d97706',
+            text: `Bill #${billNo} in ${diffDays}d`,
+            bg: '#fffbeb', color: '#b45309', border: '#fde68a'
         };
     }
 
     return {
         isAlert: false, reached: false, diffDays, alertMonths, cyclesDone,
         billNo, toBillNo: billNo, dueCyclesCount: 0, totalDueMonths: 0, dueISO, lastDueISO: dueISO,
-        text: `🕒 Bill #${billNo}: ${formatDate(dueISO)}`,
+        tone: 'blue', dot: '#0284c7',
+        text: `Next bill: ${formatDate(dueISO)}`,
         bg: '#f0f9ff', color: '#0369a1', border: '#bae6fd'
     };
 }
@@ -2045,31 +2338,21 @@ function getPOSDStatus(po) {
 
     if (po.sdReceived) {
         return {
-            state: 'received',
-            isAlert: false,
-            sdAmt,
-            holdMonths,
-            diffDays: Infinity,
-            text: `✅ SD Refunded (₹${sdAmtText})`,
-            bg: '#ecfdf5',
-            color: '#047857',
-            border: '#a7f3d0'
+            state: 'received', isAlert: false, sdAmt, holdMonths, diffDays: Infinity,
+            tone: 'green', dot: '#10b981',
+            text: `SD Refunded · ₹${sdAmtText}`,
+            bg: '#ecfdf5', color: '#047857', border: '#a7f3d0'
         };
     }
 
     if (!po.completedDate) {
         return {
-            state: 'held',
-            isAlert: false,
-            sdAmt,
-            holdMonths,
-            diffDays: Infinity,
+            state: 'held', isAlert: false, sdAmt, holdMonths, diffDays: Infinity,
+            tone: 'indigo', dot: '#4f46e5',
             text: po.isCompleted
-                ? `🔒 SD ₹${sdAmtText} (Set Done Date)`
-                : `🔒 SD ₹${sdAmtText} (${holdMonths}M after done)`,
-            bg: '#eef2ff',
-            color: '#3730a3',
-            border: '#c7d2fe'
+                ? `SD ₹${sdAmtText} (Set done date)`
+                : `SD ₹${sdAmtText} (${holdMonths}M hold)`,
+            bg: '#eef2ff', color: '#3730a3', border: '#c7d2fe'
         };
     }
 
@@ -2086,28 +2369,32 @@ function getPOSDStatus(po) {
     if (diffDays < 0) {
         return {
             state: 'due', isAlert: true, sdAmt, holdMonths, diffDays, dueISO,
-            text: `💰 SD Overdue (${Math.abs(diffDays)}d) • ₹${sdAmtText}`,
-            bg: '#fef2f2', color: '#b91c1c', border: '#fca5a5'
+            tone: 'red', dot: '#dc2626',
+            text: `SD overdue (${Math.abs(diffDays)}d) · ₹${sdAmtText}`,
+            bg: '#fef2f2', color: '#b91c1c', border: '#fecaca'
         };
     }
     if (diffDays === 0) {
         return {
             state: 'due', isAlert: true, sdAmt, holdMonths, diffDays: 0, dueISO,
-            text: `💰 SD Refund Today! • ₹${sdAmtText}`,
-            bg: '#ffedd5', color: '#c2410c', border: '#fdba74'
+            tone: 'amber', dot: '#ea580c',
+            text: `SD due today · ₹${sdAmtText}`,
+            bg: '#fff7ed', color: '#c2410c', border: '#fed7aa'
         };
     }
     if (diffDays <= 5) {
         return {
             state: 'due', isAlert: true, sdAmt, holdMonths, diffDays, dueISO,
-            text: `💰 SD Refund in ${diffDays}d • ₹${sdAmtText}`,
-            bg: '#fef9c3', color: '#a16207', border: '#fde047'
+            tone: 'amber', dot: '#d97706',
+            text: `SD in ${diffDays}d · ₹${sdAmtText}`,
+            bg: '#fffbeb', color: '#b45309', border: '#fde68a'
         };
     }
 
     return {
         state: 'waiting', isAlert: false, sdAmt, holdMonths, diffDays, dueISO,
-        text: `🔒 SD ₹${sdAmtText} • Due: ${formatDate(dueISO)}`,
+        tone: 'indigo', dot: '#4f46e5',
+        text: `SD ₹${sdAmtText} · Due ${formatDate(dueISO)}`,
         bg: '#eef2ff', color: '#3730a3', border: '#c7d2fe'
     };
 }
@@ -2134,14 +2421,14 @@ function getAlertPOItems() {
 
             if (monthAlert && monthAlert.isAlert) {
                 let dueDateInfo = monthAlert.dueCyclesCount > 1
-                    ? `Due: ${formatDate(monthAlert.dueISO)} → ${formatDate(monthAlert.lastDueISO)}`
-                    : `Bill Due: ${formatDate(monthAlert.dueISO)}`;
+                    ? `${formatDate(monthAlert.dueISO)} → ${formatDate(monthAlert.lastDueISO)}`
+                    : `Due: ${formatDate(monthAlert.dueISO)}`;
                 alerts.push({
                     po: p, isBillCycle: true, isSDRefund: false,
                     billNo: monthAlert.billNo,
                     dueCyclesCount: monthAlert.dueCyclesCount,
                     totalDueMonths: monthAlert.totalDueMonths,
-                    kind: `${typeLabel} • ${monthAlert.alertMonths}M CYCLE`,
+                    kind: `${typeLabel} · ${monthAlert.alertMonths}M CYCLE`,
                     badgeText: monthAlert.text,
                     bg: monthAlert.bg, color: monthAlert.color, border: monthAlert.border,
                     dateText: dueDateInfo,
@@ -2155,10 +2442,10 @@ function getAlertPOItems() {
             alerts.push({
                 po: p, isBillCycle: false, isSDRefund: true,
                 sdAmt: sdStatus.sdAmt,
-                kind: `${typeLabel} • SD REFUND (${sdStatus.holdMonths}M)`,
+                kind: `${typeLabel} · SD REFUND`,
                 badgeText: sdStatus.text,
                 bg: sdStatus.bg, color: sdStatus.color, border: sdStatus.border,
-                dateText: `Refund Due: ${formatDate(sdStatus.dueISO)}`,
+                dateText: `Due: ${formatDate(sdStatus.dueISO)}`,
                 priority: sdStatus.diffDays
             });
         }
@@ -2171,7 +2458,7 @@ function updatePOTabBadge() {
     if (!tabBtn) return;
     let count = getAlertPOItems().length;
     if (count > 0) {
-        tabBtn.innerHTML = `📄 PO Track <span style="background:#e11d48; color:#fff; font-size:10px; font-weight:800; padding:1px 5px; border-radius:99px; margin-left:2px;">${count}</span>`;
+        tabBtn.innerHTML = `📄 PO Track <span style="background:#dc2626; color:#fff; font-size:10px; font-weight:800; padding:1px 5px; border-radius:99px; margin-left:2px;">${count}</span>`;
     } else {
         tabBtn.innerHTML = `📄 PO Track`;
     }
@@ -2190,21 +2477,23 @@ function injectPOAlertBanner() {
 
     let cardsHTML = alertList.map(({ po, isBillCycle, isSDRefund, dueCyclesCount, totalDueMonths, kind, badgeText, bg, color, border, dateText }) => {
         let claimLabel = (dueCyclesCount > 1 && totalDueMonths > 0)
-            ? `🧾 Claim (${totalDueMonths}M)`
-            : `🧾 Claim Bill`;
+            ? `Claim ${totalDueMonths}M`
+            : `Claim Bill`;
         return `
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; background:#ffffff; padding:10px 12px; border-radius:10px; border:1px solid ${border};">
-            <div>
-                <span style="font-size:10px; font-weight:800; background:${isSDRefund ? '#eef2ff' : '#f1f5f9'}; color:${isSDRefund ? '#3730a3' : '#334155'}; padding:1px 6px; border-radius:4px; margin-right:4px;">${kind}</span>
-                <b style="color:#0f172a; font-size:13.5px;">${po.authority}</b>
-                <span style="font-size:12px; color:#475569;"> (${po.poNo})</span>
-                <div style="font-size:11.5px; color:#64748b; margin-top:2px;">${po.workDesc || 'No work details'} • PO: ₹${parseFloat(po.amount || 0).toLocaleString('en-IN')}</div>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; background:#ffffff; padding:10px 12px; border-radius:10px; border:1px solid #e2e8f0;">
+            <div style="min-width:0;">
+                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                    <span style="font-size:10px; font-weight:700; background:#f1f5f9; color:#475569; padding:1px 6px; border-radius:4px;">${kind}</span>
+                    <b style="color:#0f172a; font-size:13.5px;">${po.authority}</b>
+                    <span style="font-size:12px; color:#64748b; font-family:ui-monospace,monospace;">${po.poNo}</span>
+                </div>
+                <div style="font-size:11.5px; color:#64748b; margin-top:2px;">${po.workDesc || 'No work details'} · ₹${parseFloat(po.amount || 0).toLocaleString('en-IN')}</div>
             </div>
             <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                <span style="background:${bg}; color:${color}; border:1px solid ${border}; padding:3px 8px; border-radius:99px; font-size:11.5px; font-weight:800; white-space:nowrap;">${badgeText}</span>
+                <span style="background:${bg}; color:${color}; border:1px solid ${border}; padding:3px 9px; border-radius:99px; font-size:11.5px; font-weight:700; white-space:nowrap;">${badgeText}</span>
                 <span style="font-size:11px; color:#64748b; white-space:nowrap;">${dateText}</span>
-                ${isBillCycle ? `<button onclick="markPOBillDone('${po.id}')" style="background:#dc2626; color:#fff; padding:4px 9px; font-size:11px; border-radius:6px; white-space:nowrap;">${claimLabel}</button>` : ''}
-                ${isSDRefund ? `<button onclick="togglePOSDReceived('${po.id}')" style="background:#dc2626; color:#fff; padding:4px 9px; font-size:11px; border-radius:6px; white-space:nowrap;">💰 Claim SD</button>` : ''}
+                ${isBillCycle ? `<button onclick="markPOBillDone('${po.id}')" style="background:#dc2626; color:#fff; padding:5px 10px; font-size:11.5px; border-radius:7px; white-space:nowrap;">${claimLabel}</button>` : ''}
+                ${isSDRefund ? `<button onclick="togglePOSDReceived('${po.id}')" style="background:#dc2626; color:#fff; padding:5px 10px; font-size:11.5px; border-radius:7px; white-space:nowrap;">Claim SD</button>` : ''}
             </div>
         </div>`;
     }).join('');
@@ -2212,14 +2501,14 @@ function injectPOAlertBanner() {
     let banner = document.createElement('div');
     banner.id = 'poAlertBanner';
     banner.className = 'card';
-    banner.style.cssText = `background:#fff1f2; border:1.5px solid #f43f5e; border-left:5px solid #e11d48; padding:16px;`;
+    banner.style.cssText = `background:#ffffff; border:1px solid #fecaca; border-left:4px solid #dc2626; padding:16px;`;
     banner.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
             <div style="display:flex; align-items:center; gap:8px;">
-                <span style="font-size:18px;">🔔</span>
-                <strong style="color:#be123c; font-size:15px;">PO & SD Refund Alerts (${alertList.length})</strong>
+                <span style="width:8px; height:8px; background:#dc2626; border-radius:50%; display:inline-block;"></span>
+                <strong style="color:#0f172a; font-size:15px;">Action Required — PO & SD Alerts (${alertList.length})</strong>
             </div>
-            <button onclick="showPOTracker()" style="background:#e11d48; color:#fff; padding:6px 12px; font-size:12px; border-radius:8px;">Open PO Tracker ↗</button>
+            <button onclick="showPOTracker()" style="background:#0f172a; color:#fff; padding:6px 12px; font-size:12px; border-radius:8px;">Open PO Tracker ↗</button>
         </div>
         <div style="display:flex; flex-direction:column; gap:8px;">
             ${cardsHTML}
@@ -2253,16 +2542,16 @@ async function markPOBillDone(id) {
             : `Abhi Bill #${currentCycles + 1} (${alertMonths}M) due hai.`;
 
         let input = prompt(
-            `🧾 Claim Bill: ${p.authority} (${p.poNo})\n${headerInfo}\n\nKitne cycles ek saath claim kar rahe hain?\n${lines.join('\n')}`,
+            `Claim Bill: ${p.authority} (${p.poNo})\n${headerInfo}\n\nKitne cycles ek saath claim kar rahe hain?\n${lines.join('\n')}`,
             String(dueCount)
         );
         if (input === null) return;
         claimCycles = parseInt(input.trim(), 10);
         if (isNaN(claimCycles) || claimCycles < 1 || claimCycles > 24) {
-            return alert("⚠️ Valid cycle number daalein (jaise 1 ya 2).");
+            return alert("Valid cycle number daalein (jaise 1 ya 2).");
         }
     } else {
-        if (!confirm(`🧾 Bill #${currentCycles + 1} (${p.authority} - ${p.poNo}) claim mark karein?`)) return;
+        if (!confirm(`Bill #${currentCycles + 1} (${p.authority} - ${p.poNo}) claim mark karein?`)) return;
     }
 
     p.completedCycles = currentCycles + claimCycles;
@@ -2287,14 +2576,14 @@ async function undoPOBillClaim(id) {
 
     let alertM = getEffectiveAlertMonths(p);
     let input = prompt(
-        `↩️ Undo Claimed Bill: ${p.authority} (${p.poNo})\nAbhi ${currentCycles} bill${currentCycles > 1 ? 's' : ''}${alertM > 0 ? ` (${currentCycles * alertM}M)` : ''} claimed hain.\n\nKitne claimed bills rakhne hain?\n• ${currentCycles - 1} = Last 1 bill undo\n• 0 = Sabhi undo (reset)`,
+        `Undo Claimed Bill: ${p.authority} (${p.poNo})\nAbhi ${currentCycles} bill${currentCycles > 1 ? 's' : ''}${alertM > 0 ? ` (${currentCycles * alertM}M)` : ''} claimed hain.\n\nKitne claimed bills rakhne hain?\n• ${currentCycles - 1} = Last 1 bill undo\n• 0 = Sabhi undo (reset)`,
         String(currentCycles - 1)
     );
     if (input === null) return;
 
     let newCount = parseInt(input.trim(), 10);
     if (isNaN(newCount) || newCount < 0 || newCount > 24) {
-        return alert("⚠️ Valid number daalein (0 ya usse zyada).");
+        return alert("Valid number daalein (0 ya usse zyada).");
     }
 
     p.completedCycles = newCount;
@@ -2316,7 +2605,7 @@ async function togglePOSDReceived(id) {
 
     let sdAmtText = sdAmt.toLocaleString('en-IN', { maximumFractionDigits: 2 });
     if (!p.sdReceived) {
-        if (!confirm(`💰 Security Deposit ₹${sdAmtText} (${p.authority} - ${p.poNo}) wapas mil gaya?\n\nOK dabate hi SD Refunded mark ho jayega aur alert band ho jayega.`)) return;
+        if (!confirm(`Security Deposit ₹${sdAmtText} (${p.authority} - ${p.poNo}) wapas mil gaya?\n\nOK dabate hi SD Refunded mark ho jayega aur alert band ho jayega.`)) return;
         p.sdReceived = true;
         p.sdReceivedDate = new Date().toISOString().split('T')[0];
     } else {
@@ -2428,96 +2717,132 @@ function handlePOTypeChange() {
 
 function showPOTracker() {
     injectPOResponsiveCSS();
-    setActiveAdminTab('tab-po'); currentPOEditId = null; let todayDate = new Date().toISOString().split('T')[0];
-    let authOptions = getUniqueOptions(appData.poRecords, 'authority'); let poOptions = getUniqueOptions(appData.poRecords, 'poNo');
+    setActiveAdminTab('tab-po');
+    currentPOEditId = null;
+    isPOFormOpen = false;
+
+    let todayDate = new Date().toISOString().split('T')[0];
+    let authOptions = getUniqueOptions(appData.poRecords, 'authority');
+    let poOptions = getUniqueOptions(appData.poRecords, 'poNo');
+
     document.getElementById('profileArea').innerHTML = `
-    <datalist id="dlAuth">${authOptions}</datalist><datalist id="dlPoNum">${poOptions}</datalist>
+    <datalist id="dlAuth">${authOptions}</datalist>
+    <datalist id="dlPoNum">${poOptions}</datalist>
+
     <div class="card">
-        <h2>📄 Purchase Order (PO) Tracker</h2>
-        <div style="background:#fafcfb; padding:15px; border-radius:10px; border:1px solid #ccd8d4; margin-bottom:10px;">
-            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-                <div style="flex:1; min-width:140px;"><label>Issue Date</label><input type="date" id="poDate" value="${todayDate}"></div>
-                <div style="flex:1; min-width:140px;">
-                    <label>PO Type</label>
-                    <select id="poType" onchange="handlePOTypeChange()" style="margin:0; background:#fff;">
-                        <option value="General PO">📄 General PO</option>
-                        <option value="AMC PO">🔧 AMC PO</option>
-                        <option value="Civil PO">🏗️ Civil PO</option>
-                    </select>
+        <div class="po-shell">
+            <div class="po-header-bar">
+                <div>
+                    <h2 class="po-title">Purchase Orders</h2>
+                    <div class="po-sub">Track AMC billing cycles, work deadlines & security deposits</div>
                 </div>
-                <div style="flex:1; min-width:140px;">
-                    <label>Bill Cycle Alert</label>
-                    <select id="poAlertMonths" style="margin:0; background:#fff;">
-                        <option value="0">🔕 No Alert</option>
-                        <option value="1">🔔 1 Month</option>
-                        <option value="3">🔔 3 Months (AMC)</option>
-                        <option value="6">🔔 6 Months</option>
-                        <option value="12">🔔 12 Months</option>
-                    </select>
-                </div>
-                <div style="flex:2; min-width:180px;"><label>Issuing Authority</label><input id="poAuthority" list="dlAuth" placeholder="e.g. WBSETCL"></div>
-            </div>
-            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-                <div style="flex:1; min-width:150px;"><label>PO Number</label><input id="poNumber" list="dlPoNum" placeholder="PO No."></div>
-                <div style="flex:2; min-width:200px;"><label>Work Details</label><input id="poWorkDesc" placeholder="e.g. Civil Work / AMC of ACs"></div>
-            </div>
-            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-                <div style="flex:1; min-width:150px;"><label>Total Amount (₹)</label><input type="number" id="poAmount"></div>
-                <div style="flex:1; min-width:150px;"><label>Final Deadline</label><input type="date" id="poDeadline"></div>
+                <button type="button" id="poNewToggleBtn" class="po-btn-primary" onclick="togglePOFormPanel()">
+                    ${PO_ICONS.plus}<span>New PO</span>
+                </button>
             </div>
 
-            <div style="background:#eef2ff; border:1px dashed #a5b4fc; border-radius:10px; padding:12px; margin-bottom:12px;">
-                <div style="font-size:12px; font-weight:800; color:#3730a3; margin-bottom:8px;">🔒 Security Deposit / SD Refund Tracker (Optional — Civil / Security Works)</div>
-                <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                    <div style="flex:1; min-width:140px;"><label style="margin-bottom:4px;">Security Money (₹)</label><input type="number" id="poSDAmount" placeholder="e.g. 15000" style="margin-bottom:0; background:#fff;"></div>
-                    <div style="flex:1; min-width:140px;">
-                        <label style="margin-bottom:4px;">SD Hold Period</label>
-                        <select id="poSDMonths" style="margin-bottom:0; background:#fff;">
-                            <option value="6">🔒 6 Months (Default)</option>
-                            <option value="3">🔒 3 Months</option>
-                            <option value="12">🔒 12 Months</option>
+            <div id="poKpiStrip" class="po-kpi-grid"></div>
+
+            <div id="poFormWrap" class="po-form-wrap">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <strong id="poFormHeading" style="font-size:14.5px; color:#0f172a;">Add New Purchase Order</strong>
+                    <button type="button" class="po-ghost-icon" onclick="togglePOFormPanel(false)" title="Close">${PO_ICONS.close}</button>
+                </div>
+
+                <div class="po-form-grid">
+                    <div><label>Issue Date</label><input type="date" id="poDate" value="${todayDate}"></div>
+                    <div>
+                        <label>PO Type</label>
+                        <select id="poType" onchange="handlePOTypeChange()">
+                            <option value="General PO">General / Other PO</option>
+                            <option value="AMC PO">AMC PO</option>
+                            <option value="Civil PO">Civil PO</option>
                         </select>
                     </div>
-                    <div style="flex:1; min-width:165px;">
-                        <label style="margin-bottom:4px;">Work Completion Date <span style="font-weight:500; color:#64748b; font-size:10.5px;">(SD Countdown)</span></label>
-                        <input type="date" id="poCompletedDate" style="margin-bottom:0; background:#fff;" title="Kaam complete hone par auto puchhega; purane completed kaam ke liye yahan date daal sakte hain">
+                    <div>
+                        <label>Bill Cycle Alert</label>
+                        <select id="poAlertMonths">
+                            <option value="0">No Alert</option>
+                            <option value="1">Every 1 Month</option>
+                            <option value="3">Every 3 Months (AMC)</option>
+                            <option value="6">Every 6 Months</option>
+                            <option value="12">Every 12 Months</option>
+                        </select>
+                    </div>
+                    <div><label>Issuing Authority</label><input id="poAuthority" list="dlAuth" placeholder="e.g. WBSETCL"></div>
+                </div>
+
+                <div class="po-form-grid-2">
+                    <div><label>PO Number</label><input id="poNumber" list="dlPoNum" placeholder="PO No."></div>
+                    <div><label>Work Details</label><input id="poWorkDesc" placeholder="e.g. AC AMC / Boundary Wall"></div>
+                </div>
+
+                <div class="po-form-grid-2">
+                    <div><label>Total Amount (₹)</label><input type="number" id="poAmount" placeholder="0.00"></div>
+                    <div><label>Final Deadline</label><input type="date" id="poDeadline"></div>
+                </div>
+
+                <div class="po-sd-box">
+                    <div style="font-size:11.5px; font-weight:800; color:#475569; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:8px;">Security Deposit Refund (Optional)</div>
+                    <div class="po-form-grid-3">
+                        <div><label>Security Money (₹)</label><input type="number" id="poSDAmount" placeholder="e.g. 15000"></div>
+                        <div>
+                            <label>Hold Period</label>
+                            <select id="poSDMonths">
+                                <option value="6">6 Months (Default)</option>
+                                <option value="3">3 Months</option>
+                                <option value="12">12 Months</option>
+                            </select>
+                        </div>
+                        <div><label>Work Completion Date</label><input type="date" id="poCompletedDate"></div>
+                    </div>
+                </div>
+
+                <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:12px; flex-wrap:wrap;">
+                    <div style="flex:1; min-width:220px;">
+                        <label>Attach PO Copy (Image / PDF — Background Upload)</label>
+                        <input type="file" id="poPhoto" accept="image/*,application/pdf,.pdf" style="padding:7px 10px; border:1px solid #cbd5e1; border-radius:9px;">
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <button type="button" class="alt" onclick="togglePOFormPanel(false)" style="padding:10px 14px;">Cancel</button>
+                        <button id="poSaveBtn" onclick="savePO()" style="background:#0f172a; padding:10px 20px;">Save Purchase Order</button>
                     </div>
                 </div>
             </div>
 
-            <label>Attach PO Copy (Image / PDF — Background Upload)</label>
-            <input type="file" id="poPhoto" accept="image/*,application/pdf,.pdf" style="border:none; padding:0; margin-bottom:15px;">
-            <button id="poSaveBtn" onclick="savePO()" style="width:100%; background:#16a085; font-size:16px; padding:12px;">💾 Save Purchase Order</button>
-        </div>
-    </div>
-    <div class="card">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
-            <div>
-                <h2 style="margin:0;">📂 PO Track Record</h2>
-                <div id="poSDSummaryBar" style="margin-top:6px; display:flex; gap:8px; flex-wrap:wrap;"></div>
+            <div class="po-toolbar">
+                <div class="po-seg-tabs">
+                    <button type="button" class="po-seg-btn ${currentPOFilter === 'all' ? 'active' : ''}" data-filter="all" onclick="setPOFilter('all')">All</button>
+                    <button type="button" class="po-seg-btn ${currentPOFilter === 'ongoing' ? 'active' : ''}" data-filter="ongoing" onclick="setPOFilter('ongoing')">Ongoing</button>
+                    <button type="button" class="po-seg-btn ${currentPOFilter === 'pending_sd' ? 'active' : ''}" data-filter="pending_sd" onclick="setPOFilter('pending_sd')">Pending SD</button>
+                    <button type="button" class="po-seg-btn ${currentPOFilter === 'completed' ? 'active' : ''}" data-filter="completed" onclick="setPOFilter('completed')">Completed</button>
+                </div>
+                <div class="po-search-box">
+                    ${PO_ICONS.search}
+                    <input type="text" id="poSearchInput" placeholder="Search authority, PO no, work..." oninput="renderPOTableRows()">
+                </div>
             </div>
-            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; width:100%; max-width:420px; justify-content:flex-end;">
-                <select id="poFilterMode" onchange="renderPOTableRows()" style="width:auto; margin:0; padding:8px 10px; font-size:13px;">
-                    <option value="all">All POs</option>
-                    <option value="ongoing">⏳ Ongoing Only</option>
-                    <option value="pending_sd">🔒 Pending SD Only</option>
-                    <option value="completed">✅ Completed Only</option>
-                </select>
-                <input type="text" id="poSearchInput" placeholder="🔍 Search PO, AMC, Civil PO..." oninput="renderPOTableRows()" style="flex:1; min-width:160px; max-width:240px; margin:0; padding:8px 12px;">
+
+            <div id="poDesktopTableWrap" style="overflow-x:auto;">
+                <table id="poRecordTable">
+                    <thead>
+                        <tr>
+                            <th>Authority & Work</th>
+                            <th>PO Number</th>
+                            <th>Schedule & Alerts</th>
+                            <th style="text-align:right;">Amount</th>
+                            <th style="text-align:center;">Status</th>
+                            <th style="text-align:right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="poTableBody"></tbody>
+                </table>
             </div>
-        </div>
 
-        <div id="poDesktopTableWrap" style="overflow-x:auto;">
-            <table id="poRecordTable" style="min-width:880px;">
-                <thead>
-                    <tr><th>Issue Date & Cycle</th><th>Authority & Work</th><th>PO No.</th><th>Deadline / SD</th><th>Amount</th><th style="text-align:center;">Copy</th><th style="text-align:center;">Status & Action</th></tr>
-                </thead>
-                <tbody id="poTableBody"></tbody>
-            </table>
+            <div id="poMobileCardsWrap"></div>
         </div>
-
-        <div id="poMobileCardsWrap"></div>
     </div>`;
+
     renderPOTableRows();
 }
 
@@ -2526,27 +2851,42 @@ function renderPOTableRows() {
     let mobileWrap = document.getElementById('poMobileCardsWrap');
     if (!tbody && !mobileWrap) return;
 
-    let searchEl = document.getElementById('poSearchInput'); let query = searchEl ? searchEl.value.toLowerCase() : '';
-    let filterEl = document.getElementById('poFilterMode'); let filterMode = filterEl ? filterEl.value : 'all';
+    let searchEl = document.getElementById('poSearchInput');
+    let query = searchEl ? searchEl.value.toLowerCase().trim() : '';
     let allPOs = [...getArray(appData.poRecords)];
 
-    let sdBar = document.getElementById('poSDSummaryBar');
-    if (sdBar) {
+    // Render KPI Summary Strip
+    let kpiStrip = document.getElementById('poKpiStrip');
+    if (kpiStrip) {
+        let ongoingPOs = allPOs.filter(p => !p.isCompleted);
+        let ongoingVal = ongoingPOs.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
         let pendingSDList = allPOs.filter(p => (parseFloat(p.sdAmount) || 0) > 0 && !p.sdReceived);
-        let pendingSDTotal = pendingSDList.reduce((acc, p) => acc + (parseFloat(p.sdAmount) || 0), 0);
+        let pendingSDTotal = pendingSDList.reduce((s, p) => s + (parseFloat(p.sdAmount) || 0), 0);
         let dueSDCount = pendingSDList.filter(p => { let s = getPOSDStatus(p); return s && s.isAlert; }).length;
-        if (pendingSDList.length > 0) {
-            sdBar.innerHTML = `<span style="background:#eef2ff; border:1px solid #c7d2fe; color:#3730a3; padding:4px 10px; border-radius:8px; font-size:12px; font-weight:700;">🔒 Pending SD: ₹${pendingSDTotal.toLocaleString('en-IN', { maximumFractionDigits: 2 })} (${pendingSDList.length} PO${pendingSDList.length > 1 ? 's' : ''})</span>` +
-                (dueSDCount > 0 ? `<span style="background:#fef2f2; border:1px solid #fca5a5; color:#b91c1c; padding:4px 10px; border-radius:8px; font-size:12px; font-weight:700;">💰 ${dueSDCount} SD Refund Due Now!</span>` : '');
-        } else {
-            sdBar.innerHTML = '';
-        }
+        let totalAlerts = getAlertPOItems().length;
+
+        kpiStrip.innerHTML = `
+            <div class="po-kpi clickable" onclick="setPOFilter('ongoing')">
+                <span class="po-kpi-label">Ongoing POs</span>
+                <span class="po-kpi-val">₹${ongoingVal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                <span class="po-kpi-meta">${ongoingPOs.length} active · ${allPOs.length - ongoingPOs.length} done</span>
+            </div>
+            <div class="po-kpi clickable" onclick="setPOFilter('all')">
+                <span class="po-kpi-label">Action Needed</span>
+                <span class="po-kpi-val" style="color:${totalAlerts > 0 ? '#dc2626' : '#059669'};">${totalAlerts}</span>
+                <span class="po-kpi-meta">${totalAlerts > 0 ? 'Bills / SD / Deadlines due' : 'All caught up'}</span>
+            </div>
+            <div class="po-kpi clickable" onclick="setPOFilter('pending_sd')">
+                <span class="po-kpi-label">Pending SD</span>
+                <span class="po-kpi-val" style="color:${dueSDCount > 0 ? '#dc2626' : '#0f172a'};">₹${pendingSDTotal.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                <span class="po-kpi-meta">${pendingSDList.length} PO${pendingSDList.length !== 1 ? 's' : ''}${dueSDCount > 0 ? ` · ${dueSDCount} due now` : ''}</span>
+            </div>`;
     }
 
     let poList = allPOs;
-    if (filterMode === 'ongoing') poList = poList.filter(p => !p.isCompleted);
-    else if (filterMode === 'completed') poList = poList.filter(p => p.isCompleted);
-    else if (filterMode === 'pending_sd') poList = poList.filter(p => (parseFloat(p.sdAmount) || 0) > 0 && !p.sdReceived);
+    if (currentPOFilter === 'ongoing') poList = poList.filter(p => !p.isCompleted);
+    else if (currentPOFilter === 'completed') poList = poList.filter(p => p.isCompleted);
+    else if (currentPOFilter === 'pending_sd') poList = poList.filter(p => (parseFloat(p.sdAmount) || 0) > 0 && !p.sdReceived);
 
     if (query) {
         poList = poList.filter(p =>
@@ -2582,99 +2922,94 @@ function renderPOTableRows() {
         let status = getPODeadlineStatus(p.deadline, p.isCompleted);
         let monthAlert = getPOMonthAlertStatus(p);
         let sdStatus = getPOSDStatus(p);
-        let isCivil = (p.poType === 'Civil PO');
-        let isAMC = (p.poType === 'AMC PO');
         let cyclesDone = parseInt(p.completedCycles, 10) || 0;
         let alertM = getEffectiveAlertMonths(p);
         let amtNum = parseFloat(p.amount) || 0;
         let amtText = amtNum.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
         let isUrgent = (status && status.isAlert) || (monthAlert && monthAlert.isAlert) || (sdStatus && sdStatus.isAlert);
-        let bgHex = isUrgent
-            ? '#fff5f5'
-            : (p.isCompleted ? (sdStatus && sdStatus.state !== 'received' ? '#f5f7ff' : '#eefdf6') : '#ffffff');
-        let borderHex = isUrgent ? '#fecaca' : (p.isCompleted ? '#bbf7d0' : '#e2e8f0');
-
         let claimBtnLabel = (monthAlert && monthAlert.dueCyclesCount > 1 && monthAlert.totalDueMonths > 0)
-            ? `🧾 Claim (${monthAlert.totalDueMonths}M)`
-            : `🧾 Claim Bill`;
-
-        let typeBadge = '';
-        if (isCivil) {
-            typeBadge = `<span style="font-size:10px; background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; padding:1px 6px; border-radius:4px; font-weight:700;">🏗️ Civil PO</span>`;
-        } else if (isAMC) {
-            typeBadge = `<span style="font-size:10px; background:#ede9fe; color:#6d28d9; border:1px solid #ddd6fe; padding:1px 6px; border-radius:4px; font-weight:700;">🔧 AMC PO</span>`;
-        }
+            ? `Claim ${monthAlert.totalDueMonths}M`
+            : `Claim Bill`;
 
         let isUploading = activeUploadingPOIds.has(String(p.id));
-        return { status, monthAlert, sdStatus, cyclesDone, alertM, amtText, isUrgent, bgHex, borderHex, claimBtnLabel, typeBadge, isUploading };
+        return { status, monthAlert, sdStatus, cyclesDone, alertM, amtText, isUrgent, claimBtnLabel, isUploading };
+    }
+
+    function buildPillsHTML(p, m) {
+        let pills = [];
+        if (m.monthAlert) {
+            pills.push(`<span class="po-pill ${m.monthAlert.tone}"><span class="po-pill-dot" style="background:${m.monthAlert.dot};"></span>${m.monthAlert.text}</span>`);
+        }
+        if (m.status) {
+            pills.push(`<span class="po-pill ${m.status.tone}"><span class="po-pill-dot" style="background:${m.status.dot};"></span>${m.status.text}</span>`);
+        }
+        if (m.sdStatus) {
+            let undoAttr = p.sdReceived ? `onclick="togglePOSDReceived('${p.id}')" title="Click to undo SD Refunded"` : '';
+            let undoIcon = p.sdReceived ? PO_ICONS.undo : '';
+            pills.push(`<span class="po-pill ${m.sdStatus.tone} ${p.sdReceived ? 'clickable' : ''}" ${undoAttr}><span class="po-pill-dot" style="background:${m.sdStatus.dot};"></span>${m.sdStatus.text}${undoIcon}</span>`);
+        }
+        if (!p.isCompleted && m.cyclesDone > 0) {
+            pills.push(`<span class="po-pill green clickable" onclick="undoPOBillClaim('${p.id}')" title="Click to undo / adjust claimed cycles">${m.cyclesDone} claimed${m.alertM > 0 ? ` (${m.cyclesDone * m.alertM}M)` : ''}${PO_ICONS.undo}</span>`);
+        }
+        return pills.join('');
+    }
+
+    function buildIconToolsHTML(p, m) {
+        let copyIcons = '';
+        if (m.isUploading) {
+            copyIcons = `<span style="font-size:11px; color:#059669; font-weight:700; padding:0 4px;">Uploading...</span>`;
+        } else if (p.photo && p.photo.length > 5) {
+            copyIcons = `
+                <a href="${p.photo}" target="_blank" class="po-ghost-icon" title="View PO Copy">${PO_ICONS.file}</a>
+                <button type="button" class="po-ghost-icon" onclick="downloadPOAttachment('${p.id}')" title="Download PO Copy">${PO_ICONS.download}</button>`;
+        } else if (p.link && p.link.length > 5) {
+            copyIcons = `<a href="${p.link}" target="_blank" class="po-ghost-icon" title="Open Link">${PO_ICONS.file}</a>`;
+        }
+        return `
+            ${copyIcons}
+            ${copyIcons ? `<span class="po-divider-v"></span>` : ''}
+            <button type="button" class="po-ghost-icon" onclick="editPO('${p.id}')" title="Edit PO">${PO_ICONS.edit}</button>
+            <button type="button" class="po-ghost-icon danger" onclick="deletePO('${p.id}')" title="Delete PO">${PO_ICONS.trash}</button>`;
     }
 
     function buildPORowHTML(p) {
         let m = getPORenderMeta(p);
-        let rowBg = `background:${m.bgHex};${p.isCompleted && !m.isUrgent && !(m.sdStatus && m.sdStatus.state !== 'received') ? ' color:#555;' : ''}`;
+        let rowClass = `po-data-row ${m.isUrgent ? 'is-urgent' : (p.isCompleted ? 'is-done' : '')}`;
+
+        let dateLine = `${formatDate(p.date)}${p.deadline ? ` → ${formatDate(p.deadline)}` : ''}${p.completedDate ? ` · Done ${formatDate(p.completedDate)}` : ''}`;
+        let pillsHTML = buildPillsHTML(p, m);
 
         let statusBtn = p.isCompleted
-            ? `<button onclick="togglePOStatus('${p.id}')" style="background:#07865b; padding:4px 8px; border-radius:4px; font-size:11px; color:white; border:none; cursor:pointer; width:82px;">✅ Completed</button>`
-            : `<button onclick="togglePOStatus('${p.id}')" style="background:#f39c12; padding:4px 8px; border-radius:4px; font-size:11px; color:white; border:none; cursor:pointer; width:82px;">⏳ Ongoing</button>`;
+            ? `<button type="button" class="po-status-toggle completed" onclick="togglePOStatus('${p.id}')"><span class="po-pill-dot" style="background:#10b981;"></span>Completed</button>`
+            : `<button type="button" class="po-status-toggle ongoing" onclick="togglePOStatus('${p.id}')"><span class="po-pill-dot" style="background:#f59e0b;"></span>Ongoing</button>`;
 
-        let billDoneBtn = (!p.isCompleted && m.monthAlert && m.monthAlert.isAlert)
-            ? `<button onclick="markPOBillDone('${p.id}')" style="background:#dc2626; padding:4px 8px; border-radius:4px; font-size:11px; color:white; border:none; cursor:pointer; white-space:nowrap;" title="Click karke 1 ya multiple cycles (3M / 6M) claim mark karein">${m.claimBtnLabel}</button>`
+        let claimBtn = (!p.isCompleted && m.monthAlert && m.monthAlert.isAlert)
+            ? `<button type="button" class="po-claim-btn" onclick="markPOBillDone('${p.id}')">${m.claimBtnLabel}</button>`
             : '';
 
-        let sdBtn = '';
-        if (m.sdStatus && !p.sdReceived && (m.sdStatus.isAlert || p.isCompleted)) {
-            let sdBtnBg = m.sdStatus.isAlert ? '#dc2626' : '#d97706';
-            sdBtn = `<button onclick="togglePOSDReceived('${p.id}')" style="background:${sdBtnBg}; padding:4px 8px; border-radius:4px; font-size:11px; color:white; border:none; cursor:pointer; white-space:nowrap;" title="Security Deposit wapas milne par click karein">💰 Claim SD</button>`;
-        }
-
-        let proofHTML = '-';
-        if (m.isUploading) {
-            proofHTML = `<span style="font-size:11px; color:#059669; font-weight:700; white-space:nowrap;">⏳ Uploading...</span>`;
-        } else if (p.photo && p.photo.length > 5) {
-            let icon = p.photo.includes('/file/d/') ? '📄' : '📷';
-            proofHTML = `<div style="display:inline-flex; align-items:center; gap:6px;">
-                <a href="${p.photo}" target="_blank" style="color:#2980b9; font-weight:bold; text-decoration:none; font-size:16px;" title="View Copy">${icon}</a>
-                <button type="button" onclick="downloadPOAttachment('${p.id}')" style="background:#eef2ff; color:#1d4ed8; border:1px solid #c7d2fe; padding:3px 6px; border-radius:6px; font-size:12px; cursor:pointer; line-height:1;" title="Download Copy">⬇️</button>
-            </div>`;
-        } else if (p.link && p.link.length > 5) {
-            proofHTML = `<a href="${p.link}" target="_blank" style="color:#2980b9; font-weight:bold; text-decoration:none; font-size:16px;">🔗</a>`;
-        }
-
-        let ageBadge = m.monthAlert
-            ? `<br><span style="display:inline-block; margin-top:3px; background:${m.monthAlert.bg}; color:${m.monthAlert.color}; border:1px solid ${m.monthAlert.border}; padding:1px 6px; border-radius:99px; font-size:10px; font-weight:700; white-space:nowrap;">${m.monthAlert.text}</span>`
+        let sdBtn = (m.sdStatus && !p.sdReceived && (m.sdStatus.isAlert || p.isCompleted))
+            ? `<button type="button" class="po-claim-btn ${m.sdStatus.isAlert ? '' : 'subtle-sd'}" onclick="togglePOSDReceived('${p.id}')">Claim SD</button>`
             : '';
 
-        let cyclesNote = (!p.isCompleted && m.cyclesDone > 0)
-            ? `<br><span onclick="undoPOBillClaim('${p.id}')" title="Click karke claimed bill undo / adjust karein" style="cursor:pointer; display:inline-block; margin-top:3px; font-size:10px; color:#047857; background:#ecfdf5; border:1px dashed #6ee7b7; padding:1px 6px; border-radius:99px; font-weight:700;">✓ ${m.cyclesDone} Bill${m.cyclesDone > 1 ? 's' : ''} Claimed${m.alertM > 0 ? ` (${m.cyclesDone * m.alertM}M)` : ''} ↩️</span>`
-            : '';
-
-        let compNote = p.completedDate
-            ? `<br><span style="font-size:10px; color:#475569;">Done: ${formatDate(p.completedDate)}</span>`
-            : '';
-
-        let deadlineBadge = m.status
-            ? `<br><span style="display:inline-block; margin-top:3px; background:${m.status.bg}; color:${m.status.color}; border:1px solid ${m.status.border}; padding:1px 6px; border-radius:99px; font-size:10px; font-weight:700; white-space:nowrap;">${m.status.text}</span>`
-            : '';
-
-        let sdBadge = m.sdStatus
-            ? `<br><span ${p.sdReceived ? `onclick="togglePOSDReceived('${p.id}')" title="Click to undo SD Refunded" style="cursor:pointer;` : `style="`}display:inline-block; margin-top:3px; background:${m.sdStatus.bg}; color:${m.sdStatus.color}; border:1px solid ${m.sdStatus.border}; padding:1px 6px; border-radius:99px; font-size:10px; font-weight:700; white-space:nowrap;">${m.sdStatus.text}</span>`
-            : '';
-
-        return `<tr style="${rowBg}">
-            <td style="white-space:nowrap;">${formatDate(p.date)}${ageBadge}${cyclesNote}${compNote}</td>
-            <td><b>${p.authority}</b> ${m.typeBadge}<br><span style="font-size:11px;color:#555;">${p.workDesc}</span></td>
-            <td style="white-space:nowrap;">${p.poNo}</td>
-            <td style="white-space:nowrap;">${p.deadline ? formatDate(p.deadline) : '-'}${deadlineBadge}${sdBadge}</td>
-            <td style="font-weight:bold; white-space:nowrap;">₹${m.amtText}</td>
-            <td style="text-align:center;">${proofHTML}</td>
+        return `
+        <tr class="${rowClass}">
             <td>
-                <div style="display:flex; gap:4px; justify-content:center; align-items:center; flex-wrap:wrap;">
-                    ${billDoneBtn}
+                <div style="font-weight:700; color:${p.isCompleted ? '#475569' : '#0f172a'}; font-size:13.5px;">${p.authority}</div>
+                <div style="font-size:12px; color:#64748b; margin-top:1px;">${p.workDesc || '-'}</div>
+            </td>
+            <td>${p.poNo}</td>
+            <td>
+                <div style="font-size:12px; color:#475569; font-weight:500; white-space:nowrap;">${dateLine}</div>
+                ${pillsHTML ? `<div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:4px;">${pillsHTML}</div>` : ''}
+            </td>
+            <td style="text-align:right; font-weight:800; font-variant-numeric:tabular-nums; white-space:nowrap;">₹${m.amtText}</td>
+            <td style="text-align:center;">${statusBtn}</td>
+            <td style="text-align:right;">
+                <div class="po-actions-row">
+                    ${claimBtn}
                     ${sdBtn}
-                    ${statusBtn}
-                    <button onclick="editPO('${p.id}')" style="background:#3498db; padding:4px 6px; border-radius:4px; font-size:12px; color:white; border:none; cursor:pointer;">✏️</button>
-                    <button onclick="deletePO('${p.id}')" style="background:#e21d4f; padding:4px 6px; border-radius:4px; font-size:12px; color:white; border:none; cursor:pointer;">🗑️</button>
+                    ${buildIconToolsHTML(p, m)}
                 </div>
             </td>
         </tr>`;
@@ -2682,143 +3017,141 @@ function renderPOTableRows() {
 
     function buildPOMobileCardHTML(p) {
         let m = getPORenderMeta(p);
+        let cardClass = `po-m-card ${m.isUrgent ? 'is-urgent' : (p.isCompleted ? 'is-done' : 'is-ongoing')}`;
+        let pillsHTML = buildPillsHTML(p, m);
 
-        let badgesArr = [];
-        if (m.monthAlert) {
-            badgesArr.push(`<span style="background:${m.monthAlert.bg}; color:${m.monthAlert.color}; border:1px solid ${m.monthAlert.border}; padding:2px 8px; border-radius:99px; font-size:11px; font-weight:700;">${m.monthAlert.text}</span>`);
-        }
-        if (m.status) {
-            badgesArr.push(`<span style="background:${m.status.bg}; color:${m.status.color}; border:1px solid ${m.status.border}; padding:2px 8px; border-radius:99px; font-size:11px; font-weight:700;">${m.status.text}</span>`);
-        }
-        if (m.sdStatus) {
-            badgesArr.push(`<span ${p.sdReceived ? `onclick="togglePOSDReceived('${p.id}')" style="cursor:pointer;` : `style="`}background:${m.sdStatus.bg}; color:${m.sdStatus.color}; border:1px solid ${m.sdStatus.border}; padding:2px 8px; border-radius:99px; font-size:11px; font-weight:700;">${m.sdStatus.text}</span>`);
-        }
-        if (!p.isCompleted && m.cyclesDone > 0) {
-            badgesArr.push(`<span onclick="undoPOBillClaim('${p.id}')" style="cursor:pointer; font-size:11px; color:#047857; background:#ecfdf5; border:1px dashed #6ee7b7; padding:2px 8px; border-radius:99px; font-weight:700;">✓ ${m.cyclesDone} Bill${m.cyclesDone > 1 ? 's' : ''} Claimed${m.alertM > 0 ? ` (${m.cyclesDone * m.alertM}M)` : ''} ↩️</span>`);
-        }
-
-        let copyActions = '';
-        if (m.isUploading) {
-            copyActions = `<span style="font-size:11px; color:#059669; font-weight:700;">⏳ Uploading...</span>`;
-        } else if (p.photo && p.photo.length > 5) {
-            let icon = p.photo.includes('/file/d/') ? '📄' : '📷';
-            copyActions = `
-                <a href="${p.photo}" target="_blank" style="display:inline-flex; align-items:center; gap:3px; background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; padding:5px 8px; border-radius:7px; font-size:11.5px; font-weight:700; text-decoration:none;">${icon} Copy</a>
-                <button type="button" onclick="downloadPOAttachment('${p.id}')" style="background:#eef2ff; color:#1d4ed8; border:1px solid #c7d2fe; padding:5px 8px; border-radius:7px; font-size:12px; line-height:1;" title="Download Copy">⬇️</button>`;
-        } else if (p.link && p.link.length > 5) {
-            copyActions = `<a href="${p.link}" target="_blank" style="display:inline-flex; align-items:center; background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; padding:5px 8px; border-radius:7px; font-size:11.5px; font-weight:700; text-decoration:none;">🔗 Copy</a>`;
-        }
+        let statusBtn = p.isCompleted
+            ? `<button type="button" class="po-status-toggle completed" onclick="togglePOStatus('${p.id}')"><span class="po-pill-dot" style="background:#10b981;"></span>Completed</button>`
+            : `<button type="button" class="po-status-toggle ongoing" onclick="togglePOStatus('${p.id}')"><span class="po-pill-dot" style="background:#f59e0b;"></span>Ongoing</button>`;
 
         let claimBtn = (!p.isCompleted && m.monthAlert && m.monthAlert.isAlert)
-            ? `<button onclick="markPOBillDone('${p.id}')" style="background:#dc2626; color:#fff; padding:6px 10px; border-radius:7px; font-size:11.5px;">${m.claimBtnLabel}</button>`
+            ? `<button type="button" class="po-claim-btn" onclick="markPOBillDone('${p.id}')">${m.claimBtnLabel}</button>`
             : '';
 
         let sdBtn = (m.sdStatus && !p.sdReceived && (m.sdStatus.isAlert || p.isCompleted))
-            ? `<button onclick="togglePOSDReceived('${p.id}')" style="background:${m.sdStatus.isAlert ? '#dc2626' : '#d97706'}; color:#fff; padding:6px 10px; border-radius:7px; font-size:11.5px;">💰 Claim SD</button>`
+            ? `<button type="button" class="po-claim-btn ${m.sdStatus.isAlert ? '' : 'subtle-sd'}" onclick="togglePOSDReceived('${p.id}')">Claim SD</button>`
             : '';
 
-        let statusBtn = p.isCompleted
-            ? `<button onclick="togglePOStatus('${p.id}')" style="background:#07865b; color:#fff; padding:6px 10px; border-radius:7px; font-size:11.5px;">✅ Completed</button>`
-            : `<button onclick="togglePOStatus('${p.id}')" style="background:#f39c12; color:#fff; padding:6px 10px; border-radius:7px; font-size:11.5px;">⏳ Ongoing</button>`;
-
         return `
-        <div style="background:${m.bgHex}; border:1px solid ${m.borderHex}; border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:8px;">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+        <div class="${cardClass}">
+            <div class="po-m-top">
                 <div style="min-width:0;">
-                    <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-                        <b style="font-size:14.5px; color:#0f172a;">${p.authority}</b>
-                        ${m.typeBadge}
-                    </div>
-                    <div style="font-size:12px; color:#475569; margin-top:2px;">${p.workDesc || '-'}</div>
+                    <div class="po-m-auth">${p.authority}</div>
+                    <div class="po-m-desc">${p.workDesc || '-'}</div>
                 </div>
-                <div style="font-weight:800; font-size:14.5px; color:#0f172a; white-space:nowrap;">₹${m.amtText}</div>
+                <div class="po-m-amt">₹${m.amtText}</div>
             </div>
 
-            <div style="display:flex; flex-wrap:wrap; gap:6px 12px; font-size:11.5px; color:#334155; background:rgba(255,255,255,0.75); padding:6px 8px; border-radius:8px; border:1px solid #e2e8f0;">
-                <span><b>PO:</b> ${p.poNo}</span>
-                <span><b>Issue:</b> ${formatDate(p.date)}</span>
-                ${p.deadline ? `<span><b>Due:</b> ${formatDate(p.deadline)}</span>` : ''}
-                ${p.completedDate ? `<span><b>Done:</b> ${formatDate(p.completedDate)}</span>` : ''}
+            <div class="po-m-meta">
+                <span class="po-m-mono">#${p.poNo}</span>
+                <span>·</span>
+                <span>${formatDate(p.date)}${p.deadline ? ` → ${formatDate(p.deadline)}` : ''}</span>
+                ${p.completedDate ? `<span>· Done ${formatDate(p.completedDate)}</span>` : ''}
             </div>
 
-            ${badgesArr.length > 0 ? `<div style="display:flex; flex-wrap:wrap; gap:5px;">${badgesArr.join('')}</div>` : ''}
+            ${pillsHTML ? `<div class="po-m-badges">${pillsHTML}</div>` : ''}
 
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; padding-top:6px; border-top:1px dashed #cbd5e1;">
-                <div style="display:flex; align-items:center; gap:5px;">
-                    ${copyActions}
-                </div>
-                <div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap; margin-left:auto;">
+            <div class="po-m-footer">
+                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                    ${statusBtn}
                     ${claimBtn}
                     ${sdBtn}
-                    ${statusBtn}
-                    <button onclick="editPO('${p.id}')" style="background:#3498db; color:#fff; padding:6px 8px; border-radius:7px; font-size:12px;">✏️</button>
-                    <button onclick="deletePO('${p.id}')" style="background:#e21d4f; color:#fff; padding:6px 8px; border-radius:7px; font-size:12px;">🗑️</button>
+                </div>
+                <div class="po-actions-row">
+                    ${buildIconToolsHTML(p, m)}
                 </div>
             </div>
         </div>`;
     }
 
-    let groups = [
-        {
-            title: '🏗️ Civil PO',
-            bg: '#e0f2fe',
-            color: '#0369a1',
-            border: '#7dd3fc',
+    let groupMap = {
+        'Civil PO': {
+            key: 'Civil PO',
+            title: 'Civil PO',
+            dot: '#0284c7',
             items: poList.filter(p => p.poType === 'Civil PO')
         },
-        {
-            title: '🔧 AMC PO',
-            bg: '#ede9fe',
-            color: '#6d28d9',
-            border: '#c4b5fd',
+        'AMC PO': {
+            key: 'AMC PO',
+            title: 'AMC PO',
+            dot: '#7c3aed',
             items: poList.filter(p => p.poType === 'AMC PO')
         },
-        {
-            title: '📄 Other / General PO',
-            bg: '#f1f5f9',
-            color: '#334155',
-            border: '#cbd5e1',
+        'General PO': {
+            key: 'General PO',
+            title: 'Other / General PO',
+            dot: '#64748b',
             items: poList.filter(p => p.poType !== 'Civil PO' && p.poType !== 'AMC PO')
         }
-    ];
+    };
 
-    let activeGroups = groups.filter(g => g.items.length > 0);
+    let groupOrder = getPOGroupOrder();
+    let activeGroups = groupOrder.map(k => groupMap[k]).filter(g => g && g.items.length > 0);
+
+    function buildOrderBtns(g, idx) {
+        if (activeGroups.length <= 1) return '';
+        let upDisabled = idx === 0 ? 'disabled' : '';
+        let downDisabled = idx === activeGroups.length - 1 ? 'disabled' : '';
+        let upClick = idx > 0 ? `onclick="event.stopPropagation(); swapPOGroupOrder('${g.key}', '${activeGroups[idx - 1].key}')"` : '';
+        let downClick = idx < activeGroups.length - 1 ? `onclick="event.stopPropagation(); swapPOGroupOrder('${g.key}', '${activeGroups[idx + 1].key}')"` : '';
+        return `
+            <span class="po-order-btns">
+                <button type="button" class="po-ghost-icon" style="width:24px;height:24px;" title="Move group up" ${upDisabled} ${upClick}>${PO_ICONS.up}</button>
+                <button type="button" class="po-ghost-icon" style="width:24px;height:24px;" title="Move group down" ${downDisabled} ${downClick}>${PO_ICONS.down}</button>
+            </span>`;
+    }
 
     if (tbody) {
-        let historyRows = activeGroups.map(g => {
+        let html = activeGroups.map((g, idx) => {
             let groupTotal = g.items.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
             let groupOngoing = g.items.filter(p => !p.isCompleted).length;
+            let isCollapsed = collapsedPOGroups.has(g.key);
             let headerRow = `
-                <tr style="background:${g.bg}; border-top:2px solid ${g.border}; border-bottom:1.5px solid ${g.border};">
-                    <td colspan="7" style="padding:9px 10px; font-weight:800; color:${g.color}; font-size:13px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-                            <span>${g.title} <span style="background:#ffffff; color:${g.color}; border:1px solid ${g.border}; padding:1px 8px; border-radius:99px; font-size:11px; margin-left:6px;">${g.items.length} PO${g.items.length > 1 ? 's' : ''}</span></span>
-                            <span style="font-size:12px; font-weight:700;">⏳ Ongoing: ${groupOngoing} &nbsp;|&nbsp; Total: ₹${groupTotal.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                <tr class="po-group-row">
+                    <td colspan="6">
+                        <div class="po-group-head">
+                            <div class="po-group-left" onclick="togglePOGroupCollapse('${g.key}')" title="Click to expand/collapse">
+                                <span style="font-size:10px; color:#94a3b8; width:10px;">${isCollapsed ? '▸' : '▾'}</span>
+                                <span class="po-group-dot" style="background:${g.dot};"></span>
+                                <span class="po-group-name">${g.title}</span>
+                                <span class="po-group-count">${g.items.length}</span>
+                                ${buildOrderBtns(g, idx)}
+                            </div>
+                            <div class="po-group-right">
+                                <span>${groupOngoing} ongoing</span>
+                                <span style="color:#cbd5e1;">|</span>
+                                <span style="color:#0f172a; font-weight:800;">₹${groupTotal.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                            </div>
                         </div>
                     </td>
                 </tr>`;
-            return headerRow + g.items.map(buildPORowHTML).join('');
+            return headerRow + (isCollapsed ? '' : g.items.map(buildPORowHTML).join(''));
         }).join('');
-        tbody.innerHTML = historyRows || `<tr><td colspan="7" style="text-align:center; color:#888;">No Purchase Orders found</td></tr>`;
+        tbody.innerHTML = html || `<tr><td colspan="6" style="text-align:center; color:#94a3b8; padding:28px;">No Purchase Orders match this filter</td></tr>`;
     }
 
     if (mobileWrap) {
-        let mobileHTML = activeGroups.map(g => {
+        let mobileHTML = activeGroups.map((g, idx) => {
             let groupTotal = g.items.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
-            let groupOngoing = g.items.filter(p => !p.isCompleted).length;
+            let isCollapsed = collapsedPOGroups.has(g.key);
             return `
-            <div style="display:flex; flex-direction:column; gap:8px;">
-                <div style="background:${g.bg}; color:${g.color}; border:1.5px solid ${g.border}; border-radius:10px; padding:8px 11px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
-                        <span style="font-weight:800; font-size:13px;">${g.title} (${g.items.length})</span>
-                        <span style="font-weight:800; font-size:12.5px;">₹${groupTotal.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+            <div class="po-m-group">
+                <div class="po-m-group-head">
+                    <div class="po-group-left" onclick="togglePOGroupCollapse('${g.key}')">
+                        <span style="font-size:10px; color:#94a3b8;">${isCollapsed ? '▸' : '▾'}</span>
+                        <span class="po-group-dot" style="background:${g.dot};"></span>
+                        <span class="po-group-name">${g.title}</span>
+                        <span class="po-group-count">${g.items.length}</span>
                     </div>
-                    <div style="font-size:11px; opacity:0.85; margin-top:2px; font-weight:600;">⏳ Ongoing: ${groupOngoing} • ✅ Completed: ${g.items.length - groupOngoing}</div>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span style="font-size:12px; font-weight:800; color:#0f172a; font-variant-numeric:tabular-nums;">₹${groupTotal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                        ${buildOrderBtns(g, idx)}
+                    </div>
                 </div>
-                ${g.items.map(buildPOMobileCardHTML).join('')}
+                ${isCollapsed ? '' : g.items.map(buildPOMobileCardHTML).join('')}
             </div>`;
         }).join('');
-        mobileWrap.innerHTML = mobileHTML || `<div style="text-align:center; color:#888; padding:18px; font-size:13px;">No Purchase Orders found</div>`;
+        mobileWrap.innerHTML = mobileHTML || `<div style="text-align:center; color:#94a3b8; padding:24px; font-size:13px;">No Purchase Orders match this filter</div>`;
     }
 
     updatePOTabBadge();
@@ -2846,13 +3179,13 @@ async function savePO() {
 
     if (!authority || !poNo || !amount) return alert("Authority, PO Number and Amount required!");
     let isPDF = file && (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'));
-    if (file && !file.type.startsWith('image/') && !isPDF) return alert("⚠️ ERROR: Sirf Image ya PDF file upload karein!");
+    if (file && !file.type.startsWith('image/') && !isPDF) return alert("Sirf Image ya PDF file upload karein!");
 
-    let btn = document.getElementById('poSaveBtn'); let originalText = btn.innerText; btn.innerText = "⏳ Saving..."; btn.disabled = true;
+    let btn = document.getElementById('poSaveBtn'); let originalText = btn.innerText; btn.innerText = "Saving..."; btn.disabled = true;
     try {
         appData.poRecords = getArray(appData.poRecords);
         let isDuplicatePO = appData.poRecords.some(p => String(p.id) !== String(currentPOEditId) && p.poNo.toLowerCase() === poNo.toLowerCase());
-        if (isDuplicatePO) { btn.innerText = originalText; btn.disabled = false; return alert(`❌ DUPLICATE PO!`); }
+        if (isDuplicatePO) { btn.innerText = originalText; btn.disabled = false; return alert("DUPLICATE PO Number!"); }
 
         let existingPO = currentPOEditId ? appData.poRecords.find(p => String(p.id) === String(currentPOEditId)) : null;
         let existingPhotoUrl = existingPO && existingPO.photo ? existingPO.photo : '';
@@ -2924,13 +3257,13 @@ function togglePOStatus(id) {
             let holdM = parseInt(p.sdHoldMonths, 10) || 6;
             let defaultDate = p.completedDate || new Date().toISOString().split('T')[0];
             let entered = prompt(
-                `🔒 Is PO mein ₹${sdAmt.toLocaleString('en-IN', { maximumFractionDigits: 2 })} Security Money hai.\n\nWork Completion Date confirm karein (YYYY-MM-DD):\n(Is date se ${holdM} mahine baad SD Refund alert aayega)`,
+                `Is PO mein ₹${sdAmt.toLocaleString('en-IN', { maximumFractionDigits: 2 })} Security Money hai.\n\nWork Completion Date confirm karein (YYYY-MM-DD):\n(Is date se ${holdM} mahine baad SD Refund alert aayega)`,
                 defaultDate
             );
             if (entered === null) return;
             entered = entered.trim() || defaultDate;
             if (!/^\d{4}-\d{2}-\d{2}$/.test(entered) || !parseISODateLocal(entered)) {
-                return alert("⚠️ Valid date format YYYY-MM-DD daalein (jaise 2026-11-21)");
+                return alert("Valid date format YYYY-MM-DD daalein (jaise 2026-11-22)");
             }
             p.completedDate = entered;
         }
@@ -2950,9 +3283,9 @@ async function deletePO(id) {
     activeUploadingPOIds.delete(String(id));
 
     if (targetPO && targetPO.photo && typeof extractDriveFileId === 'function' && extractDriveFileId(targetPO.photo)) {
-        updateUploadBar(45, 'Deleting PO copy from Drive...', '🗑️ Deleting File...');
+        updateUploadBar(45, 'Deleting PO copy from Drive...', 'Deleting File...');
         await deleteFromGoogleDrive(targetPO.photo);
-        updateUploadBar(100, '✅ File deleted from Drive!', '🗑️ Deleting File...');
+        updateUploadBar(100, 'File deleted from Drive!', 'Deleting File...');
         await new Promise(r => setTimeout(r, 350));
         hideUploadBar();
     }
@@ -2966,6 +3299,7 @@ function editPO(id) {
     let p = getArray(appData.poRecords).find(x => String(x.id) === String(id));
     if (p) {
         currentPOEditId = id;
+        togglePOFormPanel(true);
         document.getElementById('poDate').value = p.date || '';
         let poTypeEl = document.getElementById('poType');
         if (poTypeEl) poTypeEl.value = p.poType || 'General PO';
@@ -2982,8 +3316,10 @@ function editPO(id) {
         document.getElementById('poWorkDesc').value = p.workDesc || '';
         document.getElementById('poAmount').value = p.amount || '';
         document.getElementById('poDeadline').value = p.deadline || '';
+        let hdr = document.getElementById('poFormHeading');
+        if (hdr) hdr.innerText = `Edit PO — ${p.poNo}`;
         let btn = document.getElementById('poSaveBtn');
-        if (btn) { btn.innerText = "✏️ Update PO Record"; btn.style.background = "#f39c12"; }
+        if (btn) { btn.innerText = "Update Purchase Order"; btn.style.background = "#d97706"; }
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 }
