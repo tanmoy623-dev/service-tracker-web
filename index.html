@@ -1850,7 +1850,7 @@ function downloadPartnerCSV(name) {
 function user() {
     return `<div class="card"><h2>👤 Select Technician Profile</h2><div class="grid"><div class="role" onclick="tech('computer')" style="cursor:pointer; background:#f8fafc; padding:20px; border-radius:14px; border:1px solid #e2e8f0; text-align:center; font-size:16px;">💻 <b>Computer</b></div><div class="role" onclick="tech('water')" style="cursor:pointer; background:#f8fafc; padding:20px; border-radius:14px; border:1px solid #e2e8f0; text-align:center; font-size:16px;">💧 <b>Water Purifier</b></div></div></div><div id="techArea"></div>`;
 }// =========================================================================
-// ====== PART 4: PO TRACKER (CLEAN MODERN SAAS UI FOR PC & MOBILE, LIST-FIRST + NEW PO FORM, MANUAL GROUP ORDER, MULTI-CYCLE CLAIM + UNDO, SD REFUND, BG UPLOAD, DOWNLOAD & AUTO-DELETE), BILLS, PETTY CASH, CF, SETTINGS, TECH & VEHICLES ======
+// ====== PART 4: PO TRACKER (STRICT COMPLETED = WORK + SD CLOSED, CLEAN SAAS UI FOR PC & MOBILE, MANUAL GROUP ORDER, MULTI-CYCLE CLAIM + UNDO, SD REFUND, BG UPLOAD, DOWNLOAD & AUTO-DELETE), BILLS, PETTY CASH, CF, SETTINGS, TECH & VEHICLES ======
 // =========================================================================
 
 // ====== CLEAN MODERN PO UI STYLES & SVG ICONS ======
@@ -1870,6 +1870,14 @@ const PO_ICONS = {
     undo: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>`,
     close: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>`
 };
+
+function hasPOPendingSD(p) {
+    return !!p && (parseFloat(p.sdAmount) || 0) > 0 && !p.sdReceived;
+}
+
+function isPOFullyCompleted(p) {
+    return !!p && !!p.isCompleted && !hasPOPendingSD(p);
+}
 
 function injectPOResponsiveCSS() {
     let old = document.getElementById('poResponsiveCSS');
@@ -1916,6 +1924,7 @@ function injectPOResponsiveCSS() {
             white-space: nowrap; cursor: pointer; transition: all 0.15s ease;
         }
         .po-seg-btn.active { background: #ffffff; color: #0f172a; box-shadow: 0 1px 3px rgba(15,23,42,0.1); }
+        .po-seg-cnt { font-size: 11px; font-weight: 700; opacity: 0.7; margin-left: 3px; }
         .po-search-box { position: relative; flex: 1; min-width: 200px; max-width: 280px; }
         .po-search-box svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none; }
         .po-search-box input {
@@ -1953,6 +1962,7 @@ function injectPOResponsiveCSS() {
         }
         #poRecordTable tbody tr.po-data-row td:nth-child(2) { white-space: nowrap !important; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px !important; color: #475569; }
         #poRecordTable tbody tr.po-data-row.is-urgent td:first-child { box-shadow: inset 3px 0 0 #dc2626; }
+        #poRecordTable tbody tr.po-data-row.is-sd-wait td:first-child { box-shadow: inset 3px 0 0 #4f46e5; }
         #poRecordTable tbody tr.po-data-row.is-done td:first-child { box-shadow: inset 3px 0 0 #10b981; }
         #poRecordTable tbody tr.po-data-row.is-done td { color: #64748b; }
 
@@ -2002,6 +2012,7 @@ function injectPOResponsiveCSS() {
             border: 1px solid transparent !important;
         }
         .po-status-toggle.ongoing { background: #fffbeb !important; color: #b45309 !important; border-color: #fde68a !important; }
+        .po-status-toggle.sd-pending { background: #eef2ff !important; color: #3730a3 !important; border-color: #c7d2fe !important; }
         .po-status-toggle.completed { background: #ecfdf5 !important; color: #047857 !important; border-color: #a7f3d0 !important; }
 
         .po-claim-btn {
@@ -2037,6 +2048,7 @@ function injectPOResponsiveCSS() {
         }
         .po-m-card.is-urgent::before { background: #dc2626; }
         .po-m-card.is-ongoing::before { background: #f59e0b; }
+        .po-m-card.is-sd-wait::before { background: #4f46e5; }
         .po-m-card.is-done::before { background: #10b981; }
         .po-m-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
         .po-m-auth { font-size: 14px; font-weight: 800; color: #0f172a; line-height: 1.3; }
@@ -2067,7 +2079,7 @@ function injectPOResponsiveCSS() {
             .po-kpi-meta { font-size: 10px; }
             .po-search-box { max-width: 100%; min-width: 100%; }
             .po-seg-tabs { width: 100%; justify-content: space-between; }
-            .po-seg-btn { flex: 1; text-align: center; padding: 7px 6px; font-size: 11.5px; }
+            .po-seg-btn { flex: 1; text-align: center; padding: 7px 4px; font-size: 11px; }
             .po-form-grid, .po-form-grid-2, .po-form-grid-3 { grid-template-columns: 1fr; }
         }
     `;
@@ -2605,11 +2617,12 @@ async function togglePOSDReceived(id) {
 
     let sdAmtText = sdAmt.toLocaleString('en-IN', { maximumFractionDigits: 2 });
     if (!p.sdReceived) {
-        if (!confirm(`Security Deposit ₹${sdAmtText} (${p.authority} - ${p.poNo}) wapas mil gaya?\n\nOK dabate hi SD Refunded mark ho jayega aur alert band ho jayega.`)) return;
+        if (!confirm(`Security Deposit ₹${sdAmtText} (${p.authority} - ${p.poNo}) wapas mil gaya?\n\nOK dabate hi SD Refunded mark hoga aur yeh PO Completed mein chala jayega.`)) return;
         p.sdReceived = true;
         p.sdReceivedDate = new Date().toISOString().split('T')[0];
+        if (!p.isCompleted) p.isCompleted = true;
     } else {
-        if (!confirm(`Kya is PO ka Security Deposit (₹${sdAmtText}) wapas Pending mark karna hai?`)) return;
+        if (!confirm(`Kya is PO ka Security Deposit (₹${sdAmtText}) wapas Pending SD mark karna hai?`)) return;
         p.sdReceived = false;
         p.sdReceivedDate = '';
     }
@@ -2812,10 +2825,10 @@ function showPOTracker() {
 
             <div class="po-toolbar">
                 <div class="po-seg-tabs">
-                    <button type="button" class="po-seg-btn ${currentPOFilter === 'all' ? 'active' : ''}" data-filter="all" onclick="setPOFilter('all')">All</button>
-                    <button type="button" class="po-seg-btn ${currentPOFilter === 'ongoing' ? 'active' : ''}" data-filter="ongoing" onclick="setPOFilter('ongoing')">Ongoing</button>
-                    <button type="button" class="po-seg-btn ${currentPOFilter === 'pending_sd' ? 'active' : ''}" data-filter="pending_sd" onclick="setPOFilter('pending_sd')">Pending SD</button>
-                    <button type="button" class="po-seg-btn ${currentPOFilter === 'completed' ? 'active' : ''}" data-filter="completed" onclick="setPOFilter('completed')">Completed</button>
+                    <button type="button" id="poTab-all" class="po-seg-btn ${currentPOFilter === 'all' ? 'active' : ''}" data-filter="all" onclick="setPOFilter('all')">All</button>
+                    <button type="button" id="poTab-ongoing" class="po-seg-btn ${currentPOFilter === 'ongoing' ? 'active' : ''}" data-filter="ongoing" onclick="setPOFilter('ongoing')">Ongoing</button>
+                    <button type="button" id="poTab-pending_sd" class="po-seg-btn ${currentPOFilter === 'pending_sd' ? 'active' : ''}" data-filter="pending_sd" onclick="setPOFilter('pending_sd')">Pending SD</button>
+                    <button type="button" id="poTab-completed" class="po-seg-btn ${currentPOFilter === 'completed' ? 'active' : ''}" data-filter="completed" onclick="setPOFilter('completed')">Completed</button>
                 </div>
                 <div class="po-search-box">
                     ${PO_ICONS.search}
@@ -2855,12 +2868,24 @@ function renderPOTableRows() {
     let query = searchEl ? searchEl.value.toLowerCase().trim() : '';
     let allPOs = [...getArray(appData.poRecords)];
 
+    let ongoingPOs = allPOs.filter(p => !p.isCompleted);
+    let pendingSDList = allPOs.filter(p => hasPOPendingSD(p));
+    let fullyClosedPOs = allPOs.filter(p => isPOFullyCompleted(p));
+
+    // Update live counts on segmented tabs
+    let setTabLabel = (id, label, count) => {
+        let el = document.getElementById(id);
+        if (el) el.innerHTML = `${label}<span class="po-seg-cnt">(${count})</span>`;
+    };
+    setTabLabel('poTab-all', 'All', allPOs.length);
+    setTabLabel('poTab-ongoing', 'Ongoing', ongoingPOs.length);
+    setTabLabel('poTab-pending_sd', 'Pending SD', pendingSDList.length);
+    setTabLabel('poTab-completed', 'Completed', fullyClosedPOs.length);
+
     // Render KPI Summary Strip
     let kpiStrip = document.getElementById('poKpiStrip');
     if (kpiStrip) {
-        let ongoingPOs = allPOs.filter(p => !p.isCompleted);
         let ongoingVal = ongoingPOs.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
-        let pendingSDList = allPOs.filter(p => (parseFloat(p.sdAmount) || 0) > 0 && !p.sdReceived);
         let pendingSDTotal = pendingSDList.reduce((s, p) => s + (parseFloat(p.sdAmount) || 0), 0);
         let dueSDCount = pendingSDList.filter(p => { let s = getPOSDStatus(p); return s && s.isAlert; }).length;
         let totalAlerts = getAlertPOItems().length;
@@ -2869,7 +2894,7 @@ function renderPOTableRows() {
             <div class="po-kpi clickable" onclick="setPOFilter('ongoing')">
                 <span class="po-kpi-label">Ongoing POs</span>
                 <span class="po-kpi-val">₹${ongoingVal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
-                <span class="po-kpi-meta">${ongoingPOs.length} active · ${allPOs.length - ongoingPOs.length} done</span>
+                <span class="po-kpi-meta">${ongoingPOs.length} active · ${fullyClosedPOs.length} closed</span>
             </div>
             <div class="po-kpi clickable" onclick="setPOFilter('all')">
                 <span class="po-kpi-label">Action Needed</span>
@@ -2885,8 +2910,8 @@ function renderPOTableRows() {
 
     let poList = allPOs;
     if (currentPOFilter === 'ongoing') poList = poList.filter(p => !p.isCompleted);
-    else if (currentPOFilter === 'completed') poList = poList.filter(p => p.isCompleted);
-    else if (currentPOFilter === 'pending_sd') poList = poList.filter(p => (parseFloat(p.sdAmount) || 0) > 0 && !p.sdReceived);
+    else if (currentPOFilter === 'completed') poList = poList.filter(p => isPOFullyCompleted(p));
+    else if (currentPOFilter === 'pending_sd') poList = poList.filter(p => hasPOPendingSD(p));
 
     if (query) {
         poList = poList.filter(p =>
@@ -2906,10 +2931,8 @@ function renderPOTableRows() {
         let bAlert = (dlB && dlB.isAlert) || (maB && maB.isAlert) || (sdB && sdB.isAlert);
         if (aAlert !== bAlert) return aAlert ? -1 : 1;
 
-        let aPendingSD = (parseFloat(a.sdAmount) || 0) > 0 && !a.sdReceived;
-        let bPendingSD = (parseFloat(b.sdAmount) || 0) > 0 && !b.sdReceived;
-        let aGroup = !a.isCompleted ? 0 : (aPendingSD ? 1 : 2);
-        let bGroup = !b.isCompleted ? 0 : (bPendingSD ? 1 : 2);
+        let aGroup = !a.isCompleted ? 0 : (hasPOPendingSD(a) ? 1 : 2);
+        let bGroup = !b.isCompleted ? 0 : (hasPOPendingSD(b) ? 1 : 2);
         if (aGroup !== bGroup) return aGroup - bGroup;
 
         let aScore = Math.min(maA ? maA.diffDays : Infinity, dlA ? dlA.days : Infinity, sdA ? sdA.diffDays : Infinity);
@@ -2922,6 +2945,8 @@ function renderPOTableRows() {
         let status = getPODeadlineStatus(p.deadline, p.isCompleted);
         let monthAlert = getPOMonthAlertStatus(p);
         let sdStatus = getPOSDStatus(p);
+        let pendingSD = hasPOPendingSD(p);
+        let fullyClosed = isPOFullyCompleted(p);
         let cyclesDone = parseInt(p.completedCycles, 10) || 0;
         let alertM = getEffectiveAlertMonths(p);
         let amtNum = parseFloat(p.amount) || 0;
@@ -2933,7 +2958,17 @@ function renderPOTableRows() {
             : `Claim Bill`;
 
         let isUploading = activeUploadingPOIds.has(String(p.id));
-        return { status, monthAlert, sdStatus, cyclesDone, alertM, amtText, isUrgent, claimBtnLabel, isUploading };
+        return { status, monthAlert, sdStatus, pendingSD, fullyClosed, cyclesDone, alertM, amtText, isUrgent, claimBtnLabel, isUploading };
+    }
+
+    function buildStatusBtnHTML(p, m) {
+        if (m.fullyClosed) {
+            return `<button type="button" class="po-status-toggle completed" onclick="togglePOStatus('${p.id}')" title="Click to reopen PO"><span class="po-pill-dot" style="background:#10b981;"></span>Completed</button>`;
+        }
+        if (p.isCompleted && m.pendingSD) {
+            return `<button type="button" class="po-status-toggle sd-pending" onclick="togglePOStatus('${p.id}')" title="Work done — waiting for SD refund (Click to mark work Ongoing again)"><span class="po-pill-dot" style="background:#4f46e5;"></span>SD Pending</button>`;
+        }
+        return `<button type="button" class="po-status-toggle ongoing" onclick="togglePOStatus('${p.id}')" title="Click when work is finished"><span class="po-pill-dot" style="background:#f59e0b;"></span>Ongoing</button>`;
     }
 
     function buildPillsHTML(p, m) {
@@ -2975,14 +3010,11 @@ function renderPOTableRows() {
 
     function buildPORowHTML(p) {
         let m = getPORenderMeta(p);
-        let rowClass = `po-data-row ${m.isUrgent ? 'is-urgent' : (p.isCompleted ? 'is-done' : '')}`;
+        let rowStateClass = m.isUrgent ? 'is-urgent' : (m.fullyClosed ? 'is-done' : (p.isCompleted && m.pendingSD ? 'is-sd-wait' : ''));
 
-        let dateLine = `${formatDate(p.date)}${p.deadline ? ` → ${formatDate(p.deadline)}` : ''}${p.completedDate ? ` · Done ${formatDate(p.completedDate)}` : ''}`;
+        let dateLine = `${formatDate(p.date)}${p.deadline ? ` → ${formatDate(p.deadline)}` : ''}${p.completedDate ? ` · Work Done ${formatDate(p.completedDate)}` : ''}`;
         let pillsHTML = buildPillsHTML(p, m);
-
-        let statusBtn = p.isCompleted
-            ? `<button type="button" class="po-status-toggle completed" onclick="togglePOStatus('${p.id}')"><span class="po-pill-dot" style="background:#10b981;"></span>Completed</button>`
-            : `<button type="button" class="po-status-toggle ongoing" onclick="togglePOStatus('${p.id}')"><span class="po-pill-dot" style="background:#f59e0b;"></span>Ongoing</button>`;
+        let statusBtn = buildStatusBtnHTML(p, m);
 
         let claimBtn = (!p.isCompleted && m.monthAlert && m.monthAlert.isAlert)
             ? `<button type="button" class="po-claim-btn" onclick="markPOBillDone('${p.id}')">${m.claimBtnLabel}</button>`
@@ -2993,9 +3025,9 @@ function renderPOTableRows() {
             : '';
 
         return `
-        <tr class="${rowClass}">
+        <tr class="po-data-row ${rowStateClass}">
             <td>
-                <div style="font-weight:700; color:${p.isCompleted ? '#475569' : '#0f172a'}; font-size:13.5px;">${p.authority}</div>
+                <div style="font-weight:700; color:${m.fullyClosed ? '#475569' : '#0f172a'}; font-size:13.5px;">${p.authority}</div>
                 <div style="font-size:12px; color:#64748b; margin-top:1px;">${p.workDesc || '-'}</div>
             </td>
             <td>${p.poNo}</td>
@@ -3017,12 +3049,9 @@ function renderPOTableRows() {
 
     function buildPOMobileCardHTML(p) {
         let m = getPORenderMeta(p);
-        let cardClass = `po-m-card ${m.isUrgent ? 'is-urgent' : (p.isCompleted ? 'is-done' : 'is-ongoing')}`;
+        let cardStateClass = m.isUrgent ? 'is-urgent' : (m.fullyClosed ? 'is-done' : (p.isCompleted && m.pendingSD ? 'is-sd-wait' : 'is-ongoing'));
         let pillsHTML = buildPillsHTML(p, m);
-
-        let statusBtn = p.isCompleted
-            ? `<button type="button" class="po-status-toggle completed" onclick="togglePOStatus('${p.id}')"><span class="po-pill-dot" style="background:#10b981;"></span>Completed</button>`
-            : `<button type="button" class="po-status-toggle ongoing" onclick="togglePOStatus('${p.id}')"><span class="po-pill-dot" style="background:#f59e0b;"></span>Ongoing</button>`;
+        let statusBtn = buildStatusBtnHTML(p, m);
 
         let claimBtn = (!p.isCompleted && m.monthAlert && m.monthAlert.isAlert)
             ? `<button type="button" class="po-claim-btn" onclick="markPOBillDone('${p.id}')">${m.claimBtnLabel}</button>`
@@ -3033,7 +3062,7 @@ function renderPOTableRows() {
             : '';
 
         return `
-        <div class="${cardClass}">
+        <div class="po-m-card ${cardStateClass}">
             <div class="po-m-top">
                 <div style="min-width:0;">
                     <div class="po-m-auth">${p.authority}</div>
@@ -3105,6 +3134,12 @@ function renderPOTableRows() {
         let html = activeGroups.map((g, idx) => {
             let groupTotal = g.items.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
             let groupOngoing = g.items.filter(p => !p.isCompleted).length;
+            let groupSDPending = g.items.filter(p => p.isCompleted && hasPOPendingSD(p)).length;
+            let metaParts = [];
+            if (groupOngoing > 0) metaParts.push(`${groupOngoing} ongoing`);
+            if (groupSDPending > 0) metaParts.push(`${groupSDPending} SD pending`);
+            if (metaParts.length === 0) metaParts.push(`${g.items.length} closed`);
+
             let isCollapsed = collapsedPOGroups.has(g.key);
             let headerRow = `
                 <tr class="po-group-row">
@@ -3118,9 +3153,9 @@ function renderPOTableRows() {
                                 ${buildOrderBtns(g, idx)}
                             </div>
                             <div class="po-group-right">
-                                <span>${groupOngoing} ongoing</span>
+                                <span>${metaParts.join(' · ')}</span>
                                 <span style="color:#cbd5e1;">|</span>
-                                <span style="color:#0f172a; font-weight:800;">₹${groupTotal.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                                <span style="color:#0f172a; font-weight:800;">₹${groupTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>
                         </div>
                     </td>
@@ -3257,7 +3292,7 @@ function togglePOStatus(id) {
             let holdM = parseInt(p.sdHoldMonths, 10) || 6;
             let defaultDate = p.completedDate || new Date().toISOString().split('T')[0];
             let entered = prompt(
-                `Is PO mein ₹${sdAmt.toLocaleString('en-IN', { maximumFractionDigits: 2 })} Security Money hai.\n\nWork Completion Date confirm karein (YYYY-MM-DD):\n(Is date se ${holdM} mahine baad SD Refund alert aayega)`,
+                `Is PO mein ₹${sdAmt.toLocaleString('en-IN', { maximumFractionDigits: 2 })} Security Money hai.\n\nWork Completion Date confirm karein (YYYY-MM-DD):\n(Kaam done mark hoga aur PO "Pending SD" mein chala jayega; ${holdM}M baad SD Refund alert aayega)`,
                 defaultDate
             );
             if (entered === null) return;
@@ -3269,6 +3304,10 @@ function togglePOStatus(id) {
         }
         p.isCompleted = true;
     } else {
+        let msg = hasPOPendingSD(p)
+            ? `Kya "${p.authority} (${p.poNo})" ka kaam wapas Ongoing mark karna hai?`
+            : `Kya "${p.authority} (${p.poNo})" ko wapas Ongoing reopen karna hai?`;
+        if (!confirm(msg)) return;
         p.isCompleted = false;
     }
 
