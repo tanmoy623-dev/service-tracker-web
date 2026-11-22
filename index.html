@@ -1850,8 +1850,26 @@ function downloadPartnerCSV(name) {
 function user() {
     return `<div class="card"><h2>👤 Select Technician Profile</h2><div class="grid"><div class="role" onclick="tech('computer')" style="cursor:pointer; background:#f8fafc; padding:20px; border-radius:14px; border:1px solid #e2e8f0; text-align:center; font-size:16px;">💻 <b>Computer</b></div><div class="role" onclick="tech('water')" style="cursor:pointer; background:#f8fafc; padding:20px; border-radius:14px; border:1px solid #e2e8f0; text-align:center; font-size:16px;">💧 <b>Water Purifier</b></div></div></div><div id="techArea"></div>`;
 }// =========================================================================
-// ====== PART 4: PO TRACKER (RED CLAIM BILL/SD BUTTONS, MULTI-CYCLE + UNDO, SD REFUND, BG UPLOAD, DOWNLOAD, 5-DAY ALERT & AUTO-DELETE), BILLS, PETTY CASH, CF, SETTINGS, TECH & VEHICLES ======
+// ====== PART 4: PO TRACKER (MOBILE CARD VIEW + GROUPED BY CIVIL/AMC/OTHERS, RED CLAIM BILL/SD, MULTI-CYCLE + UNDO, SD REFUND, BG UPLOAD, DOWNLOAD, 5-DAY ALERT & AUTO-DELETE), BILLS, PETTY CASH, CF, SETTINGS, TECH & VEHICLES ======
 // =========================================================================
+
+// ====== RESPONSIVE PO CSS (MOBILE CARDS + DESKTOP TABLE FIX) ======
+function injectPOResponsiveCSS() {
+    if (document.getElementById('poResponsiveCSS')) return;
+    let style = document.createElement('style');
+    style.id = 'poResponsiveCSS';
+    style.textContent = `
+        #poDesktopTableWrap { display: block; }
+        #poMobileCardsWrap { display: none; }
+        #poRecordTable td:nth-child(2) { white-space: normal !important; min-width: 170px; font-size: 13px !important; }
+        #poRecordTable td:nth-child(3), #poRecordTable td:nth-child(5) { white-space: nowrap !important; word-break: normal !important; }
+        @media (max-width: 768px) {
+            #poDesktopTableWrap { display: none !important; }
+            #poMobileCardsWrap { display: flex !important; flex-direction: column; gap: 14px; }
+        }
+    `;
+    document.head.appendChild(style);
+}
 
 // ====== PO DATE, DEADLINE, MULTI-CYCLE AMC & SD REFUND HELPERS ======
 function addMonthsSafe(dateStr, monthsToAdd) {
@@ -2409,6 +2427,7 @@ function handlePOTypeChange() {
 }
 
 function showPOTracker() {
+    injectPOResponsiveCSS();
     setActiveAdminTab('tab-po'); currentPOEditId = null; let todayDate = new Date().toISOString().split('T')[0];
     let authOptions = getUniqueOptions(appData.poRecords, 'authority'); let poOptions = getUniqueOptions(appData.poRecords, 'poNo');
     document.getElementById('profileArea').innerHTML = `
@@ -2477,30 +2496,36 @@ function showPOTracker() {
                 <h2 style="margin:0;">📂 PO Track Record</h2>
                 <div id="poSDSummaryBar" style="margin-top:6px; display:flex; gap:8px; flex-wrap:wrap;"></div>
             </div>
-            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; width:100%; max-width:420px; justify-content:flex-end;">
                 <select id="poFilterMode" onchange="renderPOTableRows()" style="width:auto; margin:0; padding:8px 10px; font-size:13px;">
                     <option value="all">All POs</option>
                     <option value="ongoing">⏳ Ongoing Only</option>
                     <option value="pending_sd">🔒 Pending SD Only</option>
                     <option value="completed">✅ Completed Only</option>
                 </select>
-                <input type="text" id="poSearchInput" placeholder="🔍 Search PO, AMC, Civil PO..." oninput="renderPOTableRows()" style="max-width:240px; margin:0; padding:8px 12px;">
+                <input type="text" id="poSearchInput" placeholder="🔍 Search PO, AMC, Civil PO..." oninput="renderPOTableRows()" style="flex:1; min-width:160px; max-width:240px; margin:0; padding:8px 12px;">
             </div>
         </div>
-        <div style="overflow-x:auto;">
-            <table style="min-width:880px;">
+
+        <div id="poDesktopTableWrap" style="overflow-x:auto;">
+            <table id="poRecordTable" style="min-width:880px;">
                 <thead>
                     <tr><th>Issue Date & Cycle</th><th>Authority & Work</th><th>PO No.</th><th>Deadline / SD</th><th>Amount</th><th style="text-align:center;">Copy</th><th style="text-align:center;">Status & Action</th></tr>
                 </thead>
                 <tbody id="poTableBody"></tbody>
             </table>
         </div>
+
+        <div id="poMobileCardsWrap"></div>
     </div>`;
     renderPOTableRows();
 }
 
 function renderPOTableRows() {
-    let tbody = document.getElementById('poTableBody'); if (!tbody) return;
+    let tbody = document.getElementById('poTableBody');
+    let mobileWrap = document.getElementById('poMobileCardsWrap');
+    if (!tbody && !mobileWrap) return;
+
     let searchEl = document.getElementById('poSearchInput'); let query = searchEl ? searchEl.value.toLowerCase() : '';
     let filterEl = document.getElementById('poFilterMode'); let filterMode = filterEl ? filterEl.value : 'all';
     let allPOs = [...getArray(appData.poRecords)];
@@ -2553,7 +2578,7 @@ function renderPOTableRows() {
         return 0;
     });
 
-    let historyRows = poList.map(p => {
+    function getPORenderMeta(p) {
         let status = getPODeadlineStatus(p.deadline, p.isCompleted);
         let monthAlert = getPOMonthAlertStatus(p);
         let sdStatus = getPOSDStatus(p);
@@ -2561,32 +2586,50 @@ function renderPOTableRows() {
         let isAMC = (p.poType === 'AMC PO');
         let cyclesDone = parseInt(p.completedCycles, 10) || 0;
         let alertM = getEffectiveAlertMonths(p);
+        let amtNum = parseFloat(p.amount) || 0;
+        let amtText = amtNum.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
         let isUrgent = (status && status.isAlert) || (monthAlert && monthAlert.isAlert) || (sdStatus && sdStatus.isAlert);
-        let rowBg = isUrgent
-            ? 'background:#fff5f5;'
-            : (p.isCompleted ? (sdStatus && sdStatus.state !== 'received' ? 'background:#f5f7ff;' : 'background:#eefdf6; color:#555;') : 'background:#fff;');
-
-        let statusBtn = p.isCompleted
-            ? `<button onclick="togglePOStatus('${p.id}')" style="background:#07865b; padding:4px 8px; border-radius:4px; font-size:11px; color:white; border:none; cursor:pointer; width:82px;">✅ Completed</button>`
-            : `<button onclick="togglePOStatus('${p.id}')" style="background:#f39c12; padding:4px 8px; border-radius:4px; font-size:11px; color:white; border:none; cursor:pointer; width:82px;">⏳ Ongoing</button>`;
+        let bgHex = isUrgent
+            ? '#fff5f5'
+            : (p.isCompleted ? (sdStatus && sdStatus.state !== 'received' ? '#f5f7ff' : '#eefdf6') : '#ffffff');
+        let borderHex = isUrgent ? '#fecaca' : (p.isCompleted ? '#bbf7d0' : '#e2e8f0');
 
         let claimBtnLabel = (monthAlert && monthAlert.dueCyclesCount > 1 && monthAlert.totalDueMonths > 0)
             ? `🧾 Claim (${monthAlert.totalDueMonths}M)`
             : `🧾 Claim Bill`;
 
-        let billDoneBtn = (!p.isCompleted && monthAlert && monthAlert.isAlert)
-            ? `<button onclick="markPOBillDone('${p.id}')" style="background:#dc2626; padding:4px 8px; border-radius:4px; font-size:11px; color:white; border:none; cursor:pointer; white-space:nowrap;" title="Click karke 1 ya multiple cycles (3M / 6M) claim mark karein">${claimBtnLabel}</button>`
+        let typeBadge = '';
+        if (isCivil) {
+            typeBadge = `<span style="font-size:10px; background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; padding:1px 6px; border-radius:4px; font-weight:700;">🏗️ Civil PO</span>`;
+        } else if (isAMC) {
+            typeBadge = `<span style="font-size:10px; background:#ede9fe; color:#6d28d9; border:1px solid #ddd6fe; padding:1px 6px; border-radius:4px; font-weight:700;">🔧 AMC PO</span>`;
+        }
+
+        let isUploading = activeUploadingPOIds.has(String(p.id));
+        return { status, monthAlert, sdStatus, cyclesDone, alertM, amtText, isUrgent, bgHex, borderHex, claimBtnLabel, typeBadge, isUploading };
+    }
+
+    function buildPORowHTML(p) {
+        let m = getPORenderMeta(p);
+        let rowBg = `background:${m.bgHex};${p.isCompleted && !m.isUrgent && !(m.sdStatus && m.sdStatus.state !== 'received') ? ' color:#555;' : ''}`;
+
+        let statusBtn = p.isCompleted
+            ? `<button onclick="togglePOStatus('${p.id}')" style="background:#07865b; padding:4px 8px; border-radius:4px; font-size:11px; color:white; border:none; cursor:pointer; width:82px;">✅ Completed</button>`
+            : `<button onclick="togglePOStatus('${p.id}')" style="background:#f39c12; padding:4px 8px; border-radius:4px; font-size:11px; color:white; border:none; cursor:pointer; width:82px;">⏳ Ongoing</button>`;
+
+        let billDoneBtn = (!p.isCompleted && m.monthAlert && m.monthAlert.isAlert)
+            ? `<button onclick="markPOBillDone('${p.id}')" style="background:#dc2626; padding:4px 8px; border-radius:4px; font-size:11px; color:white; border:none; cursor:pointer; white-space:nowrap;" title="Click karke 1 ya multiple cycles (3M / 6M) claim mark karein">${m.claimBtnLabel}</button>`
             : '';
 
         let sdBtn = '';
-        if (sdStatus && !p.sdReceived && (sdStatus.isAlert || p.isCompleted)) {
-            let sdBtnBg = sdStatus.isAlert ? '#dc2626' : '#d97706';
+        if (m.sdStatus && !p.sdReceived && (m.sdStatus.isAlert || p.isCompleted)) {
+            let sdBtnBg = m.sdStatus.isAlert ? '#dc2626' : '#d97706';
             sdBtn = `<button onclick="togglePOSDReceived('${p.id}')" style="background:${sdBtnBg}; padding:4px 8px; border-radius:4px; font-size:11px; color:white; border:none; cursor:pointer; white-space:nowrap;" title="Security Deposit wapas milne par click karein">💰 Claim SD</button>`;
         }
 
         let proofHTML = '-';
-        if (activeUploadingPOIds.has(String(p.id))) {
+        if (m.isUploading) {
             proofHTML = `<span style="font-size:11px; color:#059669; font-weight:700; white-space:nowrap;">⏳ Uploading...</span>`;
         } else if (p.photo && p.photo.length > 5) {
             let icon = p.photo.includes('/file/d/') ? '📄' : '📷';
@@ -2598,39 +2641,32 @@ function renderPOTableRows() {
             proofHTML = `<a href="${p.link}" target="_blank" style="color:#2980b9; font-weight:bold; text-decoration:none; font-size:16px;">🔗</a>`;
         }
 
-        let typeBadge = '';
-        if (isCivil) {
-            typeBadge = `<span style="font-size:10px; background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; padding:1px 6px; border-radius:4px; font-weight:700; margin-left:4px;">🏗️ Civil PO</span>`;
-        } else if (isAMC) {
-            typeBadge = `<span style="font-size:10px; background:#ede9fe; color:#6d28d9; border:1px solid #ddd6fe; padding:1px 6px; border-radius:4px; font-weight:700; margin-left:4px;">🔧 AMC PO</span>`;
-        }
-
-        let ageBadge = monthAlert
-            ? `<br><span style="display:inline-block; margin-top:3px; background:${monthAlert.bg}; color:${monthAlert.color}; border:1px solid ${monthAlert.border}; padding:1px 6px; border-radius:99px; font-size:10px; font-weight:700; white-space:nowrap;">${monthAlert.text}</span>`
+        let ageBadge = m.monthAlert
+            ? `<br><span style="display:inline-block; margin-top:3px; background:${m.monthAlert.bg}; color:${m.monthAlert.color}; border:1px solid ${m.monthAlert.border}; padding:1px 6px; border-radius:99px; font-size:10px; font-weight:700; white-space:nowrap;">${m.monthAlert.text}</span>`
             : '';
 
-        let cyclesNote = (!p.isCompleted && cyclesDone > 0)
-            ? `<br><span onclick="undoPOBillClaim('${p.id}')" title="Click karke claimed bill undo / adjust karein" style="cursor:pointer; display:inline-block; margin-top:3px; font-size:10px; color:#047857; background:#ecfdf5; border:1px dashed #6ee7b7; padding:1px 6px; border-radius:99px; font-weight:700;">✓ ${cyclesDone} Bill${cyclesDone > 1 ? 's' : ''} Claimed${alertM > 0 ? ` (${cyclesDone * alertM}M)` : ''} ↩️</span>`
+        let cyclesNote = (!p.isCompleted && m.cyclesDone > 0)
+            ? `<br><span onclick="undoPOBillClaim('${p.id}')" title="Click karke claimed bill undo / adjust karein" style="cursor:pointer; display:inline-block; margin-top:3px; font-size:10px; color:#047857; background:#ecfdf5; border:1px dashed #6ee7b7; padding:1px 6px; border-radius:99px; font-weight:700;">✓ ${m.cyclesDone} Bill${m.cyclesDone > 1 ? 's' : ''} Claimed${m.alertM > 0 ? ` (${m.cyclesDone * m.alertM}M)` : ''} ↩️</span>`
             : '';
 
         let compNote = p.completedDate
             ? `<br><span style="font-size:10px; color:#475569;">Done: ${formatDate(p.completedDate)}</span>`
             : '';
 
-        let deadlineBadge = status
-            ? `<br><span style="display:inline-block; margin-top:3px; background:${status.bg}; color:${status.color}; border:1px solid ${status.border}; padding:1px 6px; border-radius:99px; font-size:10px; font-weight:700; white-space:nowrap;">${status.text}</span>`
+        let deadlineBadge = m.status
+            ? `<br><span style="display:inline-block; margin-top:3px; background:${m.status.bg}; color:${m.status.color}; border:1px solid ${m.status.border}; padding:1px 6px; border-radius:99px; font-size:10px; font-weight:700; white-space:nowrap;">${m.status.text}</span>`
             : '';
 
-        let sdBadge = sdStatus
-            ? `<br><span ${p.sdReceived ? `onclick="togglePOSDReceived('${p.id}')" title="Click to undo SD Refunded" style="cursor:pointer;` : `style="`}display:inline-block; margin-top:3px; background:${sdStatus.bg}; color:${sdStatus.color}; border:1px solid ${sdStatus.border}; padding:1px 6px; border-radius:99px; font-size:10px; font-weight:700; white-space:nowrap;">${sdStatus.text}</span>`
+        let sdBadge = m.sdStatus
+            ? `<br><span ${p.sdReceived ? `onclick="togglePOSDReceived('${p.id}')" title="Click to undo SD Refunded" style="cursor:pointer;` : `style="`}display:inline-block; margin-top:3px; background:${m.sdStatus.bg}; color:${m.sdStatus.color}; border:1px solid ${m.sdStatus.border}; padding:1px 6px; border-radius:99px; font-size:10px; font-weight:700; white-space:nowrap;">${m.sdStatus.text}</span>`
             : '';
 
         return `<tr style="${rowBg}">
             <td style="white-space:nowrap;">${formatDate(p.date)}${ageBadge}${cyclesNote}${compNote}</td>
-            <td><b>${p.authority}</b>${typeBadge}<br><span style="font-size:11px;color:#555;">${p.workDesc}</span></td>
-            <td>${p.poNo}</td>
+            <td><b>${p.authority}</b> ${m.typeBadge}<br><span style="font-size:11px;color:#555;">${p.workDesc}</span></td>
+            <td style="white-space:nowrap;">${p.poNo}</td>
             <td style="white-space:nowrap;">${p.deadline ? formatDate(p.deadline) : '-'}${deadlineBadge}${sdBadge}</td>
-            <td style="font-weight:bold;">₹${p.amount}</td>
+            <td style="font-weight:bold; white-space:nowrap;">₹${m.amtText}</td>
             <td style="text-align:center;">${proofHTML}</td>
             <td>
                 <div style="display:flex; gap:4px; justify-content:center; align-items:center; flex-wrap:wrap;">
@@ -2642,9 +2678,149 @@ function renderPOTableRows() {
                 </div>
             </td>
         </tr>`;
-    }).join('');
+    }
 
-    tbody.innerHTML = historyRows || `<tr><td colspan="7" style="text-align:center; color:#888;">No Purchase Orders found</td></tr>`;
+    function buildPOMobileCardHTML(p) {
+        let m = getPORenderMeta(p);
+
+        let badgesArr = [];
+        if (m.monthAlert) {
+            badgesArr.push(`<span style="background:${m.monthAlert.bg}; color:${m.monthAlert.color}; border:1px solid ${m.monthAlert.border}; padding:2px 8px; border-radius:99px; font-size:11px; font-weight:700;">${m.monthAlert.text}</span>`);
+        }
+        if (m.status) {
+            badgesArr.push(`<span style="background:${m.status.bg}; color:${m.status.color}; border:1px solid ${m.status.border}; padding:2px 8px; border-radius:99px; font-size:11px; font-weight:700;">${m.status.text}</span>`);
+        }
+        if (m.sdStatus) {
+            badgesArr.push(`<span ${p.sdReceived ? `onclick="togglePOSDReceived('${p.id}')" style="cursor:pointer;` : `style="`}background:${m.sdStatus.bg}; color:${m.sdStatus.color}; border:1px solid ${m.sdStatus.border}; padding:2px 8px; border-radius:99px; font-size:11px; font-weight:700;">${m.sdStatus.text}</span>`);
+        }
+        if (!p.isCompleted && m.cyclesDone > 0) {
+            badgesArr.push(`<span onclick="undoPOBillClaim('${p.id}')" style="cursor:pointer; font-size:11px; color:#047857; background:#ecfdf5; border:1px dashed #6ee7b7; padding:2px 8px; border-radius:99px; font-weight:700;">✓ ${m.cyclesDone} Bill${m.cyclesDone > 1 ? 's' : ''} Claimed${m.alertM > 0 ? ` (${m.cyclesDone * m.alertM}M)` : ''} ↩️</span>`);
+        }
+
+        let copyActions = '';
+        if (m.isUploading) {
+            copyActions = `<span style="font-size:11px; color:#059669; font-weight:700;">⏳ Uploading...</span>`;
+        } else if (p.photo && p.photo.length > 5) {
+            let icon = p.photo.includes('/file/d/') ? '📄' : '📷';
+            copyActions = `
+                <a href="${p.photo}" target="_blank" style="display:inline-flex; align-items:center; gap:3px; background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; padding:5px 8px; border-radius:7px; font-size:11.5px; font-weight:700; text-decoration:none;">${icon} Copy</a>
+                <button type="button" onclick="downloadPOAttachment('${p.id}')" style="background:#eef2ff; color:#1d4ed8; border:1px solid #c7d2fe; padding:5px 8px; border-radius:7px; font-size:12px; line-height:1;" title="Download Copy">⬇️</button>`;
+        } else if (p.link && p.link.length > 5) {
+            copyActions = `<a href="${p.link}" target="_blank" style="display:inline-flex; align-items:center; background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; padding:5px 8px; border-radius:7px; font-size:11.5px; font-weight:700; text-decoration:none;">🔗 Copy</a>`;
+        }
+
+        let claimBtn = (!p.isCompleted && m.monthAlert && m.monthAlert.isAlert)
+            ? `<button onclick="markPOBillDone('${p.id}')" style="background:#dc2626; color:#fff; padding:6px 10px; border-radius:7px; font-size:11.5px;">${m.claimBtnLabel}</button>`
+            : '';
+
+        let sdBtn = (m.sdStatus && !p.sdReceived && (m.sdStatus.isAlert || p.isCompleted))
+            ? `<button onclick="togglePOSDReceived('${p.id}')" style="background:${m.sdStatus.isAlert ? '#dc2626' : '#d97706'}; color:#fff; padding:6px 10px; border-radius:7px; font-size:11.5px;">💰 Claim SD</button>`
+            : '';
+
+        let statusBtn = p.isCompleted
+            ? `<button onclick="togglePOStatus('${p.id}')" style="background:#07865b; color:#fff; padding:6px 10px; border-radius:7px; font-size:11.5px;">✅ Completed</button>`
+            : `<button onclick="togglePOStatus('${p.id}')" style="background:#f39c12; color:#fff; padding:6px 10px; border-radius:7px; font-size:11.5px;">⏳ Ongoing</button>`;
+
+        return `
+        <div style="background:${m.bgHex}; border:1px solid ${m.borderHex}; border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:8px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+                <div style="min-width:0;">
+                    <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                        <b style="font-size:14.5px; color:#0f172a;">${p.authority}</b>
+                        ${m.typeBadge}
+                    </div>
+                    <div style="font-size:12px; color:#475569; margin-top:2px;">${p.workDesc || '-'}</div>
+                </div>
+                <div style="font-weight:800; font-size:14.5px; color:#0f172a; white-space:nowrap;">₹${m.amtText}</div>
+            </div>
+
+            <div style="display:flex; flex-wrap:wrap; gap:6px 12px; font-size:11.5px; color:#334155; background:rgba(255,255,255,0.75); padding:6px 8px; border-radius:8px; border:1px solid #e2e8f0;">
+                <span><b>PO:</b> ${p.poNo}</span>
+                <span><b>Issue:</b> ${formatDate(p.date)}</span>
+                ${p.deadline ? `<span><b>Due:</b> ${formatDate(p.deadline)}</span>` : ''}
+                ${p.completedDate ? `<span><b>Done:</b> ${formatDate(p.completedDate)}</span>` : ''}
+            </div>
+
+            ${badgesArr.length > 0 ? `<div style="display:flex; flex-wrap:wrap; gap:5px;">${badgesArr.join('')}</div>` : ''}
+
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; padding-top:6px; border-top:1px dashed #cbd5e1;">
+                <div style="display:flex; align-items:center; gap:5px;">
+                    ${copyActions}
+                </div>
+                <div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap; margin-left:auto;">
+                    ${claimBtn}
+                    ${sdBtn}
+                    ${statusBtn}
+                    <button onclick="editPO('${p.id}')" style="background:#3498db; color:#fff; padding:6px 8px; border-radius:7px; font-size:12px;">✏️</button>
+                    <button onclick="deletePO('${p.id}')" style="background:#e21d4f; color:#fff; padding:6px 8px; border-radius:7px; font-size:12px;">🗑️</button>
+                </div>
+            </div>
+        </div>`;
+    }
+
+    let groups = [
+        {
+            title: '🏗️ Civil PO',
+            bg: '#e0f2fe',
+            color: '#0369a1',
+            border: '#7dd3fc',
+            items: poList.filter(p => p.poType === 'Civil PO')
+        },
+        {
+            title: '🔧 AMC PO',
+            bg: '#ede9fe',
+            color: '#6d28d9',
+            border: '#c4b5fd',
+            items: poList.filter(p => p.poType === 'AMC PO')
+        },
+        {
+            title: '📄 Other / General PO',
+            bg: '#f1f5f9',
+            color: '#334155',
+            border: '#cbd5e1',
+            items: poList.filter(p => p.poType !== 'Civil PO' && p.poType !== 'AMC PO')
+        }
+    ];
+
+    let activeGroups = groups.filter(g => g.items.length > 0);
+
+    if (tbody) {
+        let historyRows = activeGroups.map(g => {
+            let groupTotal = g.items.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+            let groupOngoing = g.items.filter(p => !p.isCompleted).length;
+            let headerRow = `
+                <tr style="background:${g.bg}; border-top:2px solid ${g.border}; border-bottom:1.5px solid ${g.border};">
+                    <td colspan="7" style="padding:9px 10px; font-weight:800; color:${g.color}; font-size:13px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                            <span>${g.title} <span style="background:#ffffff; color:${g.color}; border:1px solid ${g.border}; padding:1px 8px; border-radius:99px; font-size:11px; margin-left:6px;">${g.items.length} PO${g.items.length > 1 ? 's' : ''}</span></span>
+                            <span style="font-size:12px; font-weight:700;">⏳ Ongoing: ${groupOngoing} &nbsp;|&nbsp; Total: ₹${groupTotal.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                        </div>
+                    </td>
+                </tr>`;
+            return headerRow + g.items.map(buildPORowHTML).join('');
+        }).join('');
+        tbody.innerHTML = historyRows || `<tr><td colspan="7" style="text-align:center; color:#888;">No Purchase Orders found</td></tr>`;
+    }
+
+    if (mobileWrap) {
+        let mobileHTML = activeGroups.map(g => {
+            let groupTotal = g.items.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+            let groupOngoing = g.items.filter(p => !p.isCompleted).length;
+            return `
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                <div style="background:${g.bg}; color:${g.color}; border:1.5px solid ${g.border}; border-radius:10px; padding:8px 11px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
+                        <span style="font-weight:800; font-size:13px;">${g.title} (${g.items.length})</span>
+                        <span style="font-weight:800; font-size:12.5px;">₹${groupTotal.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                    </div>
+                    <div style="font-size:11px; opacity:0.85; margin-top:2px; font-weight:600;">⏳ Ongoing: ${groupOngoing} • ✅ Completed: ${g.items.length - groupOngoing}</div>
+                </div>
+                ${g.items.map(buildPOMobileCardHTML).join('')}
+            </div>`;
+        }).join('');
+        mobileWrap.innerHTML = mobileHTML || `<div style="text-align:center; color:#888; padding:18px; font-size:13px;">No Purchase Orders found</div>`;
+    }
+
     updatePOTabBadge();
 }
 
